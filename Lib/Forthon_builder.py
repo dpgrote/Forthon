@@ -244,7 +244,7 @@ else:
 for f in extrafiles:
   root,suffix = os.path.splitext(f)
   if suffix[1:] in ['F','F90','f',fixed_suffix,free_suffix,'o']:
-    extraobjectsstr = extraobjectsstr + root + osuffix
+    extraobjectsstr = extraobjectsstr + ' ' + root + osuffix
     extraobjectslist = extraobjectslist + [root + osuffix]
   elif suffix[1:] in ['c']:
     extracfiles.append(f)
