@@ -1,7 +1,7 @@
 
-example: example.F example.v example_extra.F 
-	Forthon example example_extra.F
+example: example.F example.v
+	Forthon example
 	python example.py
 
 clean:
-	rm -rf build examplepy.so
+	rm -rf build *.so
