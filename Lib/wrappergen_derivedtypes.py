@@ -513,13 +513,21 @@ class ForthonDerivedType:
         self.fw('    RETURN')
         self.fw('  END SUBROUTINE Del'+t.name+'')
         # --- This routine should be called by fortran instead of deallocate.
-        # --- If there are no existing python references to the object, then
-        # --- it is just deallocated. If there are references, it is made
-        # --- deallocatable by python, so that when all of those references
-        # --- are deleted, the object can finally be deallocated.
+        # --- The first decref accounts for the reference "owned" by the
+        # --- fortran object itself. If there are no further existing python
+        # --- references to the object, then it is just deallocated. If there
+        # --- are references, it is made deallocatable by python, so that
+        # --- when all of those references are deleted, the object can finally
+        # --- be deallocated. Lastly, the fortran pointer to the instance
+        # --- is in all cases nullified. This is necessary so that future
+        # --- accesses to the object can detect that the object is now
+        # --- unassociated.
         self.fw('  SUBROUTINE Release'+t.name+'(oldobj__)')
         self.fw('    TYPE('+t.name+'),pointer:: oldobj__')
         self.fw('    integer:: error')
+        self.fw('    if (oldobj__%cobj__ /= 0) then')
+        self.fw('      call decref'+t.name+'py(oldobj__)')
+        self.fw('    endif')
         self.fw('    if (oldobj__%cobj__ == 0) then')
         self.fw('      DEALLOCATE(oldobj__,STAT=error)')
         self.fw('      if (error /= 0) then')
@@ -529,6 +537,7 @@ class ForthonDerivedType:
         self.fw('    else')
         self.fw('      call '+self.fsub(t,'makedeallocable')+'(oldobj__%cobj__)')
         self.fw('    endif')
+        self.fw('    NULLIFY(oldobj__)')
         self.fw('    RETURN')
         self.fw('  END SUBROUTINE Release'+t.name+'')
         # --- This routine is needed to get around limitations
@@ -540,6 +549,10 @@ class ForthonDerivedType:
         # --- To get around that, the input argument is declared a target,
         # --- then an explicit pointer assignment gives a pointer that can
         # --- be deallocated.
+        # --- Note that this fails with the IBM xlf compiler. It takes a
+        # --- strict interpretation of the Fortran standard - an error value
+        # --- is returned from the deallocate since the pointer points to
+        # --- (what appears to be) a static object.
         self.fw('  SUBROUTINE '+t.name+'dealloc(oldobj__)')
         self.fw('    TYPE('+t.name+'),target:: oldobj__')
         self.fw('    TYPE('+t.name+'),pointer:: poldobj__')
