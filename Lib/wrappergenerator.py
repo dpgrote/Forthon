@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.18 2004/08/11 00:33:12 dave Exp $
+# $Id: wrappergenerator.py,v 1.19 2004/08/18 16:40:34 dave Exp $
 
 import sys
 import os.path
@@ -268,6 +268,7 @@ Usage:
           setpointer = 'NULL'
           getpointer = 'NULL'
         self.cw('{PyArray_%s,'%fvars.ftop(s.type) + 
+                 '"%s",'%s.type +
                  '"%s",'%s.name + 
                  'NULL,' + 
                  '"%s",'%s.group + 

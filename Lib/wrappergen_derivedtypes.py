@@ -150,6 +150,7 @@ class ForthonDerivedType:
         if s.dynamic: getpointer = '*'+fname(self.fsub(t,'getpointer',s.name))
         else:         getpointer = 'NULL'
         self.cw('obj->fscalars[%d].type = PyArray_%s;'%(i,fvars.ftop(s.type)))
+        self.cw('obj->fscalars[%d].typename = "%s";'%(i,s.type))
         self.cw('obj->fscalars[%d].name = "%s";'%(i,s.name))
         self.cw('obj->fscalars[%d].data = NULL;'%i)
         self.cw('obj->fscalars[%d].group = "%s";'%(i,t.name))
