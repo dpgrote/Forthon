@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.13 2004/04/27 17:41:42 dave Exp $ */
+/* $Id: Forthon.h,v 1.14 2004/04/27 17:43:39 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -661,8 +661,7 @@ static PyObject *ForthonPackage_getdict(PyObject *_self_,PyObject *args)
 static char deprefix_doc[] = "For each variable in the package, a python object is created which has the same name and same value. For arrays, the new objects points to the same memory location.";
 static PyObject *ForthonPackage_deprefix(PyObject *_self_,PyObject *args)
 {
-  ForthonObject *self = (ForthonObject *)_self_;
-  int j;
+  /* ForthonObject *self = (ForthonObject *)_self_; */
   PyObject *m,*d, *a;
   if (!PyArg_ParseTuple(args,"")) return NULL;
   /* printf("deprefixing %s, please wait\n",self->name); */
