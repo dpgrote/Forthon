@@ -22,7 +22,7 @@ c========================================================================
       t1%j = ii
       t1%b = aa
       allocate(t2)
-      call NewPyRefType2(t2) ! Must be added so t2 is accessible from python
+      call InitPyRefType2(t2) ! Must be added so t2 is accessible from python
       t2%j = ii**2
       t2%b = aa**2
       return
