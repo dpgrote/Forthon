@@ -201,6 +201,7 @@ f90fixed = fcompiler.f90fixed
 popts = fcompiler.popts
 forthonargs = forthonargs + fcompiler.forthonargs
 if fopt is None: fopt = fcompiler.fopt
+extra_link_args = fcompiler.extra_link_args
 
 # --- Create path to fortran files for the Makefile since they will be
 # --- referenced from the build directory.
@@ -328,6 +329,7 @@ setup(name = pkg,
                                include_dirs=[forthonhome]+includedirs,
                                extra_objects=ofiles,
                                library_dirs=fcompiler.libdirs+libdirs,
-                               libraries=fcompiler.libs+libs)]
+                               libraries=fcompiler.libs+libs,
+                               extra_link_args=extra_link_args)]
      )
 
