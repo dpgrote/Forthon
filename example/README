@@ -1,9 +1,13 @@
-This contains a simple example.
+This contains an example which makes use of most of the features of Forthon.
+It contains extensive documentation, especially the example.v file. Please
+study this example. To build and test it, just type make (after installing
+Fortrhon).
 
 List of files:
+  example_extra.F: extra fortran90 source file that is part of the example
   example.F:       fortran90 source file containing python callable subroutines
-  example.v:       interface description file
   example.py:      python script which tests the example
+  example.v:       interface description file
   Makefile:        builds the example and test it
   README:          this file
 
