@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.20 2004/08/18 16:45:13 dave Exp $ */
+/* $Id: Forthon.h,v 1.21 2004/09/10 18:22:15 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -113,7 +113,9 @@ typedef struct {
   PyObject *scalardict,*arraydict;
   char *fobj;
   void (*fobjdeallocate)();
+  void (*nullifycobj)();
   int allocated;
+  int garbagecollected;
 } ForthonObject;
 staticforward PyTypeObject ForthonType;
 
@@ -271,13 +273,19 @@ static PyObject *Forthon_getscalarderivedtype(ForthonObject *self,void *closure)
     /* python object from the fortran variable. */
     /* This is needed since the association may have changed in fortran. */
     (fscalar->getpointer)(&objid,self->fobj);
-    /* Make sure that the correct python object is pointed to. */
-    fscalar->data = (char *)objid;}
+    if (fscalar->data != (char *)objid) {
+      /* Decrement the old reference before reassigning .data. */
+      Py_XDECREF((PyObject *)fscalar->data);
+      /* Make sure that the correct python object is pointed to. */
+      fscalar->data = (char *)objid;
+      Py_XINCREF(objid);
+      }
+    }
   else {
     /* If not dynamic, the data element will not have changed. */
     objid = (ForthonObject *)fscalar->data;}
   if (objid != NULL) {
-    Py_XINCREF(objid);
+    Py_INCREF(objid);
     return (PyObject *)objid;}
   else {
     PyErr_SetString(ErrorObject,"variable unassociated");
@@ -289,8 +297,7 @@ static int dimensionsmatch(Fortranarray *farray)
   int i,k;
   int result = 1;
   for (i=0;i<farray->nd;i++) {
-    k = farray->nd - i - 1;
-    if (farray->dimensions[i] != farray->pya->dimensions[k]) result = 0;}
+    if (farray->dimensions[i] != farray->pya->dimensions[i]) result = 0;}
   return result;
 }
 /* ------------------------------------------------------------------------- */
@@ -431,15 +438,23 @@ static int Forthon_setscalarderivedtype(ForthonObject *self,PyObject *value,
                                         void *closure)
 {
   Fortranscalar *fscalar = &(self->fscalars[(int)closure]);
-  /* if (value == NULL) { */
-    /* PyErr_SetString(PyExc_TypeError, "Cannot delete the attribute"); */
-    /* return -1;} */
+  ForthonObject *objid;
 
   if (value == NULL) {
     if (fscalar->dynamic) {
-      /* Decrement the reference counter and nullify the fortran pointer. */
-      Py_DECREF((PyObject *)fscalar->data);
-      (fscalar->setpointer)(0,(self->fobj));
+      /* (fscalar->getpointer)(&objid,self->fobj); */
+      /* if (fscalar->data != (char *)objid) { */
+        /* Decrement the old reference before reassigning .data. */
+        /* Py_XDECREF((PyObject *)fscalar->data); */
+        /* Make sure that the correct python object is pointed to. */
+        /* fscalar->data = (char *)objid;} */
+      if (fscalar->data != NULL) {
+        /* Decrement the reference counter and nullify the fortran pointer. */
+        Py_DECREF((PyObject *)fscalar->data);
+        if (((ForthonObject *)fscalar->data)->fobjdeallocate != NULL)
+          (fscalar->setpointer)(0,(self->fobj));
+        fscalar->data = (char *)0;
+        }
       return 0;
       }
     else {
@@ -577,6 +592,37 @@ static int Forthon_setarraydict(ForthonObject *self,void *closure)
   return -1;
 }
 
+/* ------------------------------------------------------------------------- */
+static int Forthon_traverse(ForthonObject *self,visitproc visit,void *arg)
+{
+  int i;
+  for (i=0;i<self->nscalars;i++) {
+    if (self->fscalars[i].type == PyArray_OBJECT &&
+        self->fscalars[i].dynamic &&
+        self->fscalars[i].data != NULL &&
+        strcmp(self->typename,self->fscalars[i].typename) != 0) {
+      return visit((PyObject *)(self->fscalars[i].data), arg);
+      }
+    }
+  return 0;
+}
+
+
+/* ------------------------------------------------------------------------- */
+static int Forthon_clear(ForthonObject *self)
+{
+  int i;
+  for (i=0;i<self->nscalars;i++) {
+    if (self->fscalars[i].type == PyArray_OBJECT &&
+        self->fscalars[i].dynamic &&
+        self->fscalars[i].data != NULL &&
+        strcmp(self->typename,self->fscalars[i].typename) != 0) {
+      Py_XDECREF((PyObject *)self->fscalars[i].data);
+      self->fscalars[i].data = NULL;
+      }
+    }
+  return 0;
+}
 
 /* ######################################################################### */
 /* ######################################################################### */
@@ -1509,31 +1555,33 @@ static PyMethodDef *getForthonPackage_methods(void)
   return ForthonPackage_methods;
 }
 
-/* ######################################################################### */
-/* # Routine which creates an instance of a ForthonObject                    */
-static PyObject *ForthonObject_New(PyObject *self, PyObject *args)
-{
-  ForthonObject *new;
-  new = PyObject_NEW(ForthonObject, &ForthonType);
-  return (PyObject *)new;
-}
-
 static void Forthon_dealloc(ForthonObject *self)
 {
   int i;
   PyObject *objid;
+  if (self->garbagecollected) PyObject_GC_UnTrack((PyObject *) self);
+
   for (i=0;i<self->nscalars;i++) {
     if (self->fscalars[i].type == PyArray_OBJECT)
       {
-      if (self->fscalars[i].dynamic) {
+      /* if (self->fscalars[i].dynamic) { */
+        /* XXX This doesn't seem to help anything and causes core dumps. */
         /* If dynamic, use getpointer to get the current address of the */
         /* python object from the fortran variable. */
         /* This is needed since the association may have changed in fortran. */
-        (self->fscalars[i].getpointer)(&objid,self->fobj);
-        /* XXX Should .data be DECREF'd first???? */
-        self->fscalars[i].data = (char *)objid;}
-      Py_XDECREF((PyObject *)self->fscalars[i].data);
-      self->fscalars[i].data = 0;
+        /* (self->fscalars[i].getpointer)(&objid,self->fobj); */
+        /* if (self->fscalars[i].data != (char *)objid) { */
+          /* Decrement the old reference before reassigning .data */
+          /* Py_XDECREF((PyObject *)self->fscalars[i].data); */
+          /* self->fscalars[i].data = (char *)objid;} */
+          /* Py_XINCREF((PyObject *)self->fscalars[i].data); */
+        /* } */
+      if (self->fscalars[i].data != NULL) {
+        Py_DECREF((PyObject *)self->fscalars[i].data);
+        if (((ForthonObject *)self->fscalars[i].data)->fobjdeallocate != NULL)
+          (self->fscalars[i].setpointer)(0,(self->fobj));
+        self->fscalars[i].data = 0;
+        }
       }
     }
   for (i=0;i<self->narrays;i++) {
@@ -1547,9 +1595,14 @@ static void Forthon_dealloc(ForthonObject *self)
     if (self->fscalars != NULL) free(self->fscalars);
     if (self->farrays  != NULL) free(self->farrays);
     }
-  if (self->fobjdeallocate != NULL) (self->fobjdeallocate)(self->fobj);
+  if (self->fobj != NULL) {
+    if (self->fobjdeallocate != NULL) {(self->fobjdeallocate)(self->fobj);}
+    else                              {(self->nullifycobj)(self->fobj);}
+    }
+
   Forthon_DeleteDicts(self);
-  self->ob_type->tp_free((PyObject*)self);
+  PyObject_GC_Del((PyObject*)self);
+  /* self->ob_type->tp_free((PyObject*)self); */
 }
 
 /* ######################################################################### */
@@ -1653,25 +1706,28 @@ static PyObject *Forthon_repr(ForthonObject *self)
 /* # Package object declaration                                              */
 static PyTypeObject ForthonType = {
   PyObject_HEAD_INIT(NULL)
-  0,                                   /*ob_size*/
-  "Forthon",                           /*tp_name*/
-  sizeof(ForthonObject),               /*tp_basicsize*/
-  0,                                   /*tp_itemsize*/
-  (destructor)Forthon_dealloc,         /*tp_dealloc*/
-  (printfunc)Forthon_print,            /*tp_print*/
-  0,                                   /*tp_getattr*/
-  0,                                   /*tp_setattr*/
-  0,                                   /*tp_compare*/
-  (reprfunc)Forthon_repr,              /*tp_repr*/
-  0,                                   /*tp_as_number*/
-  0,                                   /*tp_as_sequence*/
-  0,                                   /*tp_as_mapping*/
-  0,                                   /*tp_hash*/
-  0,                                   /*tp_call*/
-  0,                                   /*tp_str*/
-  (getattrofunc)Forthon_getattro,      /*tp_getattro*/
-  (setattrofunc)Forthon_setattro,      /*tp_setattro*/
-  0,                                   /*tp_as_buffer*/
-  Py_TPFLAGS_DEFAULT,                  /*tp_flags*/
-  "Forthon objects",                   /*tp_doc*/
+  0,                                     /*ob_size*/
+  "Forthon",                             /*tp_name*/
+  sizeof(ForthonObject),                 /*tp_basicsize*/
+  0,                                     /*tp_itemsize*/
+  (destructor)Forthon_dealloc,           /*tp_dealloc*/
+  (printfunc)Forthon_print,              /*tp_print*/
+  0,                                     /*tp_getattr*/
+  0,                                     /*tp_setattr*/
+  0,                                     /*tp_compare*/
+  (reprfunc)Forthon_repr,                /*tp_repr*/
+  0,                                     /*tp_as_number*/
+  0,                                     /*tp_as_sequence*/
+  0,                                     /*tp_as_mapping*/
+  0,                                     /*tp_hash*/
+  0,                                     /*tp_call*/
+  0,                                     /*tp_str*/
+  (getattrofunc)Forthon_getattro,        /*tp_getattro*/
+  (setattrofunc)Forthon_setattro,        /*tp_setattro*/
+  0,                                     /*tp_as_buffer*/
+  Py_TPFLAGS_DEFAULT|Py_TPFLAGS_HAVE_GC, /*tp_flags*/
+  "Forthon objects",                     /*tp_doc*/
+  (traverseproc)Forthon_traverse,        /* tp_traverse */
+  (inquiry)Forthon_clear,                /* tp_clear */
+
 };

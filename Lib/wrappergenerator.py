@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.19 2004/08/18 16:40:34 dave Exp $
+# $Id: wrappergenerator.py,v 1.20 2004/09/10 18:20:41 dave Exp $
 
 import sys
 import os.path
@@ -666,7 +666,8 @@ Usage:
    #self.cw('  PyModule_AddObject(m,"'+self.pname+'Type",'+
    #               '(PyObject *)&ForthonType);')
     self.cw('  '+self.pname+'Object=(ForthonObject *)'+
-               'ForthonObject_New(NULL,NULL);')
+               'PyObject_GC_New(ForthonObject, &ForthonType);')
+              #'ForthonObject_New(NULL,NULL);')
     self.cw('  '+self.pname+'Object->name = "'+self.pname+'";')
     self.cw('  '+self.pname+'Object->typename = "'+self.pname+'";')
     self.cw('  '+self.pname+'Object->nscalars = '+self.pname+'nscalars;')
@@ -877,6 +878,9 @@ Usage:
           self.fw('  USE '+s.group)
           self.fw('  integer('+self.isz+'):: cobj__,obj__')
           self.fw('  if (ASSOCIATED('+s.name+')) then')
+          self.fw('    if ('+s.name+'%cobj__ == 0)'+
+                        'call init'+s.type+'py(-1,'+s.name+','+
+                                               s.name+'%cobj__,0,0)')
           self.fw('    cobj__ = '+s.name+'%cobj__')
           self.fw('  else')
           self.fw('    cobj__ = 0')
