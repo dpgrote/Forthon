@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.21 2004/09/10 18:22:15 dave Exp $ */
+/* $Id: Forthon.h,v 1.22 2004/09/14 17:36:13 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -294,7 +294,7 @@ static PyObject *Forthon_getscalarderivedtype(ForthonObject *self,void *closure)
 /* ------------------------------------------------------------------------- */
 static int dimensionsmatch(Fortranarray *farray)
 {
-  int i,k;
+  int i;
   int result = 1;
   for (i=0;i<farray->nd;i++) {
     if (farray->dimensions[i] != farray->pya->dimensions[i]) result = 0;}
@@ -438,7 +438,7 @@ static int Forthon_setscalarderivedtype(ForthonObject *self,PyObject *value,
                                         void *closure)
 {
   Fortranscalar *fscalar = &(self->fscalars[(int)closure]);
-  ForthonObject *objid;
+  /* ForthonObject *objid; */
 
   if (value == NULL) {
     if (fscalar->dynamic) {
@@ -1558,7 +1558,7 @@ static PyMethodDef *getForthonPackage_methods(void)
 static void Forthon_dealloc(ForthonObject *self)
 {
   int i;
-  PyObject *objid;
+  /* PyObject *objid; */
   if (self->garbagecollected) PyObject_GC_UnTrack((PyObject *) self);
 
   for (i=0;i<self->nscalars;i++) {
