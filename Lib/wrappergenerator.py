@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.22 2004/10/01 19:41:13 dave Exp $
+# $Id: wrappergenerator.py,v 1.23 2004/10/04 21:29:13 rcohen Exp $
 
 import sys
 import os.path
@@ -660,6 +660,11 @@ Usage:
     self.cw('init'+self.pname+'py(void)')
     self.cw('{')
     self.cw('  PyObject *m;')
+    self.cw('  #ifdef NAG')
+    self.cw('    int argc; char **argv;')
+    self.cw('    Py_GetArgcArgv(&argc,&argv);')
+    self.cw('    f90_init(argc,argv);')
+    self.cw('  #endif')
 #   self.cw('  ForthonType.tp_getset = '+self.pname+'_getseters;')
 #   self.cw('  ForthonType.tp_methods = '+self.pname+'_methods;')
     self.cw('  if (PyType_Ready(&ForthonType) < 0)')
