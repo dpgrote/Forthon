@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.29 2004/10/18 17:21:20 dave Exp $ */
+/* $Id: Forthon.h,v 1.30 2004/11/11 00:32:18 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -133,18 +133,20 @@ static int totmembytes=0;
 
 /* ######################################################################### */
 /* Utility function used by attribute handling routines.                     */
-/* It returns 1 if the string v is found in string s.                        */
+/* It returns the index of the string v in the string s. If the string is    */
+/* not found, it returns -1.                                                 */
 static int strfind(char *v,char *s)
 {
-  int ls,lv;
+  int ls,lv,ind=0;
   ls = strlen(s);
   lv = strlen(v);
   while (ls >= lv) {
-    if (strncmp(s,v,strlen(v))==0) return 1;
+    if (strncmp(s,v,strlen(v))==0) return ind;
     s++;
+    ind++;
     ls--;
     }
-  return 0;
+  return -1;
 }
   
 static double cputime(void)
@@ -689,67 +691,6 @@ static int Forthon_clear(ForthonObject *self)
 /* ######################################################################### */
 
 /* ######################################################################### */
-/* # Set information about the variable name.                                */
-static char addvarattr_doc[] = "Adds an attribute to a variable";
-static PyObject *ForthonPackage_addvarattr(PyObject *_self_,PyObject *args)
-{
-  ForthonObject *self = (ForthonObject *)_self_;
-  PyObject *pyi;
-  int i;
-  char *name,*attr,*newattr;
-  if (!PyArg_ParseTuple(args,"ss",&name,&attr)) return NULL;
-
-  /* Get index for variable from scalar dictionary */
-  /* If it is not found, the pyi is returned as NULL */
-  pyi = PyDict_GetItemString(self->scalardict,name);
-  if (pyi != NULL) {
-    PyArg_Parse(pyi,"i",&i);
-    newattr = (char *)malloc(strlen(self->fscalars[i].attributes) +
-                             strlen(attr)+3);
-    strcpy(newattr,self->fscalars[i].attributes);
-    strcat(newattr," ");
-    strcat(newattr,attr);
-    strcat(newattr," ");
-    /* The call to free is commented out intentionally. When the attributes */
-    /* are first initialized, they are put in static memory and so can not  */
-    /* be freed. Some check is really needed so that free is skipped the    */
-    /* first time that this routine is called for a variable. The other     */
-    /* option is to create the attribute memory different, explicitly using */
-    /* malloc.  This is such a tiny memory leak without the free that the   */
-    /* effort is not worth it.                                              */
-    /* free(self->fscalars[i].attributes); */
-    self->fscalars[i].attributes = newattr;
-    returnnone;}
-
-  /* Get index for variable from array dictionary */
-  /* If it is not found, the pyi is returned as NULL */
-  pyi = PyDict_GetItemString(self->arraydict,name);
-  if (pyi != NULL) {
-    PyArg_Parse(pyi,"i",&i);
-    newattr = (char *)malloc(strlen(self->farrays[i].attributes) +
-                             strlen(attr)+3);
-    memset(newattr,0,strlen(self->farrays[i].attributes) + strlen(attr)+2);
-    strcpy(newattr,self->farrays[i].attributes);
-    strcat(newattr," ");
-    strcat(newattr,attr);
-    strcat(newattr," ");
-    /* The call to free is commented out intentionally. When the attributes */
-    /* are first initialized, they are put in static memory and so can not  */
-    /* be freed. Some check is really needed so that free is skipped the    */
-    /* first time that this routine is called for a variable. The other     */
-    /* option is to create the attribute memory different, explicitly using */
-    /* malloc.  This is such a tiny memory leak without the free that the   */
-    /* effort is not worth it.                                              */
-    /* free(self->farrays[i].attributes); */
-    self->farrays[i].attributes = newattr;
-    returnnone;
-    }
-
-  PyErr_SetString(ErrorObject,"No such variable");
-  return NULL;
-}
-
-/* ######################################################################### */
 static char allocated_doc[] = "Checks whether a dynamic variable is allocated. If a static array or a scalar is passed, it just returns true.";
 static PyObject *ForthonPackage_allocated(PyObject *_self_,PyObject *args)
 {
@@ -1247,6 +1188,67 @@ static PyObject *ForthonPackage_gettypename(PyObject *_self_,PyObject *args)
 }
 
 /* ######################################################################### */
+/* # Set information about the variable name.                                */
+static char addvarattr_doc[] = "Adds an attribute to a variable";
+static PyObject *ForthonPackage_addvarattr(PyObject *_self_,PyObject *args)
+{
+  ForthonObject *self = (ForthonObject *)_self_;
+  PyObject *pyi;
+  int i;
+  char *name,*attr,*newattr;
+  if (!PyArg_ParseTuple(args,"ss",&name,&attr)) return NULL;
+
+  /* Get index for variable from scalar dictionary */
+  /* If it is not found, the pyi is returned as NULL */
+  pyi = PyDict_GetItemString(self->scalardict,name);
+  if (pyi != NULL) {
+    PyArg_Parse(pyi,"i",&i);
+    newattr = (char *)malloc(strlen(self->fscalars[i].attributes) +
+                             strlen(attr)+3);
+    strcpy(newattr,self->fscalars[i].attributes);
+    strcat(newattr," ");
+    strcat(newattr,attr);
+    strcat(newattr," ");
+    /* The call to free is commented out intentionally. When the attributes */
+    /* are first initialized, they are put in static memory and so can not  */
+    /* be freed. Some check is really needed so that free is skipped the    */
+    /* first time that this routine is called for a variable. The other     */
+    /* option is to create the attribute memory different, explicitly using */
+    /* malloc.  This is such a tiny memory leak without the free that the   */
+    /* effort is not worth it.                                              */
+    /* free(self->fscalars[i].attributes); */
+    self->fscalars[i].attributes = newattr;
+    returnnone;}
+
+  /* Get index for variable from array dictionary */
+  /* If it is not found, the pyi is returned as NULL */
+  pyi = PyDict_GetItemString(self->arraydict,name);
+  if (pyi != NULL) {
+    PyArg_Parse(pyi,"i",&i);
+    newattr = (char *)malloc(strlen(self->farrays[i].attributes) +
+                             strlen(attr)+3);
+    memset(newattr,0,strlen(self->farrays[i].attributes) + strlen(attr)+2);
+    strcpy(newattr,self->farrays[i].attributes);
+    strcat(newattr," ");
+    strcat(newattr,attr);
+    strcat(newattr," ");
+    /* The call to free is commented out intentionally. When the attributes */
+    /* are first initialized, they are put in static memory and so can not  */
+    /* be freed. Some check is really needed so that free is skipped the    */
+    /* first time that this routine is called for a variable. The other     */
+    /* option is to create the attribute memory different, explicitly using */
+    /* malloc.  This is such a tiny memory leak without the free that the   */
+    /* effort is not worth it.                                              */
+    /* free(self->farrays[i].attributes); */
+    self->farrays[i].attributes = newattr;
+    returnnone;
+    }
+
+  PyErr_SetString(ErrorObject,"No such variable");
+  return NULL;
+}
+
+/* ######################################################################### */
 /* # Get information about the variable name.                                */
 static char getvarattr_doc[] = "Returns the attributes of a variable";
 static PyObject *ForthonPackage_getvarattr(PyObject *_self_,PyObject *args)
@@ -1270,6 +1272,108 @@ static PyObject *ForthonPackage_getvarattr(PyObject *_self_,PyObject *args)
   if (pyi != NULL) {
     PyArg_Parse(pyi,"i",&i);
     return Py_BuildValue("s",self->farrays[i].attributes);}
+
+  PyErr_SetString(ErrorObject,"No such variable");
+  return NULL;
+}
+
+/* ######################################################################### */
+/* # Set information about the variable name.                                */
+static char setvarattr_doc[] = "Sets the attributes of a variable";
+static PyObject *ForthonPackage_setvarattr(PyObject *_self_,PyObject *args)
+{
+  ForthonObject *self = (ForthonObject *)_self_;
+  PyObject *pyi;
+  int i;
+  char *name,*attr;
+  if (!PyArg_ParseTuple(args,"ss",&name,&attr)) return NULL;
+
+  /* Get index for variable from scalar dictionary */
+  /* If it is not found, the pyi is returned as NULL */
+  pyi = PyDict_GetItemString(self->scalardict,name);
+  if (pyi != NULL) {
+    PyArg_Parse(pyi,"i",&i);
+    /* See comments in addvarattr why the free is commented out */
+    /* free(self->fscalars[i].attributes); */
+    self->fscalars[i].attributes = (char *)malloc(strlen(attr) + 1);
+    strcpy(self->fscalars[i].attributes,attr);
+    returnnone;}
+
+  /* Get index for variable from array dictionary */
+  /* If it is not found, the pyi is returned as NULL */
+  pyi = PyDict_GetItemString(self->arraydict,name);
+  if (pyi != NULL) {
+    PyArg_Parse(pyi,"i",&i);
+    /* See comments in addvarattr why the free is commented out */
+    /* free(self->farrays[i].attributes); */
+    self->farrays[i].attributes = (char *)malloc(strlen(attr) + 1);
+    strcpy(self->farrays[i].attributes,attr);
+    returnnone;}
+
+  PyErr_SetString(ErrorObject,"No such variable");
+  return NULL;
+}
+
+/* ######################################################################### */
+/* # Deletes information about the variable name.                            */
+static char delvarattr_doc[] = "Deletes the specified attributes of a variable";
+static PyObject *ForthonPackage_delvarattr(PyObject *_self_,PyObject *args)
+{
+  ForthonObject *self = (ForthonObject *)_self_;
+  PyObject *pyi;
+  int i,ind;
+  char *name,*attr,*newattr;
+  if (!PyArg_ParseTuple(args,"ss",&name,&attr)) return NULL;
+
+  /* Get index for variable from scalar dictionary */
+  /* If it is not found, the pyi is returned as NULL */
+  pyi = PyDict_GetItemString(self->scalardict,name);
+  if (pyi != NULL) {
+    PyArg_Parse(pyi,"i",&i);
+    newattr = (char *)malloc(strlen(self->fscalars[i].attributes) -
+                             strlen(attr) + 1);
+    ind = strfind(attr,self->fscalars[i].attributes);
+    /* Check if attr was found, and make sure it is surrounded by spaces. */
+    if (ind == -1 ||
+        (ind > 0 && self->fscalars[i].attributes[ind-1] != ' ') ||
+        (ind < strlen(self->fscalars[i].attributes) &&
+         self->fscalars[i].attributes[ind+strlen(attr)] != ' ')) {
+      PyErr_SetString(ErrorObject,"Variable has no such attribute");
+      return NULL;
+      }
+    strncpy(newattr,self->fscalars[i].attributes,ind);
+    newattr[ind] = (char) NULL;
+    if (ind+strlen(attr) < strlen(self->fscalars[i].attributes))
+      strcat(newattr,self->fscalars[i].attributes+ind+strlen(attr));
+    /* See comments in addvarattr why the free is commented out */
+    /* free(self->fscalars[i].attributes); */
+    self->fscalars[i].attributes = newattr;
+    returnnone;}
+
+  /* Get index for variable from array dictionary */
+  /* If it is not found, the pyi is returned as NULL */
+  pyi = PyDict_GetItemString(self->arraydict,name);
+  if (pyi != NULL) {
+    PyArg_Parse(pyi,"i",&i);
+    newattr = (char *)malloc(strlen(self->farrays[i].attributes) -
+                             strlen(attr) + 1);
+    ind = strfind(attr,self->farrays[i].attributes);
+    /* Check if attr was found, and make sure it is surrounded by spaces. */
+    if (ind == -1 ||
+        (ind > 0 && self->farrays[i].attributes[ind-1] != ' ') ||
+        (ind < strlen(self->farrays[i].attributes) &&
+         self->farrays[i].attributes[ind+strlen(attr)] != ' ')) {
+      PyErr_SetString(ErrorObject,"Variable has no such attribute");
+      return NULL;
+      }
+    strncpy(newattr,self->farrays[i].attributes,ind);
+    newattr[ind] = (char) NULL;
+    if (ind+strlen(attr) < strlen(self->farrays[i].attributes))
+    strcat(newattr,self->farrays[i].attributes+ind+strlen(attr));
+    /* See comments in addvarattr why the free is commented out */
+    /* free(self->farrays[i].attributes); */
+    self->farrays[i].attributes = newattr;
+    returnnone;}
 
   PyErr_SetString(ErrorObject,"No such variable");
   return NULL;
@@ -1567,7 +1671,7 @@ static PyObject *ForthonPackage_varlist(PyObject *_self_,PyObject *args)
   for (i=0;i<self->nscalars;i++) {
     if (strcmp(name,self->fscalars[i].group) == 0 ||
         strcmp(name,"*")==0 ||
-        strfind(name,self->fscalars[i].attributes)) {
+        strfind(name,self->fscalars[i].attributes)>=0) {
       pyname = Py_BuildValue("s",self->fscalars[i].name);
       PyList_Append(result,pyname);
       Py_DECREF(pyname);
@@ -1578,7 +1682,7 @@ static PyObject *ForthonPackage_varlist(PyObject *_self_,PyObject *args)
   for (i=0;i<self->narrays;i++) {
     if (strcmp(name,self->farrays[i].group) == 0 ||
         strcmp(name,"*")==0 ||
-        strfind(name,self->farrays[i].attributes)) {
+        strfind(name,self->farrays[i].attributes)>=0) {
       pyname = Py_BuildValue("s",self->farrays[i].name);
       PyList_Append(result,pyname);
       Py_DECREF(pyname);
@@ -1605,6 +1709,8 @@ static struct PyMethodDef ForthonPackage_methods[] = {
   {"getpyobject" ,(PyCFunction)ForthonPackage_getpyobject,1,getpyobject_doc},
   {"gettypename" ,(PyCFunction)ForthonPackage_gettypename,1,gettypename_doc},
   {"getvarattr"  ,(PyCFunction)ForthonPackage_getvarattr,1,getvarattr_doc},
+  {"setvarattr"  ,(PyCFunction)ForthonPackage_setvarattr,1,setvarattr_doc},
+  {"delvarattr"  ,(PyCFunction)ForthonPackage_delvarattr,1,delvarattr_doc},
   {"getvardoc"   ,(PyCFunction)ForthonPackage_getvardoc,1,getvardoc_doc},
   {"gfree"       ,(PyCFunction)ForthonPackage_gfree,1,gfree_doc},
   {"gsetdims"    ,(PyCFunction)ForthonPackage_gsetdims,1,gsetdims_doc},
