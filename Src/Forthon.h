@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.30 2004/11/11 00:32:18 dave Exp $ */
+/* $Id: Forthon.h,v 1.31 2005/03/21 23:25:16 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -217,6 +217,49 @@ static void ForthonPackage_updatederivedtype(ForthonObject *self,int i,
 }
 
 /* ######################################################################### */
+/* # Update the data element of a dynamic, fortran assignable array.         */
+/* ------------------------------------------------------------------------- */
+static int dimensionsmatch(Fortranarray *farray)
+{
+  int i;
+  int result = 1;
+  for (i=0;i<farray->nd;i++) {
+    if (farray->dimensions[i] != farray->pya->dimensions[farray->nd-1-i])
+      result = 0;}
+  return result;
+}
+/* ------------------------------------------------------------------------- */
+static void ForthonPackage_updatearray(ForthonObject *self,int i)
+{
+  Fortranarray *farray = &(self->farrays[i]);
+  /* If the getpointer routine exists, call it to assign a value to data.s */
+  if (farray->getpointer != NULL) {
+    (farray->getpointer)(farray,self->fobj);
+    /* If the data.s is NULL, then the fortran array is not associated. */
+    /* Decrement the python object counter if there is one. */
+    /* Set the pointer to the python object to NULL. */
+    if (farray->data.s == NULL) {
+      if (farray->pya != NULL) {Py_XDECREF(farray->pya);}
+      farray->pya = NULL;}
+    else if (farray->pya == NULL ||
+             farray->data.s != farray->pya->data ||
+             !dimensionsmatch(farray)) {
+      /* If data.s is not NULL and there is no python object or its */
+      /* data is different, then create a new one. */
+      if (farray->pya != NULL) {Py_XDECREF(farray->pya);}
+      farray->pya = (PyArrayObject *)PyArray_FromDimsAndData(
+                       farray->nd,farray->dimensions,
+                       farray->type,farray->data.s);
+      /* Reverse the order of the dims and strides so       */
+      /* indices can be refered to in the correct (fortran) */
+      /* order in python                                    */
+      ARRAY_REVERSE_STRIDE(farray->pya);
+      ARRAY_REVERSE_DIM(farray->pya);
+    }
+  }
+}
+
+/* ######################################################################### */
 /* # Allocate the dimensions element for all of the farrays in the object.   */
 static void ForthonPackage_allotdims(ForthonObject *self)
 {
@@ -309,53 +352,14 @@ static PyObject *Forthon_getscalarderivedtype(ForthonObject *self,void *closure)
     return NULL;}
 }
 /* ------------------------------------------------------------------------- */
-static int dimensionsmatch(Fortranarray *farray)
-{
-  int i;
-  int result = 1;
-  for (i=0;i<farray->nd;i++) {
-    if (farray->dimensions[i] != farray->pya->dimensions[farray->nd-1-i])
-      result = 0;}
-  return result;
-}
-/* ------------------------------------------------------------------------- */
 static PyObject *Forthon_getarray(ForthonObject *self,void *closure)
 {
   Fortranarray *farray = &(self->farrays[(int)closure]);
-  /* If the getpointer routine exists, call it to assign a value to data.s */
-  if (farray->getpointer != NULL) {
-    (farray->getpointer)(farray,self->fobj);
-    /* If the data.s is NULL, then the fortran array is not associated. */
-    /* Decrement the python object counter if there is one. */
-    /* Set the pointer to the python object to NULL. */
-    if (farray->data.s == NULL) {
-      if (farray->pya != NULL) {Py_XDECREF(farray->pya);}
-      farray->pya = NULL;}
-    else if (farray->pya == NULL ||
-             farray->data.s != farray->pya->data ||
-             !dimensionsmatch(farray)) {
-      /* If data.s is not NULL and there is no python object or its */
-      /* data is different, then create a new one. */
-      if (farray->pya != NULL) {Py_XDECREF(farray->pya);}
-      farray->pya = (PyArrayObject *)PyArray_FromDimsAndData(
-                       farray->nd,farray->dimensions,
-                       farray->type,farray->data.s);
-      /* Reverse the order of the dims and strides so       */
-      /* indices can be refered to in the correct (fortran) */
-      /* order in python                                    */
-      ARRAY_REVERSE_STRIDE(farray->pya);
-      ARRAY_REVERSE_DIM(farray->pya);
-      Py_XINCREF(farray->pya);
-      }
-    else {
-      /* If the data is the same data, then increment the python */
-      /* object counter to prepare handing it to the interpreter. */
-      Py_XINCREF(farray->pya);}
-    }
-  else {
-    /* If there is not getpointer routine, then increment the python */
-    /* object counter to prepare handing it to the interpreter. */
-    Py_XINCREF(farray->pya);}
+  /* Update the array if it is dynamic and fortran assignable. */
+  ForthonPackage_updatearray(self,(int)closure);
+  /* Increment the python object counter to prepare handing it to the */
+  /* interpreter. */
+  Py_XINCREF(farray->pya);
   if (farray->pya == NULL) {
     PyErr_SetString(ErrorObject,"Array is unallocated");
     return NULL;}
@@ -576,6 +580,8 @@ static int Forthon_setarray(ForthonObject *self,PyObject *value,
       PyErr_SetString(ErrorObject,
                       "Right hand side has incorrect dimensions");}}
   else {
+    /* Update the array if it is dynamic and fortran assignable. */
+    ForthonPackage_updatearray(self,(int)closure);
     /* At this point, the array must already have been allocated */
     if (farray->pya == NULL) {
       Py_XDECREF(ax);
@@ -1189,7 +1195,7 @@ static PyObject *ForthonPackage_gettypename(PyObject *_self_,PyObject *args)
 
 /* ######################################################################### */
 /* # Set information about the variable name.                                */
-static char addvarattr_doc[] = "Adds an attribute to a variable";
+static char addvarattr_doc[] = "addvarattr(varname,attr) Adds an attribute to a variable";
 static PyObject *ForthonPackage_addvarattr(PyObject *_self_,PyObject *args)
 {
   ForthonObject *self = (ForthonObject *)_self_;
@@ -1316,7 +1322,7 @@ static PyObject *ForthonPackage_setvarattr(PyObject *_self_,PyObject *args)
 
 /* ######################################################################### */
 /* # Deletes information about the variable name.                            */
-static char delvarattr_doc[] = "Deletes the specified attributes of a variable";
+static char delvarattr_doc[] = "delvarattr(varname,attr) Deletes the specified attributes of a variable";
 static PyObject *ForthonPackage_delvarattr(PyObject *_self_,PyObject *args)
 {
   ForthonObject *self = (ForthonObject *)_self_;
