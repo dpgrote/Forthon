@@ -36,7 +36,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.11 2004/09/14 17:35:49 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.12 2004/10/01 20:45:33 dave Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling
@@ -248,11 +248,13 @@ def doc(f,printit=1):
         # --- Check if it is a module name
         try:
           m = __import__(f)
-          try:
-            d = m.__dict__[f+'doc']()
-            if d is None: d = ''
-          except KeyError:
-            d = m.__doc__
+          d = m.__doc__
+          if d is None:
+            try:
+              d = m.__dict__[f+'doc']()
+            except KeyError:
+              pass
+          if d is None: d = ''
           break
         except ImportError:
           pass
@@ -273,6 +275,41 @@ def doc(f,printit=1):
         d = "No documentation found"
   if printit: print d
   else:       return d
+
+def determineoriginatingfile(o):
+  """
+Attempts to determine the name of the file where the given object was defined.
+The input can be an object or a string. If it is a string, it tries to find
+the object in the __main__. If it can't find anything, it returns None.
+Note there are cases where the file name can not be determined - in those
+cases None is returned.
+  """
+  if type(o) is StringType:
+    try:
+      o = __main__.__dict__[o]
+    except KeyError:
+      try:
+        o = __import__(o)
+      except ImportError:
+        return None
+  if type(o) is ModuleType:
+    try: return o.__file__
+    except AttributeError: return '(statically linked into python)'
+  if type(o) in [MethodType,UnboundMethodType]:
+    return determineoriginatingfile(o.im_class)
+  if type(o) in [FunctionType,LambdaType]:
+    return determineoriginatingfile(o.func_code)
+  if type(o) in [BuiltinFunctionType,BuiltinMethodType]:
+    try: m = o.__module__
+    except AttributeError: return None
+    if m is not None: return determineoriginatingfile(m)
+    else:             return None
+  if type(o) is CodeType:
+    return o.co_filename
+  if type(o) is InstanceType:
+    return determineoriginatingfile(o.__class__)
+  if type(o) is ClassType:
+    return determineoriginatingfile(o.__module__)
 
 # --- Get size of all variables in a group
 def getgroupsize(pkg,grp):
