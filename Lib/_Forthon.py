@@ -36,7 +36,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.14 2004/10/04 21:33:09 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.15 2005/04/02 00:13:21 dave Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling
@@ -236,6 +236,8 @@ def fzeros(shape,typecode=Int):
 def doc(f,printit=1):
   """
 Prints out the documentation of the subroutine or variable.
+The name of package variables must be given in quotes, as a string.
+All objects can be passed in directly.
   """
   fname = None
   # --- The for loop only gives the code something to break out of. There's
