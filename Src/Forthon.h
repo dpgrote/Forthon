@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.17 2004/07/12 23:34:49 dave Exp $ */
+/* $Id: Forthon.h,v 1.18 2004/07/15 17:41:36 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -111,6 +111,7 @@ typedef struct {
   PyMethodDef *fmethods;
   PyObject *scalardict,*arraydict;
   char *fobj;
+  void (*fobjdeallocate)();
   int allocated;
 } ForthonObject;
 staticforward PyTypeObject ForthonType;
@@ -160,13 +161,19 @@ static double cputime(void)
 static void Forthon_BuildDicts(ForthonObject *self)
 {
   int i;
-  PyObject *sdict,*adict;
+  PyObject *sdict,*adict,*iobj;
   sdict = PyDict_New();
   adict = PyDict_New();
-  for (i=0;i<self->nscalars;i++)
-    PyDict_SetItemString(sdict,self->fscalars[i].name,Py_BuildValue("i",i));
-  for (i=0;i<self->narrays;i++)
-    PyDict_SetItemString(adict,self->farrays[i].name,Py_BuildValue("i",i));
+  for (i=0;i<self->nscalars;i++) {
+    iobj = Py_BuildValue("i",i);
+    PyDict_SetItemString(sdict,self->fscalars[i].name,iobj);
+    Py_DECREF(iobj);
+    }
+  for (i=0;i<self->narrays;i++) {
+    iobj = Py_BuildValue("i",i);
+    PyDict_SetItemString(adict,self->farrays[i].name,iobj);
+    Py_DECREF(iobj);
+    }
   self->scalardict = sdict;
   self->arraydict = adict;
 }
@@ -426,13 +433,28 @@ static int Forthon_setscalarderivedtype(ForthonObject *self,PyObject *value,
   if (value == NULL) {
     PyErr_SetString(PyExc_TypeError, "Cannot delete the attribute");
     return -1;}
+
+  if (value == NULL) {
+    if (fscalar->dynamic) {
+      /* Decrement the reference counter and nullify the fortran pointer. */
+      Py_DECREF((PyObject *)fscalar->data);
+      (fscalar->setpointer)(0,(self->fobj));
+      return 0;
+      }
+    else {
+      PyErr_SetString(PyExc_TypeError,
+                      "Cannot delete a static derived type object");
+      return -1;
+      }
+    }
+
   if (strcmp("Forthon",value->ob_type->tp_name) != 0 ||
       strcmp(((ForthonObject *)value)->typename,
              ((ForthonObject *)(fscalar->data))->typename) != 0) {
     PyErr_SetString(ErrorObject,"Right hand side has incorrect type");
     return -1;}
   Py_INCREF(value);
-  /* shouldn't fscalar->data be DECREF'd? */
+  Py_XDECREF((PyObject *)fscalar->data);
   fscalar->data = (char *)value;
   (fscalar->setpointer)(((ForthonObject *)value)->fobj,(self->fobj));
   return 0;
@@ -447,9 +469,15 @@ static int Forthon_setarray(ForthonObject *self,PyObject *value,
   PyArrayObject *ax;
 
   if (value == NULL) {
-    /* Deallocate the array. */
-    r = Forthon_freearray(self,closure);
-    return r;
+    if (farray->dynamic) {
+      /* Deallocate the dynamic array. */
+      r = Forthon_freearray(self,closure);
+      return r;
+      }
+    else {
+      PyErr_SetString(PyExc_TypeError, "Cannot delete a static array");
+      return -1;
+      }
     }
 
   PyArg_Parse(value, "O", &pyobj);
@@ -1492,10 +1520,26 @@ static PyObject *ForthonObject_New(PyObject *self, PyObject *args)
 
 static void Forthon_dealloc(ForthonObject *self)
 {
-  /* This should really also clean up all memory allocated during the init */
+  int i;
+  for (i=0;i<self->nscalars;i++) {
+    if (self->fscalars[i].type == PyArray_OBJECT)
+      Py_XDECREF((PyObject *)self->fscalars[i].data);
+    }
+  for (i=0;i<self->narrays;i++) {
+    free(self->farrays[i].dimensions);
+    Py_XDECREF(self->farrays[i].pya);
+    }
+  if (self->fobj != NULL) {
+    /* Note that for package instance (as opposed to derived type */
+    /* instances), the fscalars and farrays are statically defined and */
+    /* can't be freed. */
+    if (self->fscalars != NULL) free(self->fscalars);
+    if (self->farrays  != NULL) free(self->farrays);
+    }
+  if (self->fobjdeallocate != NULL) (self->fobjdeallocate)(self->fobj);
+  Forthon_DeleteDicts(self);
   self->ob_type->tp_free((PyObject*)self);
 }
-
 
 /* ######################################################################### */
 /* # Get attribute handler                                                   */
