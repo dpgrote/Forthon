@@ -4,7 +4,7 @@ calls and traces.
 """
 import sys,time
 
-ForthonTimer_version = "$Id: ForthonTimer.py,v 1.3 2005/03/15 21:42:12 dave Exp $"
+ForthonTimer_version = "$Id: ForthonTimer.py,v 1.4 2005/03/23 00:52:57 dave Exp $"
 
 def ForthonTimerdoc():
   import ForthonTimer
@@ -128,7 +128,7 @@ routine called and starts and stops the timers.
       self.level = self.level - 1
       self.timer = self.timer.stoptimer()
     if self.trace:
-      if self.tracelevel is None or self.tracelevel < self.level:
+      if self.tracelevel is None or self.tracelevel > self.level:
         print "%s %s %s"%(self.level*'  ',event,name)
     if event == 'call':
       self.level = self.level + 1
