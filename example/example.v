@@ -105,12 +105,12 @@ example
 # A block in between curly braces is optional. It can contain macros that
 # can be used below, for example as an initial value. These are not accessible
 # from python.
-AINITVALUE = 7.
+ANINITVALUE = 7.
 }
 
 ****** Module1 test:
 i integer /3/ # Sample integer variable
-a real /AINITVALUE/ # Sample real variable
+a real /ANINITVALUE/ # Sample real variable
 d(3) real /3*10./ # Sample static array
 n integer /0/ # Size of sample array pointer
 x(0:n) _real /1/ # Sample array pointer
