@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.13 2004/05/14 23:45:59 dave Exp $
+# $Id: wrappergenerator.py,v 1.14 2004/06/24 16:17:23 dave Exp $
 
 import sys
 import os.path
@@ -14,6 +14,7 @@ import getopt
 import pickle
 from cfinterface import *
 import wrappergen_derivedtypes
+import md5
 
 class PyWrap:
   """
@@ -51,6 +52,20 @@ Usage:
     # --- Standard name of the C interface to a Fortran routine
     # --- pkg_varname
     return self.pname+'_'+n
+
+  transtable = (10*string.ascii_lowercase)[:256]
+  def fsub(self,prefix,suffix=''):
+    """
+    The fortran standard limits routine names to 31 characters. If the
+    routine name is longer than that, this routine takes the first 15
+    characters and and creates a hashed string based on the full name to get
+    the next 16. This does not guarantee uniqueness, but the nonuniqueness
+    should be minute.
+    """
+    name = self.pname+prefix+suffix
+    if len(name) < 32: return name
+    hash = string.translate(md5.new(name).digest(),PyWrap.transtable)
+    return name[:15] + hash
 
   def prefixdimsc(self,dim,sdict):
     # --- Convert fortran variable name into reference from list of variables.
@@ -167,7 +182,7 @@ Usage:
     self.cw('ForthonObject *'+self.pname+'Object;')
 
     # --- Print out the external commands
-    self.cw('extern void '+fname(self.pname+'passpointers')+'(void);')
+    self.cw('extern void '+fname(self.fsub('passpointers'))+'(void);')
     if not self.f90 and not self.f90f:
       self.cw('extern void '+self.pname+'data();')
 
@@ -202,29 +217,29 @@ Usage:
     if self.f90:
       for s in slist:
         if s.dynamic or s.derivedtype:
-          self.cw('extern void '+fname(self.pname+'setpointer'+s.name)+
+          self.cw('extern void '+fname(self.fsub('setpointer',s.name))+
                   '(char *p,long *cobj__);')
         if s.dynamic:
-          self.cw('extern void '+fname(self.pname+'getpointer'+s.name)+
+          self.cw('extern void '+fname(self.fsub('getpointer',s.name))+
                   '(ForthonObject **cobj__,long *obj);')
       for a in alist:
-        self.cw('extern void '+fname(self.pname+'setpointer'+a.name)+
+        self.cw('extern void '+fname(self.fsub('setpointer',a.name))+
                 '(char *p,long *cobj__,long *dims__);')
         if re.search('fassign',a.attr):
-          self.cw('extern void '+fname(self.pname+'getpointer'+a.name)+
+          self.cw('extern void '+fname(self.fsub('getpointer',a.name))+
                   '(long *i,long *cobj__);')
     if self.f90f:
       for s in slist:
         if s.dynamic:
-          self.cw('extern void '+fname(self.pname+'setpointer'+s.name)+
+          self.cw('extern void '+fname(self.fsub('setpointer',s.name))+
                   '(PyObject *p,long *cobj__);')
-          self.cw('extern void '+fname(self.pname+'getpointer'+s.name)+
+          self.cw('extern void '+fname(self.fsub('getpointer',s.name))+
                   '(ForthonObject **cobj__,long *obj);')
       for a in alist:
-        self.cw('extern void '+fname(self.pname+'setpointer'+a.name)+
+        self.cw('extern void '+fname(self.fsub('setpointer',a.name))+
                 '(PyObject *p,long *cobj__,long *dims__);')
         if re.search('fassign',a.attr):
-          self.cw('extern void '+fname(self.pname+'getpointer'+a.name)+
+          self.cw('extern void '+fname(self.fsub('getpointer',a.name))+
                   '(long *i,long *cobj__);')
 
     ###########################################################################
@@ -242,9 +257,9 @@ Usage:
       for i in range(len(slist)):
         s = slist[i]
         if (self.f90 or self.f90f) and s.derivedtype:
-          setpointer = '*'+fname(self.pname+'setpointer'+s.name)
+          setpointer = '*'+fname(self.fsub('setpointer',s.name))
           if s.dynamic:
-            getpointer = '*'+fname(self.pname+'getpointer'+s.name)
+            getpointer = '*'+fname(self.fsub('getpointer',s.name))
           else:
             getpointer = 'NULL'
         else:
@@ -272,11 +287,11 @@ Usage:
       for i in range(len(alist)):
         a = alist[i]
         if (self.f90 or self.f90f) and a.dynamic:
-          setpointer = '*'+fname(self.pname+'setpointer'+a.name)
+          setpointer = '*'+fname(self.fsub('setpointer',a.name))
         else:
           setpointer = 'NULL'
         if (self.f90 or self.f90f) and re.search('fassign',a.attr):
-          getpointer = '*'+fname(self.pname+'getpointer'+a.name)
+          getpointer = '*'+fname(self.fsub('getpointer',a.name))
         else:
           getpointer = 'NULL'
         if a.data and a.dynamic:
@@ -566,7 +581,7 @@ Usage:
 
     ###########################################################################
     # --- Write set pointers routine which gets all of the fortran pointers
-    self.cw('void '+fname(self.pname+'setscalarpointers')+
+    self.cw('void '+fname(self.fsub('setscalarpointers'))+
             '(int *i,char *p',noreturn=1)
     if machine=='J90':
       self.cw(',int *iflag)')
@@ -582,7 +597,7 @@ Usage:
 
     # --- A serarate routine is needed for derived types since the cobj__
     # --- that is passed in is already a pointer, so **p is needed.
-    self.cw('void '+fname(self.pname+'setderivedtypepointers')+
+    self.cw('void '+fname(self.fsub('setderivedtypepointers'))+
             '(int *i,char **p)')
     self.cw('{')
     self.cw('  /* Get pointers for the scalars */')
@@ -590,7 +605,7 @@ Usage:
     self.cw('}')
 
     # --- Get pointer to an array. This takes an integer to specify which array
-    self.cw('void '+fname(self.pname+'setarraypointers')+
+    self.cw('void '+fname(self.fsub('setarraypointers'))+
             '(int *i,char *p',noreturn=1)
     if machine=='J90':
       self.cw(',int *iflag)')
@@ -605,7 +620,7 @@ Usage:
     self.cw('}')
 
     # --- This takes a Fortranarray object directly.
-    self.cw('void '+fname(self.pname+'setarraypointersobj')+
+    self.cw('void '+fname(self.fsub('setarraypointersobj'))+
             '(Fortranarray *farray,char *p',noreturn=1)
     if machine=='J90':
       self.cw(',int *iflag)')
@@ -622,7 +637,7 @@ Usage:
     # --- This routine gets the dimensions from an array. It is called from
     # --- fortran and the last argument should be shape(array).
     # --- This is only used for routines with the fassign attribute.
-    self.cw('void '+fname(self.pname+'setarraydims')+
+    self.cw('void '+fname(self.fsub('setarraydims'))+
             '(Fortranarray *farray,int *dims)')
     self.cw('{')
     if self.f90:
@@ -669,10 +684,10 @@ Usage:
     self.cw('  import_array();')
     self.cw('  Forthon_BuildDicts('+self.pname+'Object);')
     self.cw('  ForthonPackage_allotdims('+self.pname+'Object);')
-    self.cw('  '+fname(self.pname+'passpointers')+'();')
+    self.cw('  '+fname(self.fsub('passpointers'))+'();')
     self.cw('  ForthonPackage_staticarrays('+self.pname+'Object);')
     if not self.f90 and not self.f90f:
-      self.cw('  '+fname(self.pname+'data')+'();')
+      self.cw('  '+fname(self.fsub('data'))+'();')
     if self.initialgallot:
       self.cw('  {')
       self.cw('  PyObject *s;')
@@ -785,7 +800,7 @@ Usage:
         self.fw('END MODULE '+g)
 
     ###########################################################################
-    self.fw('SUBROUTINE '+self.pname+'passpointers()')
+    self.fw('SUBROUTINE '+self.fsub('passpointers')+'()')
 
     # --- Write out the Use statements
     for g in groups+hidden_groups:
@@ -801,9 +816,9 @@ Usage:
       if s.derivedtype:
         self.fw('  call init'+s.type+'py('+repr(i)+','+s.name+','+
                 s.name+'%cobj__,1)')
-        self.fw('  call '+self.pname+'setderivedtypepointers('+repr(i)+','+s.name+'%cobj__)')
+        self.fw('  call '+self.fsub('setderivedtypepointers')+'('+repr(i)+','+s.name+'%cobj__)')
       else:
-        self.fw('  call '+self.pname+'setscalarpointers('+repr(i)+','+s.name,
+        self.fw('  call '+self.fsub('setscalarpointers')+'('+repr(i)+','+s.name,
                 noreturn=1)
         if machine == 'J90':
           if s.type == 'string' or s.type == 'character':
@@ -827,10 +842,10 @@ Usage:
       a = alist[i]
       if a.dynamic:
         if not self.f90 and not self.f90f:
-          self.fw('  call '+self.pname+'setarraypointers('+repr(i)+','+
+          self.fw('  call '+self.fsub('setarraypointers')+'('+repr(i)+','+
                   'p'+a.name+str)
       else:
-        self.fw('  call '+self.pname+'setarraypointers('+repr(i)+','+a.name+str)
+        self.fw('  call '+self.fsub('setarraypointers')+'('+repr(i)+','+a.name+str)
 
     # --- Finish the routine
     self.fw('  return')
@@ -841,7 +856,7 @@ Usage:
     # --- wrapper
     if self.f90:
       for s in slist:
-        self.fw('SUBROUTINE '+self.pname+'setpointer'+s.name+'(p__,cobj__)')
+        self.fw('SUBROUTINE '+self.fsub('setpointer',s.name)+'(p__,cobj__)')
         self.fw('  USE '+s.group)
         self.fw('  integer('+self.isz+'):: cobj__')
         self.fw('  '+fvars.ftof(s.type)+',target::p__')
@@ -852,7 +867,7 @@ Usage:
         self.fw('  RETURN')
         self.fw('END')
         if s.dynamic:
-          self.fw('SUBROUTINE '+self.pname+'getpointer'+s.name+'(cobj__,obj__)')
+          self.fw('SUBROUTINE '+self.fsub('getpointer',s.name)+'(cobj__,obj__)')
           self.fw('  USE '+s.group)
           self.fw('  integer('+self.isz+'):: cobj__,obj__')
           self.fw('  if (ASSOCIATED('+s.name+')) then')
@@ -865,7 +880,7 @@ Usage:
 
       for a in alist:
         if a.dynamic:
-          self.fw('SUBROUTINE '+self.pname+'setpointer'+a.name+'(p__,cobj__,dims__)')
+          self.fw('SUBROUTINE '+self.fsub('setpointer',a.name)+'(p__,cobj__,dims__)')
           groups = self.dimsgroups(a.dimstring,sdict,slist)
           groupsprinted = [a.group]
           for g in groups:
@@ -881,18 +896,18 @@ Usage:
           self.fw('  return')
           self.fw('end')
           if re.search('fassign',a.attr):
-            self.fw('SUBROUTINE '+self.pname+'getpointer'+a.name+'(i__,obj__)')
+            self.fw('SUBROUTINE '+self.fsub('getpointer',a.name)+'(i__,obj__)')
             self.fw('  USE '+a.group)
             self.fw('  integer('+self.isz+'):: i__,obj__')
-            self.fw('  call '+self.pname+'setarraypointersobj(i__,'+a.name+')')
-            self.fw('  call '+self.pname+'setarraydims(i__,shape('+a.name+'))')
+            self.fw('  call '+self.fsub('setarraypointersobj')+'(i__,'+a.name+')')
+            self.fw('  call '+self.fsub('setarraydims')+'(i__,shape('+a.name+'))')
             self.fw('  return')
             self.fw('end')
 
     if self.f90f:
       for a in alist:
         if a.dynamic:
-          self.fw('SUBROUTINE '+self.pname+'setpointer'+a.name+'(p__,cobj__,dims__)')
+          self.fw('SUBROUTINE '+self.fsub('setpointer',a.name)+'(p__,cobj__,dims__)')
           groups = self.dimsgroups(a.dimstring,sdict,slist)
           groupsprinted = [a.group]
           for g in groups:
@@ -911,7 +926,7 @@ Usage:
     ###########################################################################
     if not self.f90 and not self.f90f:
       # --- Write out fortran data routine, only for f77 version
-      self.fw('      SUBROUTINE '+self.pname+'data()')
+      self.fw('      SUBROUTINE '+self.fsub('data')+'()')
 
       # --- Write out the Use statements
       for g in groups:
