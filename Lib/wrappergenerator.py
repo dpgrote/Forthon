@@ -2,9 +2,10 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.2 2004/01/08 22:55:22 dave Exp $
+# $Id: wrappergenerator.py,v 1.3 2004/02/02 22:34:48 dave Exp $
 
 import sys
+import os.path
 import interfaceparser
 import string
 import re
@@ -14,7 +15,7 @@ import pickle
 from cfinterface import *
 import wrappergen_derivedtypes
 
-class PyMAC:
+class PyWrap:
   """
 Usage:
   -a       All groups will be allocated on initialization
@@ -30,8 +31,9 @@ Usage:
   [file2, ...] Subsidiary variable description files
   """
 
-  def __init__(self,pname,f90=1,f90f=0,initialgallot=1,writemodules=1,
+  def __init__(self,ifile,pname,f90=1,f90f=0,initialgallot=1,writemodules=1,
                otherfiles=[],other_scalar_dicts=[]):
+    self.ifile = ifile
     self.pname = pname
     self.f90 = f90
     self.f90f = f90f
@@ -64,7 +66,7 @@ Usage:
                         '_fscalars['+repr(other_dict[ss])+'].data',dim,count=1)
               break
           else:
-            raise ss + ' is not declared in a .v file'
+            raise ss + ' is not declared in the interface file'
     return string.lower(dim)
 
   # --- Convert dimensions for unspecified arrays
@@ -87,7 +89,7 @@ Usage:
         if sdict.has_key (ss):
           groups.append(slist[sdict[ss]].group)
         else:
-          raise ss + ' is not declared in a .v file'
+          raise ss + ' is not declared in the interface file'
     return groups
 
   def cw(self,text,noreturn=0):
@@ -106,7 +108,7 @@ Usage:
 
     # --- Get the list of variables and subroutine from the var file
     vlist,hidden_vlist,typelist = interfaceparser.processfile(self.pname,
-                                                self.pname+'.v',self.otherfiles)
+                                                self.ifile,self.otherfiles)
     if not vlist and not hidden_vlist and not typelist:
       return
 
@@ -873,9 +875,11 @@ def wrappergenerator_main(argv=None):
 
   # --- Get package name from argument list
   try:
-    pname = args[0][:re.search('\.',args[0]).start()]
+    ifile = args[0]
+    pname = os.path.splitext(os.path.split(ifile)[1])[0]
+    #pname = args[0][:re.search('\.',args[0]).start()]
   except IndexError:
-    print PyMAC.__doc__
+    print PyWrap.__doc__
     sys.exit(1)
 
   # --- get other command line options and default actions
@@ -904,8 +908,8 @@ def wrappergenerator_main(argv=None):
     elif o[0]=='--macros':
       othermacros.append(o[1])
 
-  cc = PyMAC(pname,f90,f90f,initialgallot,writemodules,
-             othermacros,other_scalar_dicts)
+  cc = PyWrap(ifile,pname,f90,f90f,initialgallot,writemodules,
+              othermacros,other_scalar_dicts)
 
 if __name__ == '__main__':
   wrappergenerator_main(sys.argv[1:])
