@@ -180,19 +180,19 @@ appropriate block for the machine.
       # [n]fix = fixed or free form
       # wide = column width longer than 72
       # ap = preserve arithmetic precision
-      self.f90free  = 'lf95 --dbl --ap --nfix --in'
-      self.f90fixed = 'lf95 --wide --dbl --ap --fix --in'
+      self.f90free  = 'lf95 --nfix --dbl --in --mlcdecl'
+      self.f90fixed = 'lf95 --fix --wide --dbl --in --mlcdecl'
       self.popt = '-O'
       flibroot,b = os.path.split(self.findfile('lf95'))      
       self.libdirs = [flibroot+'/lib']
-      self.libs = []
+      self.libs = ["fj9i6","fj9f6","fj9e6","fccx86"]
       cpuinfo = open('/proc/cpuinfo','r').read()
       if re.search('Pentium III',cpuinfo):
-        self.fopt = '--O2 --unroll --prefetch'
+        self.fopt = '--O2 --unroll --prefetch --nap --npca --ntrace --nsav'
       elif re.search('AMD Athlon',cpuinfo):
-        self.fopt = '--O2 --unroll --prefetch'
+        self.fopt = '--O2 --unroll --prefetch --nap --npca --ntrace --nsav'
       else:
-        self.fopt = '--O2 --unroll --prefetch'
+        self.fopt = '--O2 --unroll --prefetch --nap --npca --ntrace --nsav'
       return 1
 
   #-----------------------------------------------------------------------------
@@ -223,9 +223,9 @@ appropriate block for the machine.
       return 1
 
   def macosx_absoft(self):
-    print 'compiler is ABSOFT!'
     if (self.findfile('f90') and
         (self.fcompiler=='absoft' or self.fcompiler is None)):
+      print 'compiler is ABSOFT!'
       # --- Absoft
       self.f90free  = 'f90 -N11 -N113 -YEXT_NAMES=LCS -YEXT_SFX=_'
       self.f90fixed = 'f90 -f fixed -W 132 -N11 -N113 -YEXT_NAMES=LCS -YEXT_SFX=_'
