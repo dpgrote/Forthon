@@ -36,7 +36,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.9 2004/08/06 23:30:31 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.10 2004/09/03 21:06:24 dave Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling
@@ -150,8 +150,10 @@ def deprefix():
   """For each variable in the package, a python object is created which has the same name and
 same value. For arrays, the new objects points to the same memory location.
   """
-  for pkg in _pkg_dict.values():
-    pkg.deprefix()
+  pkglist = package()
+  pkglist.reverse()
+  for pname in pkglist:
+    packageobject(pkg).deprefix()
 
 def reprefix():
   """For each variable in the main dictionary, if there is a package variable with the same name
@@ -514,7 +516,7 @@ Dump data into a pdb file
     # --- Get the value of the variable.
     vval = __main__.__dict__[vname]
     # --- Write out the source of functions. Note that the source of functions
-    # --- typed in interatively is not retrieveable - inspect.getsource
+    # --- typed in interactively is not retrieveable - inspect.getsource
     # --- returns an IOError.
     if type(vval) in [FunctionType]:
       try:
