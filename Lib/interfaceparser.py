@@ -1,7 +1,7 @@
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 19, 1998
 # Parse the interface description file
-# $Id: interfaceparser.py,v 1.5 2004/02/19 00:19:25 dave Exp $
+# $Id: interfaceparser.py,v 1.6 2004/03/03 17:31:06 dave Exp $
 
 # This reads in the entire variable description file and extracts all of
 # the variable and subroutine information needed to create an interface
@@ -293,7 +293,7 @@ def processfile(packname,filename,othermacros=[]):
     # Look for comment (and remove extra spaces)
     elif text[0] == '#':
       i = re.search('\n',text).start() - 1
-      v.comment = v.comment + text[1:i+1] + ' '
+      v.comment = v.comment + text[1:i+2]
       readyfortype = 0
 
     # Look for private remark

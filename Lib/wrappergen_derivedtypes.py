@@ -136,7 +136,9 @@ class ForthonDerivedType:
         self.cw('obj->fscalars[%d].group = "%s";'%(i,t.name))
         self.cw('obj->fscalars[%d].attributes = "%s";'%(i,s.attr))
         self.cw('obj->fscalars[%d].comment = "%s";'%(i,
-                                         string.replace(s.comment,'"','\\"')))
+                             string.replace(repr(s.comment)[1:-1],'"','\\"')))
+                             # The repr is used so newlines get written out
+                             # as \n.
         self.cw('obj->fscalars[%d].dynamic = %d;'%(i,s.dynamic))
         self.cw('obj->fscalars[%d].setpointer = %s;'%(i,setpointer))
         self.cw('obj->fscalars[%d].getpointer = %s;'%(i,getpointer))
@@ -170,7 +172,7 @@ class ForthonDerivedType:
         self.cw('obj->farrays[%d].group = "%s";'%(i,a.group))
         self.cw('obj->farrays[%d].attributes = "%s";'%(i,a.attr))
         self.cw('obj->farrays[%d].comment = "%s";'%(i,
-                                          string.replace(a.comment,'"','\\"')))
+                            string.replace(repr(a.comment)[1:-1],'"','\\"')))
         self.cw('obj->farrays[%d].dimstring = "%s";'%(i,a.dimstring))
       self.cw('}')
 

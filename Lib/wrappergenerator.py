@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.4 2004/02/14 00:02:15 dave Exp $
+# $Id: wrappergenerator.py,v 1.5 2004/03/03 17:31:06 dave Exp $
 
 import sys
 import os.path
@@ -247,7 +247,7 @@ Usage:
                  'NULL,' + 
                  '"%s",'%s.group + 
                  '"%s",'%s.attr + 
-                 '"%s",'%string.replace(s.comment,'"','\\"') + 
+                 '"%s",'%string.replace(repr(s.comment)[1:-1],'"','\\"') + 
                  '%i,'%s.dynamic + 
                  '%s,'%setpointer + 
                  '%s}'%getpointer,noreturn=1)
@@ -287,7 +287,7 @@ Usage:
                   'NULL,' +
                   '"%s",'%a.group +
                   '"%s",'%a.attr +
-                  '"%s",'%string.replace(a.comment,'"','\\"') +
+                  '"%s",'%string.replace(repr(a.comment)[1:-1],'"','\\"') +
                   '"%s"}'%a.dimstring,noreturn=1)
         if i < len(alist)-1: self.cw(',')
       self.cw('};')
@@ -301,7 +301,7 @@ Usage:
     for f in flist:
       # --- Write out the documentation first.
       docstring = ('static char doc_'+self.cname(f.name)+'[] = "'+f.name+
-                   f.dimstring+f.comment+'";')
+                   f.dimstring+repr(f.comment)[1:-1]+'";')
       # --- Replaces newlines with '\\n' so that the string is all on one line
       # --- in the C coding.
       docstring = re.sub(r'\
