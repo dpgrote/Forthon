@@ -355,9 +355,8 @@ class ForthonDerivedType:
         for s in slist:
           self.fw('    '+fvars.ftof(s.type),noreturn=1)
           if s.dynamic: self.fw(',POINTER',noreturn=1)
-          self.fw(':: '+s.name,noreturn=1)
-          if s.data: self.fw(' = '+s.data[1:-1],noreturn=1)
-          self.fw('')
+          self.fw(':: '+s.name)
+          # --- data statement is handle by the passpointer routine
         for a in alist:
           if a.dynamic:
             if a.type == 'character':
@@ -376,13 +375,14 @@ class ForthonDerivedType:
                       a.name+a.dimstring,noreturn=1)
             else:
               self.fw('    '+fvars.ftof(a.type)+':: '+
-                      a.name+a.dimstring,noreturn=1)
-            if a.data:
-              # --- Add line continuation marks if the data line extends over
-              # --- multiple lines.
-              dd = re.sub(r'\n','&',a.data)
-              self.fw(' = ('+dd+')',noreturn=1)
-            self.fw('')
+                      a.name+a.dimstring)
+            # --- data statement is handle by the passpointer routine
+            #if a.data:
+            #  # --- Add line continuation marks if the data line extends over
+            #  # --- multiple lines.
+            #  dd = re.sub(r'\n','&',a.data)
+            #  self.fw(' = ('+dd+')',noreturn=1)
+            #self.fw('')
 
         self.fw('  END TYPE '+t.name+'')
 
@@ -473,6 +473,7 @@ class ForthonDerivedType:
           self.fw('  CALL '+t.name+'setderivedtypepointers('+
                   repr(i)+',obj__%'+s.name+'%cobj__,obj__%cobj__)')
         else:
+          if s.data: self.fw('  obj__%'+s.name+' = '+s.data[1:-1])
           self.fw('  CALL '+t.name+'setscalarpointers('+
                   repr(i)+',obj__%'+s.name+',obj__%cobj__',noreturn=1)
           if machine == 'J90':
@@ -497,6 +498,9 @@ class ForthonDerivedType:
         a = alist[i]
         if not a.dynamic:
           if not a.derivedtype:
+            # --- This assumes that a scalar is given which is broadcasted
+            # --- to fill the array.
+            if a.data: self.fw('  obj__%'+a.name+' = '+a.data[1:-1])
             self.fw('  CALL '+t.name+'setarraypointers('+repr(i)+
                     ',obj__%'+a.name+',obj__%cobj__'+str)
 
