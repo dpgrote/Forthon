@@ -34,7 +34,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.2 2004/01/16 20:18:47 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.3 2004/02/03 23:58:04 dave Exp $"
 
 
 # --- The following routines deal with multiple packages. The ones setting
@@ -559,6 +559,8 @@ Note that it will automatically detect whether the file is PDB or HDF.
     if filename is None: filename = fname
     # --- Make sure a filename was input.
     assert filename is not None,"A filename must be specified"
+    # --- Check if file exists
+    assert os.access(filename,os.F_OK),"File %s does not exist"%filename
     # --- open pdb file
     try:
       ff = PR.PR(filename)
