@@ -59,3 +59,19 @@ c========================================================================
       return
       end
 c========================================================================
+      subroutine a1()
+      use Module2
+      allocate(t2)
+      return
+      end
+      subroutine a2()
+      use Module2
+      call ReleaseType1(t2)
+      return
+      end
+      subroutine a3()
+      use Module2
+      print*,t2%j
+      return
+      end
+

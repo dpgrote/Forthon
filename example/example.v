@@ -152,3 +152,6 @@ testsub6(t:Type1) subroutine # Test passing derived type to fortran.
 testsub10(ii:integer,aa:real,nn:integer) subroutine
    # This subroutine is declared in a separate fortran file.
 
+a1() subroutine
+a2() subroutine
+a3() subroutine
