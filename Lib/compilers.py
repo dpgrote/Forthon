@@ -54,7 +54,7 @@ appropriate block for the machine.
       elif self.machine == 'darwin':
         if self.macosx_gnu() is not None: break
         if self.macosx_xlf() is not None: break
-        if self.macosx_gfortran() is not None: break
+        if self.macosx_g95() is not None: break
         if self.macosx_absoft() is not None: break
         if self.macosx_nag() is not None: break
       elif self.machine == 'win32':
@@ -144,6 +144,7 @@ appropriate block for the machine.
       self.f90free  = 'g95 -r8'
       self.f90fixed = 'g95 -ffixed-line-length-132 -r8'
       self.popt = '-O'
+      self.forthonargs = ['--2underscores']
       flibroot,b = os.path.split(self.findfile('g95'))
       self.libdirs = [flibroot+'/lib']
       self.libs = ['f95']
@@ -210,17 +211,25 @@ appropriate block for the machine.
 
   #-----------------------------------------------------------------------------
   # --- MAC OSX
-  def macosx_gfortran(self):
-    if (self.findfile('gfortran') and
-        (self.fcompname=='gfortran' or self.fcompname is None)):
-      self.fcompname = 'gfortran'
+  def macosx_g95(self):
+    if (self.findfile('g95') and
+        (self.fcompname=='g95' or self.fcompname is None)):
+      self.fcompname = 'g95'
       print "WARNING: This compiler might cause a bus error."
       # --- g95
-      self.f90free  = 'gfortran -x f95'
-      self.f90fixed = 'gfortran -x f95'
-      flibroot,b = os.path.split(self.findfile('gfortran'))
+      self.f90free  = 'g95 -r8'
+      self.f90fixed = 'g95 -r8 -ffixed-line-length-132'
+      self.forthonargs = ['--2underscores']
+      flibroot,b = os.path.split(self.findfile('g95'))
+      self.fopt = '-O3 -mtune=G5 -mcpu=G5'
+      self.fopt = '-O3 -funroll-loops -fstrict-aliasing -fsched-interblock  \
+           -falign-loops=16 -falign-jumps=16 -falign-functions=16 \
+           -falign-jumps-max-skip=15 -falign-loops-max-skip=15 -malign-natural \
+           -ffast-math -mpowerpc-gpopt -force_cpusubtype_ALL \
+           -fstrict-aliasing -mtune=G5 -mcpu=G5 -mpowerpc64'
+      self.extra_link_args = ['-flat_namespace','-Wl,-undefined,suppress','/home/jlvay/warp/packages/cmee-1.0-g95/posinst-0.97b/src/.libs/libsecelec.a','-lg2c']
       self.libdirs = [flibroot+'/lib']
-      self.libs = ['gfortran','mx']
+      self.libs = ['f95']
       return 1
 
   def macosx_xlf(self):
@@ -228,11 +237,14 @@ appropriate block for the machine.
         (self.fcompname in ['xlf','xlf90'] or self.fcompname is None)):
       self.fcompname = 'xlf'
       # --- XLF
-      self.f90free  = 'xlf90 -qsuffix=f=F90 -qextname'
-      self.f90fixed = 'xlf90 -qsuffix=f=F90 -qextname'
-      #self.f90free  = 'xlf90 -qsuffix=f=F90'
-      #self.f90fixed = 'xlf90 -qsuffix=f=F90'
-      flibroot,b = os.path.split(self.findfile('xlf90'))
+      self.f90free  = 'xlf95 -qsuffix=f=f90:cpp=F90 -qextname -qintsize=4 -qdpc=e -bmaxdata:0x70000000 -bmaxstack:0x10000000 -qinitauto'
+      self.f90fixed = 'xlf95 -qextname -qfixed=132 -qintsize=4 -qdpc=e -bmaxdata:0x70000000 -bmaxstack:0x10000000 -qinitauto'
+      self.fopt = '-O5'
+#      self.fopt = '-O1'
+      #self.f90free  = 'xlf95 -qsuffix=f=F90'
+      #self.f90fixed = 'xlf95 -qsuffix=f=F90'
+      self.extra_link_args = ['-flat_namespace','-Wl,-undefined,suppress']#,'-Wl,-stack_size,10000000']
+      flibroot,b = os.path.split(self.findfile('xlf95'))
       self.libdirs = [flibroot+'/lib']
       self.libs = ['xlf90','xl','xlfmath']
       return 1
@@ -245,11 +257,13 @@ appropriate block for the machine.
       # --- Absoft
       self.f90free  = 'f90 -N11 -N113 -YEXT_NAMES=LCS -YEXT_SFX=_'
       self.f90fixed = 'f90 -f fixed -W 132 -N11 -N113 -YEXT_NAMES=LCS -YEXT_SFX=_'
+#      self.f90free  = 'f90 -ffree -YEXT_NAMES=LCS -YEXT_SFX=_'
+#      self.f90fixed = 'f90 -ffixed -W 132 -YEXT_NAMES=LCS -YEXT_SFX=_'
       flibroot,b = os.path.split(self.findfile('f90'))
       self.libdirs = [flibroot+'/lib']
       self.extra_link_args = ['-flat_namespace','-Wl,-undefined,suppress']
       self.libs = ['fio','f77math','f90math','f90math_altivec','lapack','blas']
-      self.fopt = '-O2'
+      self.fopt = '-O3'
       return 1
 
   def macosx_nag(self):
@@ -259,24 +273,28 @@ appropriate block for the machine.
       # --- NAG
       self.f90free  = 'f95 -132 -fpp -Wp,-macro=no_com -Wc,-O3 -Wc,-funroll-loops -free -PIC -u -w -mismatch_all -kind=byte -r8'
       self.f90fixed = 'f95 -132 -fpp -u -Wp,-macro=no_com -Wp,-fixed -fixed -Wc,-O3 -Wc,-funroll-loops -PIC -w -mismatch_all -kind=byte -r8'
+      self.f90free  = 'f95 -132 -fpp -Wp,-macro=no_com -free -PIC -u -w -mismatch_all -kind=byte -r8 -Oassumed=contig'
+      self.f90fixed = 'f95 -132 -fpp -Wp,-macro=no_com -Wp,-fixed -fixed -PIC -u -w -mismatch_all -kind=byte -r8 -Oassumed=contig'
       flibroot,b = os.path.split(self.findfile('f95'))
       self.libdirs = ['/usr/local/lib/NAGWare']
-      self.extra_link_args = ['-flat_namespace','-Wl,-undefined,suppress','-framework vecLib','/usr/local/lib/NAGWare/quickfit.o','/usr/local/lib/NAGWare/libf96.dylib','/usr/local/lib/NAGWare/libf97.dylib']
+      self.extra_link_args = ['-flat_namespace','-Wl,-undefined,suppress','-framework vecLib','/usr/local/lib/NAGWare/quickfit.o','/usr/local/lib/NAGWare/libf97.dylib']
       self.libs = ['f96','m']
       self.fopt = '-Wc,-O3 -Wc,-funroll-loops -O3 -Ounroll=2'
+      self.fopt = '-O4 -Wc,-fast'
+      self.fopt = '-O3 '#-Wc,-fast'
       self.define_macros.append(('NAG','1'))
       return 1
 
   def macosx_gnu(self):
-    if (self.findfile('gfortran') and
+    if (self.findfile('g95') and
         (self.fcompname=='gnu' or self.fcompname is None)):
       self.fcompname = 'gnu'
       # --- GNU
       self.f90free  = 'f95 -132 -fpp -Wp,-macro=no_com -free -PIC -w -mismatch_all -kind=byte -r8'
       self.f90fixed = 'f95 -132 -fpp -Wp,-macro=no_com -Wp,-fixed -fixed -PIC -w -mismatch_all -kind=byte -r8'
-      self.f90free  = 'gfortran -x f95'
-      self.f90fixed = 'gfortran -x f95 -ffixed-form -ffixed-line-length-132'
-      flibroot,b = os.path.split(self.findfile('gfortran'))
+      self.f90free  = 'g95 -r8'
+      self.f90fixed = 'g95 -r8 -ffixed-form -ffixed-line-length-132'
+      flibroot,b = os.path.split(self.findfile('g95'))
       self.libdirs = [flibroot+'/lib']
       self.libs = ['???']
       self.fopts = '-O3'
