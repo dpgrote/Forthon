@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.5 2004/03/03 17:26:14 dave Exp $ */
+/* $Id: Forthon.h,v 1.6 2004/03/16 17:30:59 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -114,6 +114,7 @@ staticforward PyTypeObject ForthonType;
 /* This is needed to settle circular dependencies */
 static PyObject *Forthon_getattr(ForthonObject *self,char *name);
 static int Forthon_setattr(ForthonObject *self,char *name,PyObject *v);
+static PyMethodDef *getForthonPackage_methods();
 
 /* ######################################################################### */
 /* ######################################################################### */
@@ -359,6 +360,79 @@ static PyObject *ForthonPackage_deprefix(PyObject *_self_,PyObject *args)
       Py_DECREF(n);}}
   /* printf("done deprefixing %s\n",self->name); */
   returnnone;
+}
+
+/* ######################################################################### */
+static char getdict_doc[] = "Builds a dictionary, including every variable in the package. For arrays, the dictionary value points to the same memory location as the fortran.";
+static PyObject *ForthonPackage_getdict(PyObject *_self_,PyObject *args)
+{
+  ForthonObject *self = (ForthonObject *)_self_;
+  int j;
+  PyObject *dict;
+  PyObject *v,*n;
+  Fortranscalars *s;
+  Fortranarrays *a;
+  if (!PyArg_ParseTuple(args,"")) return NULL;
+  dict = PyDict_New();
+  for (j=0;j<self->nscalars;j++) {
+    s = self->fscalars + j;
+    n = Py_BuildValue("s",s->name);
+    if (s->type == PyArray_DOUBLE)
+      v = Py_BuildValue("d",*((double *)(s->data)));
+    else if (s->type == PyArray_CDOUBLE)
+      v = PyComplex_FromDoubles(((double *)s->data)[0],
+                                ((double *)s->data)[1]);
+    else if (s->type == PyArray_OBJECT) {
+      if (s->data != NULL) {
+        Py_XINCREF((PyObject *)s->data);
+        v = (PyObject *)s->data;}
+      else {
+        Py_INCREF(Py_None);
+        v = Py_None;}}
+    else
+      v = Py_BuildValue("i",*((int *)(s->data)));
+    PyDict_SetItem(dict,n,v);
+    Py_DECREF(n);
+    Py_DECREF(v);
+    }
+  for (j=0;j<self->narrays;j++) {
+    a = self->farrays + j;
+    n = Py_BuildValue("s",a->name);
+    if (a->pya != NULL) {
+      PyDict_SetItem(dict,n,(PyObject *)a->pya);
+      }
+    else {
+      Py_INCREF(Py_None);
+      PyDict_SetItem(dict,n,Py_None);
+      }
+    Py_DECREF(n);
+    }
+  return dict;
+}
+
+/* ######################################################################### */
+static char getfunctions_doc[] = "Builds a dictionary containing all of the functions in the package.";
+static PyObject *ForthonPackage_getfunctions(PyObject *_self_,PyObject *args)
+{
+  ForthonObject *self = (ForthonObject *)_self_;
+  int j;
+  PyObject *dict,*name;
+  PyMethodDef *ml;
+  if (!PyArg_ParseTuple(args,"")) return NULL;
+  dict = PyDict_New();
+  ml = getForthonPackage_methods();
+  for (; ml->ml_name != NULL; ml++) {
+    name = Py_BuildValue("s",ml->ml_name);
+    PyDict_SetItem(dict,name,(PyObject *)PyCFunction_New(ml, _self_));
+    Py_DECREF(name);
+    }
+  ml = self->fmethods;
+  for (; ml->ml_name != NULL; ml++) {
+    name = Py_BuildValue("s",ml->ml_name);
+    PyDict_SetItem(dict,name,(PyObject *)PyCFunction_New(ml, _self_));
+    Py_DECREF(name);
+    }
+  return dict;
 }
 
 /* ######################################################################### */
@@ -776,6 +850,34 @@ static PyObject *ForthonPackage_getvardoc(PyObject *_self_,PyObject *args)
 }
 
 /* ######################################################################### */
+static char isdynamic_doc[] = "Checks whether a variable is dynamic.";
+static PyObject *ForthonPackage_isdynamic(PyObject *_self_,PyObject *args)
+{
+  ForthonObject *self = (ForthonObject *)_self_;
+  PyObject *pyi;
+  int i;
+  char *name;
+  if (!PyArg_ParseTuple(args,"s",&name)) return NULL;
+
+  /* Check for scalar of derived type which could be dynamic */
+  pyi = PyDict_GetItemString(self->scalardict,name);
+  if (pyi != NULL) {
+    PyArg_Parse(pyi,"i",&i);
+    return Py_BuildValue("i",self->fscalars[i].dynamic);
+    }
+
+  /* Get index for variable from array dictionary */
+  pyi = PyDict_GetItemString(self->arraydict,name);
+  if (pyi != NULL) {
+    PyArg_Parse(pyi,"i",&i);
+    return Py_BuildValue("i",self->farrays[i].dynamic);
+    }
+
+  PyErr_SetString(PyExc_AttributeError,"package has no such attribute");
+  return NULL;
+}
+
+/* ######################################################################### */
 /* # Group allocation freeing routine */
 static char gfree_doc[] = "Frees the memory of all dynamic arrays in a group";
 static PyObject *ForthonPackage_gfree(PyObject *_self_,PyObject *args)
@@ -941,6 +1043,16 @@ static PyObject *ForthonPackage_listvar(PyObject *_self_,PyObject *args)
 }
 
 /* ######################################################################### */
+/* # Print information about the variable name.                              */
+static char name_doc[] = "Returns the name of the package";
+static PyObject *ForthonPackage_name(PyObject *_self_,PyObject *args)
+{
+  ForthonObject *self = (ForthonObject *)_self_;
+  if (!PyArg_ParseTuple(args,"")) return NULL;
+  return Py_BuildValue("s",self->name);
+}
+
+/* ######################################################################### */
 static char reprefix_doc[] = "For each variable in the main dictionary, if there is a package variable with the same name it is assigned to that value. For arrays, the data is copied.";
 static PyObject *ForthonPackage_reprefix(PyObject *_self_,PyObject *args)
 {
@@ -961,7 +1073,35 @@ static PyObject *ForthonPackage_reprefix(PyObject *_self_,PyObject *args)
     v = PyList_GetItem(vlist,j);
     PyArg_Parse(vname,"s",&name);
     e = Forthon_setattr(self,name,v);
-    if (e==0) break;
+    if (e==0) continue;
+    PyErr_Clear();
+    }
+  Py_DECREF(vlist);
+  Py_DECREF(klist);
+  returnnone;
+}
+
+/* ######################################################################### */
+static char setdict_doc[] = "For each variable in the main dictionary, if there is a package variable with the same name it is assigned to that value. For arrays, the data is copied.";
+static PyObject *ForthonPackage_setdict(PyObject *_self_,PyObject *args)
+{
+  ForthonObject *self = (ForthonObject *)_self_;
+  PyObject *dict;
+  PyObject *klist,*vlist,*v;
+  int j,e,vlen;
+  PyObject *vname;
+  char *name;
+  if (!PyArg_ParseTuple(args,"O",&dict)) return NULL;
+  klist = PyDict_Keys(dict);
+  vlist = PyDict_Values(dict);
+  vlen = PyList_Size(klist);
+  for (j=0;j<vlen;j++) {
+    vname = PyList_GetItem(klist,j);
+    v = PyList_GetItem(vlist,j);
+    if (v == Py_None) continue;
+    PyArg_Parse(vname,"s",&name);
+    e = Forthon_setattr(self,name,v);
+    if (e==0) continue;
     PyErr_Clear();
     }
   Py_DECREF(vlist);
@@ -1020,25 +1160,35 @@ static PyObject *ForthonPackage_varlist(PyObject *_self_,PyObject *args)
 /* # Method list                                                            */
 /* Methods which are callable as attributes of a package                   */
 static struct PyMethodDef ForthonPackage_methods[] = {
-  {"addvarattr" ,(PyCFunction)ForthonPackage_addvarattr,1,addvarattr_doc},
-  {"allocated"  ,(PyCFunction)ForthonPackage_allocated,1,allocated_doc},
-  {"deprefix"   ,(PyCFunction)ForthonPackage_deprefix,1,deprefix_doc},
-  {"forceassign",(PyCFunction)ForthonPackage_forceassign,1,forceassign_doc},
-  {"gallot"     ,(PyCFunction)ForthonPackage_gallot,1,gallot_doc},
-  {"gchange"    ,(PyCFunction)ForthonPackage_gchange,1,gchange_doc},
-  {"getfobject" ,(PyCFunction)ForthonPackage_getfobject,1,getfobject_doc},
-  {"getgroup"   ,(PyCFunction)ForthonPackage_getgroup,1,getgroup_doc},
-  {"getpyobject",(PyCFunction)ForthonPackage_getpyobject,1,getpyobject_doc},
-  {"gettypename",(PyCFunction)ForthonPackage_gettypename,1,gettypename_doc},
-  {"getvarattr" ,(PyCFunction)ForthonPackage_getvarattr,1,getvarattr_doc},
-  {"getvardoc"  ,(PyCFunction)ForthonPackage_getvardoc,1,getvardoc_doc},
-  {"gfree"      ,(PyCFunction)ForthonPackage_gfree,1,gfree_doc},
-  {"gsetdims"   ,(PyCFunction)ForthonPackage_gsetdims,1,gsetdims_doc},
-  {"listvar"    ,(PyCFunction)ForthonPackage_listvar,1,listvar_doc},
-  {"reprefix"   ,(PyCFunction)ForthonPackage_reprefix,1,reprefix_doc},
-  {"totmembytes",(PyCFunction)ForthonPackage_totmembytes,1,totmembytes_doc},
-  {"varlist"    ,(PyCFunction)ForthonPackage_varlist,1,varlist_doc},
+  {"addvarattr"  ,(PyCFunction)ForthonPackage_addvarattr,1,addvarattr_doc},
+  {"allocated"   ,(PyCFunction)ForthonPackage_allocated,1,allocated_doc},
+  {"deprefix"    ,(PyCFunction)ForthonPackage_deprefix,1,deprefix_doc},
+  {"forceassign" ,(PyCFunction)ForthonPackage_forceassign,1,forceassign_doc},
+  {"gallot"      ,(PyCFunction)ForthonPackage_gallot,1,gallot_doc},
+  {"gchange"     ,(PyCFunction)ForthonPackage_gchange,1,gchange_doc},
+  {"getdict"     ,(PyCFunction)ForthonPackage_getdict,1,getdict_doc},
+  {"getfobject"  ,(PyCFunction)ForthonPackage_getfobject,1,getfobject_doc},
+  {"getfunctions",(PyCFunction)ForthonPackage_getfunctions,1,getfunctions_doc},
+  {"getgroup"    ,(PyCFunction)ForthonPackage_getgroup,1,getgroup_doc},
+  {"getpyobject" ,(PyCFunction)ForthonPackage_getpyobject,1,getpyobject_doc},
+  {"gettypename" ,(PyCFunction)ForthonPackage_gettypename,1,gettypename_doc},
+  {"getvarattr"  ,(PyCFunction)ForthonPackage_getvarattr,1,getvarattr_doc},
+  {"getvardoc"   ,(PyCFunction)ForthonPackage_getvardoc,1,getvardoc_doc},
+  {"gfree"       ,(PyCFunction)ForthonPackage_gfree,1,gfree_doc},
+  {"gsetdims"    ,(PyCFunction)ForthonPackage_gsetdims,1,gsetdims_doc},
+  {"isdynamic"   ,(PyCFunction)ForthonPackage_isdynamic,1,isdynamic_doc},
+  {"listvar"     ,(PyCFunction)ForthonPackage_listvar,1,listvar_doc},
+  {"name"        ,(PyCFunction)ForthonPackage_name,1,name_doc},
+  {"reprefix"    ,(PyCFunction)ForthonPackage_reprefix,1,reprefix_doc},
+  {"setdict"     ,(PyCFunction)ForthonPackage_setdict,1,setdict_doc},
+  {"totmembytes" ,(PyCFunction)ForthonPackage_totmembytes,1,totmembytes_doc},
+  {"varlist"     ,(PyCFunction)ForthonPackage_varlist,1,varlist_doc},
   {NULL,NULL}};
+
+static PyMethodDef *getForthonPackage_methods()
+{
+  return ForthonPackage_methods;
+}
 
 /* ######################################################################### */
 /* # Routine which creates an instance of a ForthonObject                    */
@@ -1160,7 +1310,7 @@ static PyObject *Forthon_getattr(ForthonObject *self,char *name)
 /* # Set attribute handler                                                   */
 static int Forthon_setattr(ForthonObject *self,char *name,PyObject *v)
 {
-  int i,j,r,d,e,setit;
+  int i,j,k,r,d,e,setit;
   PyObject *pyobj;
   PyObject *pyi;
   PyArrayObject *ax;
@@ -1205,8 +1355,10 @@ static int Forthon_setattr(ForthonObject *self,char *name,PyObject *v)
       if (self->farrays[i].dynamic == 3) {
         /* This type of dynamic array does not have the dimensions */
         /* specified so they can take on whatever is input. */
-        for (j=0;j<ax->nd;j++)
-          self->farrays[i].dimensions[j] = ax->dimensions[j];
+        for (j=0;j<ax->nd;j++) {
+          k = ax->nd - j - 1;
+          self->farrays[i].dimensions[j] = ax->dimensions[k];
+          }
         }
       else {
         /* Call the routine which sets the dimensions */
@@ -1214,9 +1366,11 @@ static int Forthon_setattr(ForthonObject *self,char *name,PyObject *v)
         /* This may cause some slow down, but is hard to get around. */
         (*self->setdims)(self->farrays[i].group,self);
         }
-      for (j=0;j<ax->nd;j++)
-        if (ax->dimensions[j] != self->farrays[i].dimensions[j])
+      for (j=0;j<ax->nd;j++) {
+        k = ax->nd - j - 1;
+        if (ax->dimensions[j] != self->farrays[i].dimensions[k])
           setit=0;
+        }
       if (setit) {
         if (self->farrays[i].pya != NULL) {Py_XDECREF(self->farrays[i].pya);}
         self->farrays[i].pya = ax;
