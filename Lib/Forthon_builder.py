@@ -333,7 +333,12 @@ makefile.close()
 
 # --- Now, execuate the make command.
 os.chdir(builddir)
-os.system('make -f Makefile.%(pkg)s'%locals())
+m = os.system('make -f Makefile.%(pkg)s'%locals())
+if m != 0:
+  # --- If there was a problem with the make, then quite this too.
+  # --- The factor of 256 just selects out the higher of the two bytes
+  # --- returned by system. The upper has the error number returned by make.
+  sys.exit(int(m/256))
 os.chdir(upbuilddir)
 
 # --- Make sure that the shared object is deleted. This is needed since
