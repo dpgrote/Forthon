@@ -34,7 +34,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.1 2004/01/06 18:35:12 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.2 2004/01/16 20:18:47 dave Exp $"
 
 
 # --- The following routines deal with multiple packages. The ones setting
@@ -436,6 +436,13 @@ Dump data into a pdb file
     assert ff is not None,"Dump file cannot be opened, no data formats available"
     closefile = 1
   else:
+    try:
+      if ff.file_type == "HDF":
+        dumpsmode = 1
+      else:
+        dumpsmode = 0
+    except:
+      dumpsmode = 0
     closefile = 0
   # --- Make sure the file has a file_type. Older versions of the pdb
   # --- wrapper did not define a file type.
