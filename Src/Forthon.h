@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.31 2005/03/21 23:25:16 dave Exp $ */
+/* $Id: Forthon.h,v 1.32 2005/03/24 19:15:51 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -840,7 +840,8 @@ static char forceassign_doc[] = "Forces assignment to a dynamic array, resizing 
 static PyObject *ForthonPackage_forceassign(PyObject *_self_,PyObject *args)
 {
   ForthonObject *self = (ForthonObject *)_self_;
-  int i,j,r=-1,*d;
+  int i,j,r=-1;
+  int *d,*pyadims,*axdims;
   PyObject *pyobj;
   PyArrayObject *ax;
   PyObject *pyi;
@@ -868,18 +869,30 @@ static PyObject *ForthonPackage_forceassign(PyObject *_self_,PyObject *args)
       /* Copy input data into the array. This does a copy   */
       /* even if the dimensions do not match. If an input   */
       /* dimension is larger, the extra data is truncated.  */
-      for (j=0;j<ax->nd;j++)
-        if (self->farrays[i].pya->dimensions[j] < ax->dimensions[j])
-          ax->dimensions[j] = self->farrays[i].pya->dimensions[j];
-      d = self->farrays[i].pya->dimensions;
-      self->farrays[i].pya->dimensions = ax->dimensions;
-      r = PyArray_CopyArray(self->farrays[i].pya,ax);
+      /* This code ensures that the dimensions of ax        */
+      /* remain intact since there may be other references  */
+      /* to it.                                             */
+      d = (int *)malloc(self->farrays[i].nd*sizeof(int));
+      for (j=0;j<ax->nd;j++) {
+        if (self->farrays[i].pya->dimensions[j] < ax->dimensions[j]) {
+          d[j] = self->farrays[i].pya->dimensions[j];}
+        else {
+          d[j] = ax->dimensions[j];}
+        }
+      pyadims = self->farrays[i].pya->dimensions;
+      axdims = ax->dimensions;
       self->farrays[i].pya->dimensions = d;
+      ax->dimensions = d;
+      r = PyArray_CopyArray(self->farrays[i].pya,ax);
+      self->farrays[i].pya->dimensions = pyadims;
+      ax->dimensions = axdims;
+      free(d);
       Py_XDECREF(ax);
       if (r == 0) {
         returnnone;}
       else {
-        return NULL;}}
+        return NULL;}
+      }
     else {
       PyErr_SetString(ErrorObject,
                   "Both arguments must have the same number of dimensions");
@@ -1003,7 +1016,8 @@ static PyObject *ForthonPackage_gchange(PyObject *_self_,PyObject *args)
   char *s=NULL;
   int i,r=0;
   PyArrayObject *ax;
-  int j,rt,*d,changeit,freeit,iverbose=0;
+  int j,rt,changeit,freeit,iverbose=0;
+  int *d,*pyadims,*axdims;
   PyObject *star;
 
   if (!PyArg_ParseTuple(args,"|si",&s,&iverbose)) return NULL;
@@ -1095,14 +1109,25 @@ static PyObject *ForthonPackage_gchange(PyObject *_self_,PyObject *args)
         /* the strides are still different though. The        */
         /* minimums are used to avoid writing beyond a        */
         /* dimension that may have been reduced.              */
+        /* This code ensures that the dimensions of pya       */
+        /* remain intact since there may be other references  */
+        /* to it.                                             */
         if (self->farrays[i].pya != NULL) {
-          for (j=0;j<self->farrays[i].nd;j++)
-            if (ax->dimensions[j] < self->farrays[i].pya->dimensions[j])
-              self->farrays[i].pya->dimensions[j] = ax->dimensions[j];
-          d = ax->dimensions;
-          ax->dimensions = self->farrays[i].pya->dimensions;
-          rt=PyArray_CopyArray(ax,self->farrays[i].pya);
+          d = (int *)malloc(self->farrays[i].nd*sizeof(int));
+          for (j=0;j<self->farrays[i].nd;j++) {
+            if (ax->dimensions[j] < self->farrays[i].pya->dimensions[j]) {
+              d[j] = ax->dimensions[j];}
+            else {
+              d[j] = self->farrays[i].pya->dimensions[j];}
+            }
+          pyadims = self->farrays[i].pya->dimensions;
+          axdims = ax->dimensions;
+          self->farrays[i].pya->dimensions = d;
           ax->dimensions = d;
+          rt=PyArray_CopyArray(ax,self->farrays[i].pya);
+          self->farrays[i].pya->dimensions = pyadims;
+          ax->dimensions = axdims;
+          free(d);
           }
         /* Point pointers to new space. */
         Py_XDECREF(self->farrays[i].pya);
