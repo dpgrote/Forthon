@@ -1,7 +1,7 @@
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 19, 1998
 # Parse the interface description file
-# $Id: interfaceparser.py,v 1.2 2004/01/29 17:25:49 dave Exp $
+# $Id: interfaceparser.py,v 1.3 2004/02/10 17:59:14 dave Exp $
 
 # This reads in the entire variable description file and extracts all of
 # the variable and subroutine information needed to create an interface
@@ -133,7 +133,7 @@ def processfile(packname,filename,othermacros=[]):
       tname = string.split(text[:i])[1]
       group = tname
       # Include group name as an attribute
-      attributes = ' '+string.join(tname[1:])+' '
+      attributes = ' '+tname+' '
       # Create new instance of Ftype and append to the list
       ftype = fvars.Ftype(tname,attributes)
       typelist.append(ftype)
