@@ -36,7 +36,7 @@ print 'Should be'
 print '5 6.0 [ 1.  1.  1.  1.  1.]'
 print ''
 
-print 'Testing shapeless arrays'
+print 'Testing deferred-shape arrays'
 example.z = [1,2,3]
 print example.z
 print 'Should be'
