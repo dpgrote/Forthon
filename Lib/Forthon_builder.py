@@ -164,11 +164,16 @@ if not writemodules: forthonargs.append('--nowritemodules')
 if timeroutines: forthonargs.append('--timeroutines')
 
 # --- Fix path - needed for Cygwin
-def fixpath(path):
+def fixpath(path,dos=1):
   if machine == 'win32':
     # --- Cygwin does path mangling, requiring two back slashes
-    p = re.sub(r'\\',r'/',path)
-    if p[1:2] == ':': p = '/c'+p[2:]
+    if(dos):
+      p = re.sub(r'\\',r'\\\\',path)
+      p = re.sub(r':',r':\\\\',p)
+    else:
+      p = re.sub(r'\\',r'/',path)
+#      p = re.sub(r'C:',r'/c',p)
+#      if p[1:2] == ':': p = '/cygdrive/'+string.lower(p[0])+p[2:]
     return p
   else:
     return path
@@ -194,7 +199,7 @@ del dummydist,dummybuild,bb
 
 # --- Add prefix to interfacefile since it will only be referenced from
 # --- the build directory.
-interfacefile = os.path.join(upbuilddir,interfacefile)
+interfacefile = fixpath(os.path.join(upbuilddir,interfacefile))
 
 # --- Pick the fortran compiler
 fcompiler = FCompiler(machine=machine,
@@ -216,9 +221,9 @@ freepath = os.path.join(upbuilddir,'%%.%(free_suffix)s'%locals())
 fixedpath = os.path.join(upbuilddir,'%%.%(fixed_suffix)s'%locals())
 
 # --- Find location of the python libraries and executable.
-prefix = fixpath(sys.prefix)
+prefix = fixpath(sys.prefix,dos=0)
 pyvers = sys.version[:3]
-python = fixpath(sys.executable)
+python = fixpath(sys.executable,dos=0)
 
 # --- Generate list of package dependencies
 dep = ''
@@ -232,11 +237,15 @@ for d in dependencies:
 extraobjectsstr = ''
 extraobjectslist = []
 extracfiles = []
+if machine == 'win32':
+  osuffix = '.obj'
+else:
+  osuffix = '.o'
 for f in extrafiles:
   root,suffix = os.path.splitext(f)
   if suffix[1:] in ['F','F90','f',fixed_suffix,free_suffix,'o']:
-    extraobjectsstr = extraobjectsstr + root + '.o '
-    extraobjectslist = extraobjectslist + [root + '.o']
+    extraobjectsstr = extraobjectsstr + root + osuffix
+    extraobjectslist = extraobjectslist + [root + osuffix]
   elif suffix[1:] in ['c']:
     extracfiles.append(f)
 
@@ -257,7 +266,7 @@ if fcompiler.static:
   defaultrule = 'static:'
   raise "Static linking not supported at this time"
 else:
-  defaultrule = 'dynamic: %(pkg)s_p.o %(fortranroot)s.o %(pkg)spymodule.c Forthon.h Forthon.c %(extraobjectsstr)s'%locals()
+  defaultrule = 'dynamic: %(pkg)s_p%(osuffix)s %(fortranroot)s%(osuffix)s %(pkg)spymodule.c Forthon.h Forthon.c %(extraobjectsstr)s'%locals()
 
 if writemodules:
   # --- Fortran modules are written by the wrapper to the _p file.
@@ -271,7 +280,7 @@ else:
   # --- makefile so that all files depend on the main file, rather than the
   # --- wrapper fortran file.
   modulecontainer = fortranroot
-  wrapperdependency = fortranroot+'.o'
+  wrapperdependency = fortranroot+osuffix
 
 # --- convert list of fortranargs into a string
 forthonargs = string.join(forthonargs,' ')
@@ -289,24 +298,25 @@ PYPREPROC = %(python)s -c "from Forthon.preprocess import main;main()" %(f90)s -
 
 %(defaultrule)s
 
-%%.o: %(fixedpath)s %(modulecontainer)s.o
+%%%(osuffix)s: %(fixedpath)s %(modulecontainer)s%(osuffix)s
 	%(f90fixed)s %(fopt)s %(fargs)s -c $<
-%%.o: %(freepath)s %(modulecontainer)s.o
+%%%(osuffix)s: %(freepath)s %(modulecontainer)s%(osuffix)s
 	%(f90free)s %(fopt)s %(fargs)s -c $<
 Forthon.h:%(forthonhome)s%(pathsep)sForthon.h
 	$(PYPREPROC) %(forthonhome)s%(pathsep)sForthon.h Forthon.h
 Forthon.c:%(forthonhome)s%(pathsep)sForthon.c
 	$(PYPREPROC) %(forthonhome)s%(pathsep)sForthon.c Forthon.c
 
-%(pkg)s_p.o:%(pkg)s_p.%(free_suffix)s %(wrapperdependency)s
+%(pkg)s_p%(osuffix)s:%(pkg)s_p.%(free_suffix)s %(wrapperdependency)s
 	%(f90free)s %(popts)s -c %(pkg)s_p.%(free_suffix)s
 %(pkg)spymodule.c %(pkg)s_p.%(free_suffix)s:%(interfacefile)s
 	%(python)s -c "from Forthon.wrappergenerator import wrappergenerator_main;wrappergenerator_main()" \\
 	%(f90)s -t %(machine)s %(forthonargs)s %(initialgallot)s \\
         %(othermacstr)s %(interfacefile)s %(dep)s
 clean:
-	rm -rf *.o *_p.%(free_suffix)s *.mod *module.c *.scalars *.so Forthon.c Forthon.h forthonf2c.h build
+	rm -rf *%(osuffix)s *_p.%(free_suffix)s *.mod *module.c *.scalars *.so Forthon.c Forthon.h forthonf2c.h build
 """%(locals())
+builddir=fixpath(builddir,0)
 try: os.makedirs(builddir)
 except: pass
 makefile = open(os.path.join(builddir,'Makefile.%s'%pkg),'w')
@@ -314,7 +324,13 @@ makefile.write(makefiletext)
 makefile.close()
 
 # --- Now, execuate the make command.
-os.system('(cd %(builddir)s;make -f Makefile.%(pkg)s)'%locals())
+if machine <> 'win32': 
+  os.system('(cd %(builddir)s;make -f Makefile.%(pkg)s)'%locals())
+else:
+  os.chdir(builddir)
+  os.system('make -f Makefile.%(pkg)s'%locals())
+  os.chdir('../../')
+  os.system('pwd')
 
 # --- Make sure that the shared object is deleted. This is needed since
 # --- distutils doesn't seem to check if objects passed in are newer
@@ -327,12 +343,12 @@ except:
 
 addbuilddir = lambda p:os.path.join(builddir,p)
 cfiles = map(addbuilddir,[pkg+'pymodule.c','Forthon.c'])
-ofiles = map(addbuilddir,[pkg+'.o',pkg+'_p.o']+extraobjectslist)
-
+ofiles = map(addbuilddir,[pkg+osuffix,pkg+'_p'+osuffix]+extraobjectslist)
 sys.argv = ['Forthon','build','--build-platlib','.']
 
-# --- DOS requires an extra argument to build properly
+# --- DOS requires an extra argument and include directory to build properly
 if machine == 'win32': sys.argv.append('--compiler=mingw32')
+if machine == 'win32': includedirs+=['/usr/include']
 
 setup(name = pkg,
       ext_modules = [Extension(pkg+'py',
