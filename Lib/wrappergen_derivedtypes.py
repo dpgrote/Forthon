@@ -393,13 +393,13 @@ class ForthonDerivedType:
         for s in slist:
           if s.dynamic:
             self.fw('    NULLIFY(newobj__%'+s.name+')')
-        self.fw('    call init'+t.name+'py(-1,newobj__,newobj__%cobj__)')
+        self.fw('    call InitPyRef'+t.name+'(newobj__)')
         self.fw('    RETURN')
         self.fw('  END FUNCTION New'+t.name+'')
         self.fw('  SUBROUTINE Del'+t.name+'(oldobj__)')
         self.fw('    TYPE('+t.name+'),pointer:: oldobj__')
         self.fw('    integer:: error')
-        self.fw('    call del'+t.name+'py(oldobj__%cobj__)')
+        self.fw('    call DelPyRef'+t.name+'(oldobj__)')
         self.fw('    DEALLOCATE(oldobj__,STAT=error)')
         self.fw('    if (error /= 0) then')
         self.fw('      print*,"ERROR during deallocation of '+t.name+'"')
@@ -412,6 +412,18 @@ class ForthonDerivedType:
       # --- These subroutines are written outside of the module in case
       # --- write module is false. This way, they are always written
       # --- out.
+      self.fw('SUBROUTINE InitPyRef'+t.name+'(newobj__)')
+      self.fw('  USE '+t.name+'module')
+      self.fw('  TYPE('+t.name+'):: newobj__')
+      self.fw('  call init'+t.name+'py(-1,newobj__,newobj__%cobj__)')
+      self.fw('  RETURN')
+      self.fw('END SUBROUTINE InitPyRef'+t.name)
+      self.fw('SUBROUTINE DelPyRef'+t.name+'(oldobj__)')
+      self.fw('  USE '+t.name+'module')
+      self.fw('  TYPE('+t.name+'):: oldobj__')
+      self.fw('  call del'+t.name+'py(oldobj__%cobj__)')
+      self.fw('  RETURN')
+      self.fw('END SUBROUTINE DelPyRef'+t.name)
       self.fw('SUBROUTINE '+t.name+'allot(obj__)')
       self.fw('  USE '+t.name+'module')
       self.fw('  TYPE('+t.name+'):: obj__')
