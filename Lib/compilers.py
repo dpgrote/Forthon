@@ -247,7 +247,8 @@ appropriate block for the machine.
       self.popts = '-O'
       self.extra_link_args = ['-bmaxdata:0x70000000','-bmaxstack:0x10000000']
       self.ld = 'mpxlf_r -bmaxdata:0x70000000 -bmaxstack:0x10000000 -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp'
-      self.libs = ' $(PYMPI)/driver.o $(PYMPI)/patchedmain.o -L$(PYMPI) -lpympi -lpthread'
+      self.libs = ['xlf90','xlopt','xlf','xlomp_ser','pthread','essl']
+     #self.libs = ' $(PYMPI)/driver.o $(PYMPI)/patchedmain.o -L$(PYMPI) -lpympi -lpthread'
       self.defines = ['PYMPI=/usr/common/homes/g/grote/pyMPI']
       self.fopt = '-O3 -qstrict -qarch=pwr3 -qtune=pwr3'
       return 1
