@@ -133,6 +133,7 @@ m integer # Size of array pointer in derived type
 y(0:m) _real /3./ # Array pointer element of a derived type
 static2 Type2 # Pointer to derived type object of the same type
 next _Type1 # Pointer to derived type object of the same type
+prev _Type1 # Pointer to derived type object of the same type
 xxx(:,:) _real
 
 ***** Module2:

@@ -61,17 +61,30 @@ c========================================================================
 c========================================================================
       subroutine a1()
       use Module2
-      allocate(t2)
+      t2 => NewType1()
+      t2%next => NewType1()
+      t2%next%prev => t2
+      t2%next%next => NewType1()
+      t2%next%next%prev => t2%next
+      t2%next%next%next => NewType1()
+      t2%next%next%next%prev => t2%next%next
       return
       end
       subroutine a2()
       use Module2
+      call ReleaseType1(t2%next%next%next)
+      NULLIFY(t2%next%next%next)
+      call ReleaseType1(t2%next%next)
+      NULLIFY(t2%next%next)
+      call ReleaseType1(t2%next)
+      NULLIFY(t2%next)
       call ReleaseType1(t2)
+      NULLIFY(t2)
       return
       end
       subroutine a3()
       use Module2
-      print*,t2%j
+      t2 => NewType1()
       return
       end
 
