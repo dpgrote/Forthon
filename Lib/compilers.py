@@ -225,7 +225,7 @@ appropriate block for the machine.
 
   def macosx_xlf(self):
     if (self.findfile('xlf90') and
-        (self.fcompname=='xlf90' or self.fcompname is None)):
+        (self.fcompname in ['xlf','xlf90'] or self.fcompname is None)):
       self.fcompname = 'xlf'
       # --- XLF
       self.f90free  = 'xlf90 -qsuffix=f=F90 -qextname'
