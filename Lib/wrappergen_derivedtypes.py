@@ -467,32 +467,27 @@ class ForthonDerivedType:
         self.fw('    call DelPyRef'+t.name+'(oldobj__)')
         self.fw('    RETURN')
         self.fw('  END SUBROUTINE Del'+t.name+'')
-        # --- This chain of fortran calls is needed to get around limitations
+        # --- This routine is needed to get around limitations
         # --- on subroutine arguments. A variable must be a pointer (or
-        # --- allocatable) to be deallocated, but for a pointer to passed into
-        # --- a subroutine, its signature must be defined. This can't be done
-        # --- from C, so it must be inside a module. Furthermore, when a
-        # --- variable is a pointer in a subroutine, the variable passed in
-        # --- must also be a pointer. So dealloc1 is needed to satisfy this
-        # --- requirement,
-        self.fw('  SUBROUTINE '+t.name+'dealloc1(oldobj__)')
+        # --- allocatable) to be deallocated, but for a pointer or target
+        # --- to be passed into a subroutine, its signature must be defined.
+        # --- This can't be done from C, so this must be inside a module.
+        # --- Furthermore, only a pointer can be passed into a pointer.
+        # --- To get around that, the input argument is declared a target,
+        # --- then an explicit pointer assignment gives a pointer that can
+        # --- be deallocated.
+        self.fw('  SUBROUTINE '+t.name+'dealloc(oldobj__)')
         self.fw('    TYPE('+t.name+'),target:: oldobj__')
         self.fw('    TYPE('+t.name+'),pointer:: poldobj__')
-        self.fw('    poldobj__ => oldobj__')
-        self.fw('    CALL '+t.name+'dealloc2(poldobj__)')
-        self.fw('    RETURN')
-        self.fw('  END SUBROUTINE '+t.name+'dealloc1')
-        self.fw('  SUBROUTINE '+t.name+'dealloc2(poldobj__)')
-        self.fw('    TYPE('+t.name+'),pointer:: poldobj__')
         self.fw('    integer:: error')
+        self.fw('    poldobj__ => oldobj__')
         self.fw('    DEALLOCATE(poldobj__,STAT=error)')
         self.fw('    if (error /= 0) then')
         self.fw('      print*,"ERROR during deallocation of '+t.name+'"')
         self.fw('      stop')
         self.fw('    endif')
         self.fw('    RETURN')
-        self.fw('  END SUBROUTINE '+t.name+'dealloc2')
-
+        self.fw('  END SUBROUTINE '+t.name+'dealloc')
 
         self.fw('END MODULE '+t.name+'module')
 
@@ -713,7 +708,7 @@ class ForthonDerivedType:
       self.fw('SUBROUTINE '+self.fsub(t,'deallocatef')+'(oldobj__)')
       self.fw('  USE '+t.name+'module')
       self.fw('  TYPE('+t.name+'):: oldobj__')
-      self.fw('  CALL '+t.name+'dealloc1(oldobj__)')
+      self.fw('  CALL '+t.name+'dealloc(oldobj__)')
       self.fw('  RETURN')
       self.fw('END SUBROUTINE '+self.fsub(t,'deallocatef'))
 
