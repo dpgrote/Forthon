@@ -9,19 +9,19 @@ import distutils
 import distutils.sysconfig
 from distutils.core import setup, Extension
 
-optlist,args = getopt.getopt(sys.argv[1:],'agd:t:F:C:D:L:l:i:',
+optlist,args = getopt.getopt(sys.argv[1:],'agd:t:F:C:D:L:l:i:f:',
                          ['f90','f77','f90f','nowritemodules','macros=',
                           'FOPTS','COPTS','static'])
 
 if len(sys.argv) == 1:
   print """
-Forthon [options] pkgname [extra fortran files]
+Forthon [options] pkgname [extra files to be compiled]
 
 pkgname is the name of the package.
 A complete package will have at least two files, the interface description
 file and the fortran file. The default name for the interface file is
 pkgname.v.  Note that the first line of the interface file must be the package
-name.
+name. The default name for the fortran file is pkgname.F
 
 One or more of the following options can be specified.
 
@@ -45,7 +45,9 @@ One or more of the following options can be specified.
  -g
     Turns off optimization for fortran compiler
  -i filename
-    Specify full interface file name. It defaults to pkgname.v
+    Specify full name of interface file. It defaults to pkgname.v
+ -f filename
+    Specifiy full name of main fortran file. It defaults to pkgname.F
  -L path
     Addition library directories
  -l library
@@ -95,6 +97,7 @@ else:
 
 # --- Set default values for command line options
 interfacefile = pkg + '.v'
+fortranfile = pkg + '.F'
 initialgallot = ''
 dependencies = []
 defines = []
@@ -121,6 +124,7 @@ for o in optlist:
   elif o[0] == '-L': libdirs.append(o[1])
   elif o[0] == '-l': libs.append(o[1])
   elif o[0] == '-i': interfacefile = o[1]
+  elif o[0] == '-f': fortranfile = o[1]
   elif o[0] == '--f90': f90 = '--f90'
   elif o[0] == '--f77': f90 = ''
   elif o[0] == '--f90f': f90f = 1
@@ -318,22 +322,31 @@ dep = ''
 for d in dependencies:
   dep = dep + ' -d %s.scalars'%d
 
-# --- Make string containing extra fortran objects
+# --- Loop over extrafiles. For each fortran file, append the object name
+# --- to be used in the makefile. For each C file, add to a list to be
+# --- included in the setup command.
 extraobjects = ''
+extraobjectslist = []
+extracfiles = []
 for f in extrafiles:
   root,suffix = os.path.splitext(f)
-  extraobjects = extraobjects + root + '.o '
+  if suffix in ['F','F90','f']:
+    extraobjects = extraobjects + root + '.o '
+    extraobjectslist = extraobjectslist + [root + '.o']
+  elif suffix in ['c']:
+    extracfiles.append(f)
 
 # --- Make string containing other macros files
-omac = ''
+othermacstr = ''
 for f in othermacros:
-  omac = omac + ' --macros ' + f
+  othermacstr = othermacstr + ' --macros ' + f
 
 # --- Define default rule. Note that static doesn't work yet.
 if static:
   default = 'static:'
 else:
-  default = 'dynamic: %(pkg)s_p.o %(pkg)s.o %(pkg)spymodule.c Forthon.h Forthon.c %(extraobjects)s'%locals()
+  fortranroot,suffix = os.path.splitext(fortranfile)
+  default = 'dynamic: %(pkg)s_p.o %(fortranroot)s.o %(pkg)spymodule.c Forthon.h Forthon.c %(extraobjects)s'%locals()
 
 definesstr = ''
 for d in defines: definesstr = definesstr + d + '\n'
@@ -360,8 +373,8 @@ Forthon.c:%(pywrapperhome)s/Forthon.c
 	%(f90free)s %(popt)s -c %(pkg)s_p.F90
 %(pkg)spymodule.c %(pkg)s_p.F90:%(interfacefile)s
 	%(python)s -c "from Forthon.wrappergenerator import wrappergenerator_main;wrappergenerator_main()" \\
-	%(f90)s -t %(machine)s %(pywrapperargs)s %(initialgallot)s %(omac)s \\
-	%(interfacefile)s %(dep)s
+	%(f90)s -t %(machine)s %(pywrapperargs)s %(initialgallot)s \\
+        %(othermacstr)s %(interfacefile)s %(dep)s
 clean:
 	rm -rf *.o *_p.F90 *.mod *module.c *.scalars *.so Forthon.c Forthon.h forthonf2c.h build
 """%(locals())
@@ -381,18 +394,12 @@ try:
 except:
   pass
 
-# --- Now use setup to build the shared object.
-extraobjects = []
-for f in extrafiles:
-  root,suffix = os.path.splitext(f)
-  extraobjects = extraobjects + [root + '.o']
-
 sys.argv = ['Forthon','build','--build-platlib','.']
 setup(name = pkg,
       ext_modules = [Extension(pkg+'py',
-                        [pkg+'pymodule.c','Forthon.c'],
+                        [pkg+'pymodule.c','Forthon.c']+extracfiles,
                         include_dirs=[pywrapperhome,'.'],
-                        extra_objects=[pkg+'.o',pkg+'_p.o']+extraobjects,
+                        extra_objects=[pkg+'.o',pkg+'_p.o']+extraobjectslist,
                         library_dirs=libdirs,
                         libraries=libs)]
      )
