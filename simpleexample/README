@@ -1,0 +1,10 @@
+This contains a simple example.
+
+List of files:
+  example.F:       fortran90 source file containing python callable subroutines
+  example.v:       interface description file
+  example.py:      python script which tests the example
+  Makefile:        builds the example and test it
+  README:          this file
+
+Dave Grote
