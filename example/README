@@ -1,0 +1,6 @@
+This contains an example which makes use of most of the features of Forthon.
+It contains extensive documentation, especially the example.v file. Please
+study this example. To build and test it, just type make (after installing
+Fortrhon).
+
+Dave Grote
