@@ -4,7 +4,7 @@ calls and traces.
 """
 import sys,time
 
-ForthonTimer_version = "$Id: ForthonTimer.py,v 1.1 2004/05/06 00:55:21 dave Exp $"
+ForthonTimer_version = "$Id: ForthonTimer.py,v 1.2 2004/07/21 16:26:50 dave Exp $"
 
 def ForthonTimerdoc():
   import ForthonTimer
@@ -59,14 +59,15 @@ called on a function return, so it returns the timer instance of the caller
     self.endtime = time.clock()
     self.time = self.time + self.endtime - self.starttime
     return self.parent
-  def out(self,maxlevel):
+  def out(self,maxlevel,mintime):
     """
 Prints info about the function and all of its callees, up to the input level.
     """
     if self.level > maxlevel: return
+    if self.time < mintime: return
     print "%s%s %d %f"%(self.level*'  ',self.name,self.ncalls,self.time)
     for v in self.subtimers.values():
-      v.out(maxlevel)
+      v.out(maxlevel,mintime)
 
 class ForthonProfiler:
   """
@@ -81,10 +82,12 @@ Argument:
   """
   _ninstances = 0
   def __init__(self,trace=0):
-    if ForthonProfiler > 0:
+    if ForthonProfiler._ninstances > 0:
       raise "Only one instance allowed."
     ForthonProfiler._ninstances = 1
     self.trace = trace
+    self.restart()
+  def restart(self):
     self.root = None
     self.level = 0
     self.finished = 0
@@ -126,10 +129,12 @@ routine called and starts and stops the timers.
       self.timer = self.timer.newtimer(name)
     # --- Turn the profiler back on
     sys.setprofile(self.profiler)
-  def out(self,maxlevel=2):
+  def out(self,maxlevel=2,mintime=0.):
     """
 Print out timing info.
+ - maxlevel=2: only prints timings up to the given call depth
+ - mintime=0.: only prints timings greater than or equal to the given value
     """
     self.finish()
-    self.root.out(maxlevel)
+    self.root.out(maxlevel,mintime)
 
