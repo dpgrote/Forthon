@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.19 2004/07/29 16:51:38 dave Exp $ */
+/* $Id: Forthon.h,v 1.20 2004/08/18 16:45:13 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -69,6 +69,7 @@ static PyObject *ErrorObject;
 /* # must also be changed. */
 typedef struct {
   int type;
+  char *typename;
   char* name;
   char* data;
   char* group;
@@ -430,9 +431,9 @@ static int Forthon_setscalarderivedtype(ForthonObject *self,PyObject *value,
                                         void *closure)
 {
   Fortranscalar *fscalar = &(self->fscalars[(int)closure]);
-  if (value == NULL) {
-    PyErr_SetString(PyExc_TypeError, "Cannot delete the attribute");
-    return -1;}
+  /* if (value == NULL) { */
+    /* PyErr_SetString(PyExc_TypeError, "Cannot delete the attribute"); */
+    /* return -1;} */
 
   if (value == NULL) {
     if (fscalar->dynamic) {
@@ -449,8 +450,7 @@ static int Forthon_setscalarderivedtype(ForthonObject *self,PyObject *value,
     }
 
   if (strcmp("Forthon",value->ob_type->tp_name) != 0 ||
-      strcmp(((ForthonObject *)value)->typename,
-             ((ForthonObject *)(fscalar->data))->typename) != 0) {
+      strcmp(((ForthonObject *)value)->typename,fscalar->typename) != 0) {
     PyErr_SetString(ErrorObject,"Right hand side has incorrect type");
     return -1;}
   Py_INCREF(value);
@@ -1521,10 +1521,19 @@ static PyObject *ForthonObject_New(PyObject *self, PyObject *args)
 static void Forthon_dealloc(ForthonObject *self)
 {
   int i;
+  PyObject *objid;
   for (i=0;i<self->nscalars;i++) {
     if (self->fscalars[i].type == PyArray_OBJECT)
       {
+      if (self->fscalars[i].dynamic) {
+        /* If dynamic, use getpointer to get the current address of the */
+        /* python object from the fortran variable. */
+        /* This is needed since the association may have changed in fortran. */
+        (self->fscalars[i].getpointer)(&objid,self->fobj);
+        /* XXX Should .data be DECREF'd first???? */
+        self->fscalars[i].data = (char *)objid;}
       Py_XDECREF((PyObject *)self->fscalars[i].data);
+      self->fscalars[i].data = 0;
       }
     }
   for (i=0;i<self->narrays;i++) {
