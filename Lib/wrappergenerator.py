@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.25 2004/10/08 23:48:18 dave Exp $
+# $Id: wrappergenerator.py,v 1.26 2004/10/12 22:46:54 dave Exp $
 
 import sys
 import os.path
@@ -227,7 +227,7 @@ Usage:
                   '(char *p,long *cobj__);')
         if s.dynamic:
           self.cw('extern void '+fname(self.fsub('getpointer',s.name))+
-                  '(ForthonObject **cobj__,long *obj);')
+                  '(ForthonObject **cobj__,long *obj,long *createnew);')
       for a in alist:
         self.cw('extern void '+fname(self.fsub('setpointer',a.name))+
                 '(char *p,long *cobj__,long *dims__);')
@@ -691,7 +691,6 @@ Usage:
     self.cw('  '+self.pname+'Object->fobjdeallocate = NULL;')
     self.cw('  '+self.pname+'Object->nullifycobj = NULL;')
     self.cw('  '+self.pname+'Object->allocated = 0;')
-    self.cw('  '+self.pname+'Object->referenceclaimed = 0;')
     self.cw('  '+self.pname+'Object->garbagecollected = 0;')
     self.cw('  PyModule_AddObject(m,"'+self.pname+'",(PyObject *)'+
                 self.pname+'Object);')
@@ -911,11 +910,14 @@ Usage:
         self.fw('  RETURN')
         self.fw('END')
         if s.dynamic:
-          self.fw('SUBROUTINE '+self.fsub('getpointer',s.name)+'(cobj__,obj__)')
+          # --- In all cases, it is not desirable to create a new instance,
+          # --- for example when the object is being deleted.
+          self.fw('SUBROUTINE '+self.fsub('getpointer',s.name)+
+                                 '(cobj__,obj__,createnew__)')
           self.fw('  USE '+s.group)
-          self.fw('  integer('+self.isz+'):: cobj__,obj__')
+          self.fw('  integer('+self.isz+'):: cobj__,obj__,createnew__')
           self.fw('  if (ASSOCIATED('+s.name+')) then')
-          self.fw('    if ('+s.name+'%cobj__ == 0)'+
+          self.fw('    if ('+s.name+'%cobj__ == 0 .and. createnew__ == 1)'+
                         'call init'+s.type+'py(-1,'+s.name+','+
                                                s.name+'%cobj__,0,0)')
           self.fw('    cobj__ = '+s.name+'%cobj__')

@@ -291,10 +291,7 @@ class ForthonDerivedType:
       self.cw('PyObject *'+pname+'_'+t.name+
               'New(PyObject *self, PyObject *args)')
       self.cw('{')
-      self.cw('  ForthonObject *result;')
-      self.cw('  result = (ForthonObject *)'+fname(self.fsub(t,'newf'))+'();')
-      self.cw('  result->referenceclaimed = 1;')
-      self.cw('  return (PyObject *)result;')
+      self.cw('  return '+fname(self.fsub(t,'newf'))+'();')
       self.cw('}')
       #########################################################################
       # --- Write out an empty list of methods
@@ -322,7 +319,6 @@ class ForthonDerivedType:
       self.cw('    obj->fobjdeallocate = NULL;')
       self.cw('  obj->nullifycobj=*'+fname(self.fsub(t,'nullifycobjf'))+';')
       self.cw('  obj->allocated = 0;')
-      self.cw('  obj->referenceclaimed = 0;')
       self.cw('  obj->garbagecollected = %d;'%garbagecollected)
       self.cw('  *cobj__ = obj;')
       self.cw('  if (PyErr_Occurred())')
@@ -522,16 +518,24 @@ class ForthonDerivedType:
         # --- references to the object, then it is just deallocated. If there
         # --- are references, it is made deallocatable by python, so that
         # --- when all of those references are deleted, the object can finally
-        # --- be deallocated. Lastly, the fortran pointer to the instance
+        # --- be deallocated. The fortran pointer to the instance
         # --- is in all cases nullified. This is necessary so that future
-        # --- accesses to the object can detect that the object is now
-        # --- unassociated.
+        # --- accesses to the object can detect that the pointer is now
+        # --- unassociated. Similarly, all pointers to derived types that this
+        # --- object refers to are nullified. This isolates the object,
+        # --- breaking its connections to other objects. As far as the fortran
+        # --- is concerned, this object no longer exists and should not have
+        # --- references to other objects.
         self.fw('  SUBROUTINE Release'+t.name+'(oldobj__)')
         self.fw('    TYPE('+t.name+'),pointer:: oldobj__')
         self.fw('    integer:: error')
         self.fw('    if (oldobj__%cobj__ /= 0) then')
         self.fw('      call decref'+t.name+'py(oldobj__)')
         self.fw('    endif')
+        for s in slist:
+          if s.dynamic:
+            self.fw('    if (ASSOCIATED(oldobj__%'+s.name+'))'+
+                                        'NULLIFY(oldobj__%'+s.name+')')
         self.fw('    if (oldobj__%cobj__ == 0) then')
         self.fw('      DEALLOCATE(oldobj__,STAT=error)')
         self.fw('      if (error /= 0) then')

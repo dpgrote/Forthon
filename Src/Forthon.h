@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.27 2004/10/08 23:48:18 dave Exp $ */
+/* $Id: Forthon.h,v 1.28 2004/10/12 22:46:53 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -115,7 +115,6 @@ typedef struct {
   void (*fobjdeallocate)();
   void (*nullifycobj)();
   int allocated;
-  int referenceclaimed;
   int garbagecollected;
 } ForthonObject;
 staticforward PyTypeObject ForthonType;
@@ -193,6 +192,7 @@ static void ForthonPackage_updatederivedtype(ForthonObject *self,int i,
                                              long createnew)
 {
   ForthonObject *objid;
+  PyObject *oldobj;
   if (self->fscalars[i].type == PyArray_OBJECT && self->fscalars[i].dynamic) {
     /* If dynamic, use getpointer to get the current address of the */
     /* python object from the fortran variable. */
@@ -202,28 +202,14 @@ static void ForthonPackage_updatederivedtype(ForthonObject *self,int i,
     /* in fortran. The data needs to be updated and the reference */
     /* count possibly incremented. */
     if (self->fscalars[i].data != (char *)objid) {
+      oldobj = (PyObject *)self->fscalars[i].data;
       /* Make sure that the correct python object is pointed to. */
+      /* The pointer is redirected before the DECREF is done to avoid */
+      /* infinite loops. */
       self->fscalars[i].data = (char *)objid;
-      /* When the python object for a derived type is created, its */
-      /* reference count is 1, but nothing owns that reference - the flag */
-      /* referenceclaimed will be 0. With the line above, the fscalar is */
-      /* claiming a reference.  (That reference is a stand in the for */
-      /* fortran reference.) If the reference is unclaimed, then claim it, */
-      /* otherwise claim a new reference and increment the counter. */
-      if (objid != NULL) {
-        if (objid->referenceclaimed) {
-          Py_XINCREF((PyObject *)self->fscalars[i].data);
-          }
-        else {
-          /* XXX XXX This extra incref is wrong XXX */
-          /* Somewhere, a reference is not being accounted for properly */
-          /* and an object is being deallocated twice during the clean up */
-          /* on exit. This incref fixes it, but will certainly lead to */
-          /* memory leaks. */
-          Py_XINCREF((PyObject *)self->fscalars[i].data);
-          objid->referenceclaimed = 1;
-          }
-        }
+      Py_XDECREF(oldobj);
+      /* Increment the reference count since a new thing points to it. */
+      Py_XINCREF((PyObject *)self->fscalars[i].data);
       }
     }
 }
@@ -473,7 +459,11 @@ static int Forthon_setscalarderivedtype(ForthonObject *self,PyObject *value,
   Fortranscalar *fscalar = &(self->fscalars[(int)closure]);
   void *d;
   int createnew;
+  PyObject *oldobj;
 
+  /* Only create a new instance if a non-NULL value is passed in. */
+  /* With a NULL value, the object will be decref'ed so there's no */
+  /* point creating a new one. */
   createnew = (value != NULL);
   ForthonPackage_updatederivedtype(self,(int)closure,createnew);
 
@@ -481,11 +471,12 @@ static int Forthon_setscalarderivedtype(ForthonObject *self,PyObject *value,
     if (fscalar->dynamic) {
       if (fscalar->data != NULL) {
         /* Decrement the reference counter and nullify the fortran pointer. */
+        oldobj = (PyObject *)fscalar->data;
         d = (void *)((ForthonObject *)fscalar->data)->fobjdeallocate;
-        Py_DECREF((PyObject *)fscalar->data);
         if (d != NULL)
           (fscalar->setpointer)(0,(self->fobj));
         fscalar->data = NULL;
+        Py_DECREF(oldobj);
         }
       return 0;
       }
@@ -632,12 +623,12 @@ static int Forthon_traverse(ForthonObject *self,visitproc visit,void *arg)
   int i;
   long createnew=0;
   for (i=0;i<self->nscalars;i++) {
-    ForthonPackage_updatederivedtype(self,i,createnew);
     if (self->fscalars[i].type == PyArray_OBJECT &&
         self->fscalars[i].dynamic &&
-        self->fscalars[i].data != NULL &&
         strcmp(self->typename,self->fscalars[i].typename) != 0) {
-      return visit((PyObject *)(self->fscalars[i].data), arg);
+      ForthonPackage_updatederivedtype(self,i,createnew);
+      if (self->fscalars[i].data != NULL)
+        return visit((PyObject *)(self->fscalars[i].data), arg);
       }
     }
   return 0;
@@ -647,19 +638,44 @@ static int Forthon_traverse(ForthonObject *self,visitproc visit,void *arg)
 /* ------------------------------------------------------------------------- */
 static int Forthon_clear(ForthonObject *self)
 {
-  int i;
-  long createnew=0;
+  /* Note that this is called by Forthon_dealloc. */
+  int i,createnew=0;
+  void *d;
   ForthonObject *objid;
+  PyObject *oldobj;
+
   for (i=0;i<self->nscalars;i++) {
-    ForthonPackage_updatederivedtype(self,i,createnew);
-    if (self->fscalars[i].type == PyArray_OBJECT &&
-        self->fscalars[i].dynamic &&
-        self->fscalars[i].data != NULL &&
-        strcmp(self->typename,self->fscalars[i].typename) != 0) {
-      Py_XDECREF((PyObject *)self->fscalars[i].data);
-      self->fscalars[i].data = NULL;
+    if (self->fscalars[i].type == PyArray_OBJECT)
+      {
+      ForthonPackage_updatederivedtype(self,i,createnew);
+      if (self->fscalars[i].data != NULL) {
+        d = (void *)((ForthonObject *)self->fscalars[i].data)->fobjdeallocate;
+        oldobj = (PyObject *)self->fscalars[i].data;
+        self->fscalars[i].data = NULL;
+        if (d != NULL)
+          (self->fscalars[i].setpointer)(0,(self->fobj));
+        /* Only delete the object after deleting references to it. */
+        Py_DECREF(oldobj);
+        }
       }
     }
+  for (i=0;i<self->narrays;i++) {
+    free(self->farrays[i].dimensions);
+    Py_XDECREF(self->farrays[i].pya);
+    }
+  if (self->fobj != NULL) {
+    /* Note that for package instance (as opposed to derived type */
+    /* instances), the fscalars and farrays are statically defined and */
+    /* can't be freed. */
+    if (self->fscalars != NULL) free(self->fscalars);
+    if (self->farrays  != NULL) free(self->farrays);
+    }
+  if (self->fobj != NULL) {
+    if (self->fobjdeallocate != NULL) {(self->fobjdeallocate)(self->fobj);}
+    else                              {(self->nullifycobj)(self->fobj);}
+    }
+
+  Forthon_DeleteDicts(self);
   return 0;
 }
 
@@ -1609,41 +1625,8 @@ static PyMethodDef *getForthonPackage_methods(void)
 
 static void Forthon_dealloc(ForthonObject *self)
 {
-  int i,createnew=0;
-  void *d;
-  ForthonObject *objid;
   if (self->garbagecollected) PyObject_GC_UnTrack((PyObject *) self);
-
-  for (i=0;i<self->nscalars;i++) {
-    if (self->fscalars[i].type == PyArray_OBJECT)
-      {
-      ForthonPackage_updatederivedtype(self,i,createnew);
-      if (self->fscalars[i].data != NULL) {
-        d = (void *)((ForthonObject *)self->fscalars[i].data)->fobjdeallocate;
-        Py_DECREF((PyObject *)self->fscalars[i].data);
-        if (d != NULL)
-          (self->fscalars[i].setpointer)(0,(self->fobj));
-        self->fscalars[i].data = NULL;
-        }
-      }
-    }
-  for (i=0;i<self->narrays;i++) {
-    free(self->farrays[i].dimensions);
-    Py_XDECREF(self->farrays[i].pya);
-    }
-  if (self->fobj != NULL) {
-    /* Note that for package instance (as opposed to derived type */
-    /* instances), the fscalars and farrays are statically defined and */
-    /* can't be freed. */
-    if (self->fscalars != NULL) free(self->fscalars);
-    if (self->farrays  != NULL) free(self->farrays);
-    }
-  if (self->fobj != NULL) {
-    if (self->fobjdeallocate != NULL) {(self->fobjdeallocate)(self->fobj);}
-    else                              {(self->nullifycobj)(self->fobj);}
-    }
-
-  Forthon_DeleteDicts(self);
+  Forthon_clear(self);
   PyObject_GC_Del((PyObject*)self);
   /* self->ob_type->tp_free((PyObject*)self); */
 }
