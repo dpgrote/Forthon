@@ -1,7 +1,7 @@
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 19, 1998
 # Parse the interface description file
-# $Id: interfaceparser.py,v 1.6 2004/03/03 17:31:06 dave Exp $
+# $Id: interfaceparser.py,v 1.7 2004/03/17 14:23:08 dave Exp $
 
 # This reads in the entire variable description file and extracts all of
 # the variable and subroutine information needed to create an interface
@@ -16,7 +16,7 @@ if sys.version[0] == '1':
 
 attribute_pat = re.compile('[ \t\n]*([a-zA-Z_]+)')
 
-def processfile(packname,filename,othermacros=[]):
+def processfile(packname,filename,othermacros=[],timeroutines=0):
 
   # Open the variable description file
   varfile = open(filename,'r')
@@ -204,6 +204,17 @@ def processfile(packname,filename,othermacros=[]):
       v.array = 0
       i = 7
       readyfortype = 0
+      if timeroutines:
+        # --- Add variable used to accumulate the time
+        timerv = fvars.Fvars()
+        timerv.name = v.name+'runtime'
+        timerv.type = 'real'
+        timerv.data = '/0./'
+        timerv.unit = 'seconds'
+        timerv.comment = 'Run time for function %s'%v.name
+        timerv.group = packname+'timers'
+        timerv.attr = ' timer dump '
+        vlist.append(timerv)
 
     # Check if variable is a subroutine
     elif re.match('subroutine\s',text):
@@ -212,6 +223,17 @@ def processfile(packname,filename,othermacros=[]):
       v.type = 'void'
       i = 9
       readyfortype = 0
+      if timeroutines:
+        # --- Add variable used to accumulate the time
+        timerv = fvars.Fvars()
+        timerv.name = v.name+'runtime'
+        timerv.type = 'real'
+        timerv.data = '/0./'
+        timerv.unit = 'seconds'
+        timerv.comment = 'Run time for subroutine %s'%v.name
+        timerv.group = packname+'timers'
+        timerv.attr = ' timer dump '
+        vlist.append(timerv)
 
     # Check if there are any dimensions
     elif text[0] == '(':

@@ -58,6 +58,9 @@ One or more of the following options can be specified.
     original code will need to be modified. See example2. Also note that
     if this option is used, no checks are made to ensure the consistency
     between the interface file description and the actual module.
+ --timeroutines
+    When specified, timers are added which accumulate the runtime in all
+    routines called directly from python.
  --macros pkg.v
     Other interface files whose macros are needed
  --fopt options
@@ -94,7 +97,8 @@ if len(sys.argv) == 1:
 
 # --- Process command line arguments
 optlist,args = getopt.getopt(sys.argv[1:],'agd:t:F:D:L:l:I:i:f:',
-                         ['f90','f77','f90f','nowritemodules','macros=',
+                         ['f90','f77','f90f','nowritemodules',
+                          'timeroutines','macros=',
                           'fopt=','fargs=','static',
                           'free_suffix=','fixed_suffix='])
 
@@ -113,6 +117,7 @@ fcomp          = None
 f90            = '--f90'
 f90f           = 0
 writemodules   = 1
+timeroutines   = ''
 othermacros    = []
 debug          = 0
 twounderscores = 0
@@ -145,6 +150,7 @@ for o in optlist:
   elif o[0] == '--fargs': fargs = fargs + ' ' + o[1]
   elif o[0] == '--static': static = 1
   elif o[0] == '--nowritemodules': writemodules = 0
+  elif o[0] == '--timeroutines': timeroutines = 1
   elif o[0] == '--macros': othermacros.append(o[1])
   elif o[0] == '--free_suffix': free_suffix = o[1]
   elif o[0] == '--fixed_suffix': fixed_suffix = o[1]
@@ -155,6 +161,7 @@ if fortranfile is None: fortranfile = pkg + '.' + fixed_suffix
 forthonargs = []
 if twounderscores: forthonargs.append('--2underscores')
 if not writemodules: forthonargs.append('--nowritemodules')
+if timeroutines: forthonargs.append('--timeroutines')
 
 # --- Fix path - needed for Cygwin
 def fixpath(path):

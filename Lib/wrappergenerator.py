@@ -2,11 +2,11 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.6 2004/03/11 10:28:54 dave Exp $
+# $Id: wrappergenerator.py,v 1.7 2004/03/17 14:23:08 dave Exp $
 
 import sys
 import os.path
-import interfaceparser
+from interfaceparser import processfile
 import string
 import re
 import fvars
@@ -27,18 +27,20 @@ Usage:
                    that they are already written.
   --macros pkg.v Other interface files that are needed for the definition
                  of macros.
+  --timeroutines Calls to the routines from python will be timed
   file1    Main variable description file for the package
   [file2, ...] Subsidiary variable description files
   """
 
   def __init__(self,ifile,pname,f90=1,f90f=0,initialgallot=1,writemodules=1,
-               otherfiles=[],other_scalar_dicts=[]):
+               otherfiles=[],other_scalar_dicts=[],timeroutines=0):
     self.ifile = ifile
     self.pname = pname
     self.f90 = f90
     self.f90f = f90f
     self.initialgallot = initialgallot
     self.writemodules = writemodules
+    self.timeroutines = timeroutines
     self.otherfiles = otherfiles
     self.other_scalar_dicts = other_scalar_dicts
     self.isz = isz # isz defined in cfinterface
@@ -107,8 +109,8 @@ Usage:
     # --- This is the routine that does all of the work
 
     # --- Get the list of variables and subroutine from the var file
-    vlist,hidden_vlist,typelist = interfaceparser.processfile(self.pname,
-                                                self.ifile,self.otherfiles)
+    vlist,hidden_vlist,typelist = processfile(self.pname,self.ifile,
+                                              self.otherfiles,self.timeroutines)
     if not vlist and not hidden_vlist and not typelist:
       return
 
@@ -312,23 +314,18 @@ Usage:
       self.cw(self.cname(f.name)+'(PyObject *self, PyObject *args)')
       self.cw('{')
 
-      if f.args == []:
-        # --- Function with no arguments is easy.
-        if f.type == 'void':
-          self.cw('  '+fnameofobj(f)+'();')
-          self.cw('  returnnone;')
-        else:
-          self.cw('  return Py_BuildValue("'+fvars.fto1[f.type]+'",'+
-                  fnameofobj(f)+'());')
-        self.cw('}')
-        continue
-
       # --- With arguments, it gets very messy
       lv = repr(len(f.args))
-      self.cw('  PyObject * pyobj['+lv+'];')
-      self.cw('  PyArrayObject * ax['+lv+'];')
-      self.cw('  int i,argno=0;')
-      self.cw('  char e[80];')
+      if len(f.args) > 0:
+        self.cw('  PyObject * pyobj['+lv+'];')
+        self.cw('  PyArrayObject * ax['+lv+'];')
+        self.cw('  int i,argno=0;')
+        self.cw('  char e[80];')
+
+      if self.timeroutines:
+        # --- Setup for the timer, getting time routine started.
+        self.cw('  double time1,time2;')
+        self.cw('  time1 = cputime();')
 
       # --- For character arguments, need to create an FSTRING array.
       istr = 0
@@ -409,11 +406,18 @@ Usage:
       # --- Copy the data that was sent to the routine back into the passed
       # --- in object if it is an PyArray. This needs to be thoroughly checked.
       # --- Decrement reference counts of array objects created.
-      self.cw('  for (i=0;i<'+repr(len(f.args))+';i++) {')
-      self.cw('    if (PyArray_Check(pyobj[i])) {')
-      self.cw('      if (pyobj[i] != (PyObject *)ax[i])')
-      self.cw('        PyArray_CopyArray((PyArrayObject *)pyobj[i],ax[i]);}')
-      self.cw('    if (ax[i] != NULL) {Py_XDECREF(ax[i]);}}')
+      if len(f.args) > 0:
+        self.cw('  for (i=0;i<'+repr(len(f.args))+';i++) {')
+        self.cw('    if (PyArray_Check(pyobj[i])) {')
+        self.cw('      if (pyobj[i] != (PyObject *)ax[i])')
+        self.cw('        PyArray_CopyArray((PyArrayObject *)pyobj[i],ax[i]);}')
+        self.cw('    if (ax[i] != NULL) {Py_XDECREF(ax[i]);}}')
+
+      if self.timeroutines:
+        # --- Now get ending time and add to timer variable
+        self.cw('  time2 = cputime();')
+        self.cw('  *(double *)'+self.pname+'_fscalars['+
+                     repr(sdict[f.name+'runtime'])+'].data += (time2-time1);')
 
       # --- Write return sequence
       if f.type == 'void':
@@ -422,15 +426,16 @@ Usage:
         self.cw('  ret_val = Py_BuildValue ("'+fvars.fto1[f.type]+'", r);')
         self.cw('  return ret_val;')
 
-      # --- Error section
-      self.cw('err:') 
+      # --- Error section, only needed if there were arguments.
+      if len(f.args) > 0:
+        self.cw('err:') 
 
-      # --- Decrement reference counts of array objects created.
-      self.cw('  sprintf(e,"There is an error in argument %d",argno);')
-      self.cw('  PyErr_SetString(ErrorObject,e);')
-      self.cw('  for (i=0;i<'+repr(len(f.args))+';i++)')
-      self.cw('    if (ax[i] != NULL) {Py_XDECREF(ax[i]);}')
-      self.cw('  return NULL;')
+        # --- Decrement reference counts of array objects created.
+        self.cw('  sprintf(e,"There is an error in argument %d",argno);')
+        self.cw('  PyErr_SetString(ErrorObject,e);')
+        self.cw('  for (i=0;i<'+repr(len(f.args))+';i++)')
+        self.cw('    if (ax[i] != NULL) {Py_XDECREF(ax[i]);}')
+        self.cw('  return NULL;')
 
       self.cw('}')
 
@@ -891,7 +896,8 @@ def get_another_scalar_dict(file_name):
 def wrappergenerator_main(argv=None):
   if argv is None: argv = sys.argv[1:]
   optlist,args=getopt.getopt(argv,'at:d:',
-                     ['f90','f90f','2underscores','nowritemodules','macros='])
+                     ['f90','f90f','2underscores','nowritemodules',
+                      'timeroutines','macros='])
 
   # --- Get package name from argument list
   try:
@@ -907,29 +913,24 @@ def wrappergenerator_main(argv=None):
   f90 = 0
   f90f = 0
   writemodules = 1
+  timeroutines = 0
   othermacros = []
 
   # --- a list of scalar dictionaries from other modules.
   other_scalar_dicts = []
 
   for o in optlist:
-    if o[0]=='-a':
-      initialgallot = 1
-    elif o[0]=='-t':
-      machine = o[1]
-    elif o[0]=='--f90':
-      f90 = 1
-    elif o[0]=='--f90f':
-      f90f = 1
-    elif o[0]=='-d':
-      get_another_scalar_dict (o[1])
-    elif o[0]=='--nowritemodules':
-      writemodules = 0
-    elif o[0]=='--macros':
-      othermacros.append(o[1])
+    if o[0]=='-a': initialgallot = 1
+    elif o[0]=='-t': machine = o[1]
+    elif o[0]=='--f90': f90 = 1
+    elif o[0]=='--f90f': f90f = 1
+    elif o[0]=='-d': get_another_scalar_dict (o[1])
+    elif o[0]=='--nowritemodules': writemodules = 0
+    elif o[0]=='--timeroutines': timeroutines = 1
+    elif o[0]=='--macros': othermacros.append(o[1])
 
   cc = PyWrap(ifile,pname,f90,f90f,initialgallot,writemodules,
-              othermacros,other_scalar_dicts)
+              othermacros,other_scalar_dicts,timeroutines)
 
 if __name__ == '__main__':
   wrappergenerator_main(sys.argv[1:])

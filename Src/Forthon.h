@@ -1,10 +1,14 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.6 2004/03/16 17:30:59 dave Exp $ */
+/* $Id: Forthon.h,v 1.7 2004/03/17 14:23:08 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
 #include <pythonrun.h>
 #include "forthonf2c.h"
+
+/* These are included for the cputime routine below. */
+#include <sys/times.h>
+#include <unistd.h>
 
 static PyObject *ErrorObject;
 
@@ -139,6 +143,15 @@ static int strfind(char *v,char *s)
   return 0;
 }
   
+static double cputime()
+{
+  struct tms usage;
+  long hardware_ticks_per_second;
+  (void) times(&usage);
+  hardware_ticks_per_second = sysconf(_SC_CLK_TCK);
+  return (double) usage.tms_utime/hardware_ticks_per_second;
+}
+
 /* ###################################################################### */
 /* Builds a scalar and an array dictionary for the package. The           */
 /* dictionaries are then used in the getattr and setattr to look up the   */
