@@ -35,7 +35,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.6 2004/03/16 17:25:30 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.7 2004/05/14 23:42:16 dave Exp $"
 
 
 # --- The following routines deal with multiple packages. The ones setting
@@ -318,7 +318,7 @@ Print out all variables in a group or with an attribute
 ##############################################################################
 ##############################################################################
 def pydumpforthonobject(ff,attr,objname,obj,varsuffix,writtenvars,fobjlist,
-                        serial,verbose):
+                        serial,verbose,lonlymakespace=0):
   # --- General work of this object
   if verbose: print "object "+objname+" being written"
   # --- Write out the value of fobj so that in restore, any links to this
@@ -368,11 +368,17 @@ def pydumpforthonobject(ff,attr,objname,obj,varsuffix,writtenvars,fobjlist,
       # --- Note that the attribute passed in is blank, since all components
       # --- are to be written out to the file.
       pydumpforthonobject(ff,[''],vname,v,'@'+vname+varsuffix,writtenvars,
-                          fobjlist,serial,verbose)
+                          fobjlist,serial,verbose,lonlymakespace)
       continue
     # --- If this point is reached, then variable is written out to file
     if verbose: print "writing "+objname+"."+vname+" as "+vname+varsuffix
-    ff.write(vname+varsuffix,v)
+    # --- If lonlymakespace is true, then use defent to create space in the
+    # --- file for arrays but don't write out any data. Scalars are still
+    # --- written out.
+    if lonlymakespace and type(v) not in [IntType,FloatType]:
+      ff.defent(vname+varsuffix,v,shape(v))
+    else:
+      ff.write(vname+varsuffix,v)
 
 ##############################################################################
 # Python version of the dump routine. This uses the varlist command to
@@ -389,7 +395,7 @@ def pydumpforthonobject(ff,attr,objname,obj,varsuffix,writtenvars,fobjlist,
 # is put into a 'try' command since some variables cannot be written to
 # a pdb file.
 def pydump(fname=None,attr=["dump"],vars=[],serial=0,ff=None,varsuffix=None,
-           verbose=false,hdf=0):
+           verbose=false,hdf=0,returnfobjlist=0,lonlymakespace=0):
   """
 Dump data into a pdb file
   - fname: dump file name
@@ -408,6 +414,8 @@ Dump data into a pdb file
   - verbose=false: When true, prints out the names of the variables as they are
        written to the dump file
   - hdf=0: when true, dump into an HDF file rather than a PDB.
+  - returnfobjlist=0: when true, returns the list of fobjects that were
+                      written to the file
   """
   assert fname is not None or ff is not None,\
          "Either a filename must be specified or a pdb file pointer"
@@ -472,7 +480,7 @@ Dump data into a pdb file
     pkg = __main__.__dict__[pname]
     if varsuffix is None: pkgsuffix = '@' + pname
     pydumpforthonobject(ff,attr,pname,pkg,pkgsuffix,writtenvars,fobjlist,
-                        serial,verbose)
+                        serial,verbose,lonlymakespace)
 
   # --- Now, write out the python variables (that can be written out).
   # --- If supplied, the varsuffix is append to the names here too.
@@ -503,7 +511,7 @@ Dump data into a pdb file
     # --- Check if variable is a Forthon object.
     if IsForthonType(vval):
       pydumpforthonobject(ff,attr,vname,vval,'@'+vname+varsuffix,writtenvars,
-                          fobjlist,serial,verbose)
+                          fobjlist,serial,verbose,lonlymakespace)
       continue
     # --- Try writing as normal variable.
     # --- The docontinue temporary is needed since python1.5.2 doesn't
@@ -532,7 +540,12 @@ Dump data into a pdb file
     if verbose: print "cannot write python variable "+vname
   if closefile: ff.close()
 
+  # --- Return the fobjlist for cases when pydump is called multiple times
+  # --- for a single file.
+  if returnfobjlist: return fobjlist
 
+
+#############################################################################
 # Python version of the restore routine. It restores all of the variables
 # in the pdb file.
 # An '@' in the name distinguishes between the two. The 'ff.__getattr__' is
@@ -540,7 +553,8 @@ Dump data into a pdb file
 # in of python variables is put in a 'try' command to make it idiot proof.
 # More fancy foot work is done to get new variables read in into the
 # global dictionary.
-def pyrestore(filename=None,fname=None,verbose=0,skip=[],ff=None,varsuffix=None,ls=0):
+def pyrestore(filename=None,fname=None,verbose=0,skip=[],ff=None,
+              varsuffix=None,ls=0,lreturnfobjdict=0):
   """
 Restores all of the variables in the specified file.
   - filename: file to read in from (assumes PDB format)
@@ -590,7 +604,7 @@ Note that it will automatically detect whether the file is PDB or HDF.
       for l in vlist: print l
 
   # --- First, sort out the list of variables
-  groups = _sortvarsbysuffix(vlist,skip)
+  groups = sortrestorevarsbysuffix(vlist,skip)
   fobjdict = {}
 
   # --- Read in the variables with the standard suffices.
@@ -665,15 +679,16 @@ Note that it will automatically detect whether the file is PDB or HDF.
     del groups['parallel']
 
   for gname in groups.keys():
-    pyrestorepyforthonobject(ff,gname,groups[gname],fobjdict,varsuffix,
-                             verbose,doarrays=0)
+    pyrestoreforthonobject(ff,gname,groups[gname],fobjdict,varsuffix,
+                           verbose,doarrays=0)
   for gname in groups.keys():
-    pyrestorepyforthonobject(ff,gname,groups[gname],fobjdict,varsuffix,
-                             verbose,doarrays=1)
+    pyrestoreforthonobject(ff,gname,groups[gname],fobjdict,varsuffix,
+                           verbose,doarrays=1)
 
   if closefile: ff.close()
+  if lreturnfobjdict: return fobjdict
 
-def _sortvarsbysuffix(vlist,skip):
+def sortrestorevarsbysuffix(vlist,skip):
   # --- Sort the variables, collecting them in groups based on there suffix.
   groups = {}
   for v in vlist:
@@ -697,14 +712,28 @@ def _sortvarsbysuffix(vlist,skip):
 
   return groups
 
-def pyrestorepyforthonobject(ff,gname,vlist,fobjdict,varsuffix,verbose,doarrays):
+#-----------------------------------------------------------------------------
+def pyrestoreforthonobject(ff,gname,vlist,fobjdict,varsuffix,verbose,doarrays,
+                           gpdbname=None):
+  """
+  - ff: reference to file being written to
+  - gname: name (in python format) of object to read in
+  - vlist: list of variables from the file that are part of this object
+ - fobjdist: dictionary of objects already read in
+  - varsuffix: suffix to apply to all variables (in python)
+  - verbose: when true, lists whether each variable is successfully read in
+  - doarrays: when true, reads in arrays, otherwise only scalars
+  - gpdbname: actual name of object in the data file. If None, extracted
+              from gname.
+  """
 
   # --- Convert gname in pdb-style name
-  gsplit = string.split(gname,'.')
-  gsplit.reverse()
-  gpdbname = string.join(gsplit,'@')
+  if gpdbname is None:
+    gsplit = string.split(gname,'.')
+    gsplit.reverse()
+    gpdbname = string.join(gsplit,'@')
 
-  # --- Check is the variable gname exists or is allocated.
+  # --- Check if the variable gname exists or is allocated.
   # --- If not, create a new variable.
   neednew = 0
   try:
@@ -732,7 +761,7 @@ def pyrestorepyforthonobject(ff,gname,vlist,fobjdict,varsuffix,verbose,doarrays)
       fobjdict[fobj] = gname
 
   # --- Sort out the list of variables
-  groups = _sortvarsbysuffix(vlist,[])
+  groups = sortrestorevarsbysuffix(vlist,[])
 
   # --- Get "leaf" variables
   if groups.has_key(''):
@@ -770,7 +799,8 @@ def pyrestorepyforthonobject(ff,gname,vlist,fobjdict,varsuffix,verbose,doarrays)
 
   # --- Read in rest of groups.
   for g,v in groups.items():
-    pyrestorepyforthonobject(ff,gname+'.'+g,v,fobjdict,varsuffix,verbose,doarrays)
+    pyrestoreforthonobject(ff,gname+'.'+g,v,fobjdict,varsuffix,verbose,doarrays,
+                           g+'@'+gpdbname)
 
 
 # --- create an alias for pyrestore
