@@ -81,6 +81,8 @@ import string
 import distutils
 import distutils.sysconfig
 from distutils.core import setup, Extension
+from distutils.dist import Distribution
+from distutils.command.build import build
 from Forthon.compilers import FCompiler
 
 # --- Print help and then exit if not arguments are given
@@ -94,36 +96,31 @@ optlist,args = getopt.getopt(sys.argv[1:],'agd:t:F:D:L:l:i:f:',
                           'fopt=','fargs=','static',
                           'free_suffix=','fixed_suffix='])
 
-# --- Get the package name
+# --- Get the package name and any other extra files
 pkg = args[0]
+extrafiles = args[1:]
 
-# --- Get any other extra files
-if len(args) > 1:
-  extrafiles = args[1:]
-else:
-  extrafiles = []
-
-# --- Set default values for command line options
-machine = sys.platform
-interfacefile = pkg + '.v'
-fortranfile = pkg + '.F'
-initialgallot = ''
-dependencies = []
-defines = []
-fcomp = None
-f90 = '--f90'
-f90f = 0
-writemodules = 1
-othermacros = []
-debug = 0
+# --- Default values for command line options
+machine        = sys.platform
+interfacefile  = pkg + '.v'
+fortranfile    = None # --- Can only be set after finding fixed_suffix
+initialgallot  = ''
+dependencies   = []
+defines        = []
+fcomp          = None
+f90            = '--f90'
+f90f           = 0
+writemodules   = 1
+othermacros    = []
+debug          = 0
 twounderscores = 0
-fopt = None
-fargs = ''
-libs = []
-libdirs = []
-static = 0
-free_suffix = 'F90'
-fixed_suffix = 'F'
+fopt           = None
+fargs          = ''
+libs           = []
+libdirs        = []
+static         = 0
+free_suffix    = 'F90'
+fixed_suffix   = 'F'
 
 for o in optlist:
   if o[0]=='-a': initialgallot = '-a'
@@ -147,6 +144,8 @@ for o in optlist:
   elif o[0] == '--macros': othermacros.append(o[1])
   elif o[0] == '--free_suffix': free_suffix = o[1]
   elif o[0] == '--fixed_suffix': fixed_suffix = o[1]
+
+if fortranfile is None: fortranfile = pkg + '.' + fixed_suffix
 
 # --- Set arguments to Forthon, based on defaults and any inputs.
 forthonargs = []
@@ -172,6 +171,20 @@ if machine == 'win32': pathsep = r'\\'
 forthonhome = os.path.join(distutils.sysconfig.get_python_lib(),'Forthon')
 forthonhome = fixpath(forthonhome)
 
+# --- Find the location of the build directory. There must be a better way
+# --- of doing this.
+dummydist = Distribution()
+dummybuild = build(dummydist)
+dummybuild.finalize_options()
+builddir = dummybuild.build_temp
+bb = string.split(builddir,os.sep)
+upbuilddir = len(bb)*(os.pardir + os.sep)
+del dummydist,dummybuild,bb
+
+# --- Add prefix to interfacefile since it will only be referenced from
+# --- the build directory.
+interfacefile = os.path.join(upbuilddir,interfacefile)
+
 # --- Pick the fortran compiler
 fcompiler = FCompiler(machine=machine,
                       debug=debug,
@@ -184,6 +197,11 @@ f90fixed = fcompiler.f90fixed
 popts = fcompiler.popts
 forthonargs = forthonargs + fcompiler.forthonargs
 if fopt is None: fopt = fcompiler.fopt
+
+# --- Create path to fortran files for the Makefile since they will be
+# --- referenced from the build directory.
+freepath = os.path.join(upbuilddir,'%%.%(free_suffix)s'%locals())
+fixedpath = os.path.join(upbuilddir,'%%.%(fixed_suffix)s'%locals())
 
 # --- Find location of the python libraries and executable.
 prefix = fixpath(sys.prefix)
@@ -254,9 +272,9 @@ PYPREPROC = %(python)s -c "from Forthon.preprocess import main;main()" %(f90)s -
 
 %(defaultrule)s
 
-%%.o: %%.%(fixed_suffix)s %(modulecontainer)s.o
+%%.o: %(fixedpath)s %(modulecontainer)s.o
 	%(f90fixed)s %(fopt)s %(fargs)s -c $<
-%%.o: %%.%(free_suffix)s %(modulecontainer)s.o
+%%.o: %(freepath)s %(modulecontainer)s.o
 	%(f90free)s %(fopt)s %(fargs)s -c $<
 Forthon.h:%(forthonhome)s%(pathsep)sForthon.h
 	$(PYPREPROC) %(forthonhome)s%(pathsep)sForthon.h Forthon.h
@@ -272,12 +290,14 @@ Forthon.c:%(forthonhome)s%(pathsep)sForthon.c
 clean:
 	rm -rf *.o *_p.%(free_suffix)s *.mod *module.c *.scalars *.so Forthon.c Forthon.h forthonf2c.h build
 """%(locals())
-makefile = open('Makefile.%s'%pkg,'w')
+try: os.makedirs(builddir)
+except: pass
+makefile = open(os.path.join(builddir,'Makefile.%s'%pkg),'w')
 makefile.write(makefiletext)
 makefile.close()
 
 # --- Now, execuate the make command.
-os.system('make -f Makefile.%s'%pkg)
+os.system('(cd %(builddir)s;make -f Makefile.%(pkg)s)'%locals())
 
 # --- Make sure that the shared object is deleted. This is needed since
 # --- distutils doesn't seem to check if objects passed in are newer
@@ -288,13 +308,17 @@ try:
 except:
   pass
 
+addbuilddir = lambda p:os.path.join(builddir,p)
+cfiles = map(addbuilddir,[pkg+'pymodule.c','Forthon.c'])
+ofiles = map(addbuilddir,[pkg+'.o',pkg+'_p.o']+extraobjectslist)
+
 sys.argv = ['Forthon','build','--build-platlib','.']
 setup(name = pkg,
       ext_modules = [Extension(pkg+'py',
-                        [pkg+'pymodule.c','Forthon.c']+extracfiles,
-                        include_dirs=[forthonhome,'.'],
-                        extra_objects=[pkg+'.o',pkg+'_p.o']+extraobjectslist,
-                        library_dirs=fcompiler.libdirs+libdirs,
-                        libraries=fcompiler.libs+libs)]
+                     cfiles+extracfiles,
+                     include_dirs=[forthonhome],
+                     extra_objects=ofiles,
+                     library_dirs=fcompiler.libdirs+libdirs,
+                     libraries=fcompiler.libs+libs)]
      )
 
