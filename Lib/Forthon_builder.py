@@ -118,7 +118,7 @@ for o in optlist:
   elif o[0] == '-F': fcompiler = o[1]
   elif o[0] == '-d': dependencies.append(o[1])
   elif o[0] == '-D': defines.append(o[1])
-  elif o[0] == '-L': libs.append(o[1])
+  elif o[0] == '-L': libdirs.append(o[1])
   elif o[0] == '-l': libs.append(o[1])
   elif o[0] == '-i': interfacefile = o[1]
   elif o[0] == '--f90': f90 = '--f90'
