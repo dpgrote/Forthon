@@ -33,10 +33,12 @@ One or more of the following options can be specified.
  -f filename
     Specifiy full name of main fortran file. It defaults to pkgname.F.
  -L path
-    Addition library paths
+    Additional library paths
  -l library
     Additional libraries that are needed. Note that the prefix 'lib' and any
     suffixes should not be included.
+ -I path
+    Additional include paths
  -t type
     Machine type. Will automatically be determined if not supplied.
     Can be one of linux2, aix4, darwin, win32.
@@ -91,7 +93,7 @@ if len(sys.argv) == 1:
   sys.exit(0)
 
 # --- Process command line arguments
-optlist,args = getopt.getopt(sys.argv[1:],'agd:t:F:D:L:l:i:f:',
+optlist,args = getopt.getopt(sys.argv[1:],'agd:t:F:D:L:l:I:i:f:',
                          ['f90','f77','f90f','nowritemodules','macros=',
                           'fopt=','fargs=','static',
                           'free_suffix=','fixed_suffix='])
@@ -118,6 +120,7 @@ fopt           = None
 fargs          = ''
 libs           = []
 libdirs        = []
+includedirs    = []
 static         = 0
 free_suffix    = 'F90'
 fixed_suffix   = 'F'
@@ -131,6 +134,7 @@ for o in optlist:
   elif o[0] == '-D': defines.append(o[1])
   elif o[0] == '-L': libdirs.append(o[1])
   elif o[0] == '-l': libs.append(o[1])
+  elif o[0] == '-I': includedirs.append(o[1])
   elif o[0] == '-i': interfacefile = o[1]
   elif o[0] == '-f': fortranfile = o[1]
   elif o[0] == '--f90': f90 = '--f90'
@@ -138,7 +142,7 @@ for o in optlist:
   elif o[0] == '--f90f': f90f = 1
   elif o[0] == '--2underscores': twounderscores = 1
   elif o[0] == '--fopt': fopt = o[1]
-  elif o[0] == '--fargs': fargs = o[1]
+  elif o[0] == '--fargs': fargs = fargs + ' ' + o[1]
   elif o[0] == '--static': static = 1
   elif o[0] == '--nowritemodules': writemodules = 0
   elif o[0] == '--macros': othermacros.append(o[1])
@@ -263,6 +267,10 @@ else:
 # --- convert list of fortranargs into a string
 forthonargs = string.join(forthonargs,' ')
 
+# --- Add any includedirs to fargs
+for i in includedirs:
+  fargs = fargs + '-I'+i+' '
+
 # --- First, create Makefile.pkg which has all the needed definitions
 makefiletext = """
 %(definesstr)s
@@ -316,7 +324,7 @@ sys.argv = ['Forthon','build','--build-platlib','.']
 setup(name = pkg,
       ext_modules = [Extension(pkg+'py',
                                cfiles+extracfiles,
-                               include_dirs=[forthonhome],
+                               include_dirs=[forthonhome]+includedirs,
                                extra_objects=ofiles,
                                library_dirs=fcompiler.libdirs+libdirs,
                                libraries=fcompiler.libs+libs)]
