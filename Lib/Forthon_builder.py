@@ -353,6 +353,7 @@ setup(name = pkg,
                                extra_objects=ofiles,
                                library_dirs=fcompiler.libdirs+libdirs,
                                libraries=fcompiler.libs+libs,
+                               define_macros=fcompiler.define_macros,
                                extra_link_args=extra_link_args)]
      )
 
