@@ -67,9 +67,9 @@ One or more of the following options can be specified.
     Writes wrapper code using a variant of the f90 method. This is under
     development and should not be used.
  --nowritemodules
-    Do not write out the module definitions. Useful if the modules have been
-    written already. Note that if variables of derived type are used, the
-    original code will need to be modified. See notes below. Also note that
+    Don't write out the module definitions. Useful if the modules have
+    been written already. Note that if variables of derived type are used, the
+    original code will need to be modified. See example2. Also note that
     if this option is used, no checks are made to ensure the consistency
     between the interface file description and the actual module.
  --macros pkg.v
@@ -330,10 +330,10 @@ extraobjectslist = []
 extracfiles = []
 for f in extrafiles:
   root,suffix = os.path.splitext(f)
-  if suffix in ['F','F90','f']:
+  if suffix in ['.F','.F90','.f']:
     extraobjects = extraobjects + root + '.o '
     extraobjectslist = extraobjectslist + [root + '.o']
-  elif suffix in ['c']:
+  elif suffix in ['.c']:
     extracfiles.append(f)
 
 # --- Make string containing other macros files
