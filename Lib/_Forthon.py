@@ -36,7 +36,18 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.8 2004/06/03 22:21:41 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.9 2004/08/06 23:30:31 dave Exp $"
+
+##############################################################################
+# --- Functions needed for object pickling
+def forthonobject_constructor(typename,dict):
+  import __main__
+  type = __main__.__dict__[typename]
+  obj = type()
+  obj.setdict(dict)
+  return obj
+def pickle_forthonobject(o):
+  return (forthonobject_constructor, (o.gettypename(),o.getdict()))
 
 
 # --- The following routines deal with multiple packages. The ones setting
@@ -60,6 +71,12 @@ _pkg_dict = {}
 _pkg_list = []
 def registerpackage(pkg,name):
   """Registers a package so it can be accessed using various global routines."""
+
+  # --- For each package, which has its own type, the pickling functions
+  # --- must be registered for that type.
+  import copy_reg
+  copy_reg.pickle(type(pkg),pickle_forthonobject,forthonobject_constructor)
+
   _pkg_dict[name] = pkg
   _pkg_list.append(name)
 
