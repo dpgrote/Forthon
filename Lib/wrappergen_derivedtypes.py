@@ -255,7 +255,6 @@ class ForthonDerivedType:
       self.cw('  obj->fmethods = '+t.name+'_methods;')
       self.cw('  obj->fobj = fobj;')
       self.cw('  obj->allocated = 0;')
-      self.cw('  if (*i>=0) '+pname+'_fscalars[*i].data = (char *)obj;')
       self.cw('  *cobj__ = obj;')
       self.cw('  if (PyErr_Occurred())')
       self.cw('    Py_FatalError("can not initialize type '+t.name+'");')
@@ -284,7 +283,7 @@ class ForthonDerivedType:
       #########################################################################
       # --- Write set pointers routine which gets all of the fortran pointers
       self.cw('void '+fname(t.name+'setscalarpointers')+
-              '(int *i,char *p,ForthonObject **obj')
+              '(int *i,char *p,ForthonObject **obj',noreturn=1)
       if machine=='J90':
         self.cw(',int *iflag)')
       else:
@@ -295,6 +294,13 @@ class ForthonDerivedType:
       if machine=='J90':
         self.cw('    if (iflag) {')
         self.cw('      (*obj)->fscalars[*i].data=_fcdtocp((_fcd)p);}')
+      self.cw('}')
+
+      self.cw('void '+fname(t.name+'setderivedtypepointers')+
+              '(int *i,char **p,ForthonObject **obj)')
+      self.cw('{')
+      self.cw('  /* Get pointers for the derived types */')
+      self.cw('  (*obj)->fscalars[*i].data = (char *)(*p);')
       self.cw('}')
 
       self.cw('void '+fname(t.name+'setarraypointers')+
@@ -460,7 +466,13 @@ class ForthonDerivedType:
       # --- Write out calls to c routine passing down pointers to scalars
       for i in range(len(slist)):
         s = slist[i]
-        if not s.derivedtype:
+        if s.dynamic: continue
+        if s.derivedtype:
+          self.fw('  CALL init'+s.type+'py(-1,obj__%'+s.name+
+                  ',obj__%'+s.name+'%cobj__)')
+          self.fw('  CALL '+t.name+'setderivedtypepointers('+
+                  repr(i)+',obj__%'+s.name+'%cobj__,obj__%cobj__)')
+        else:
           self.fw('  CALL '+t.name+'setscalarpointers('+
                   repr(i)+',obj__%'+s.name+',obj__%cobj__',noreturn=1)
           if machine == 'J90':
@@ -470,9 +482,6 @@ class ForthonDerivedType:
               self.fw(',0)')
           else:
             self.fw(')')
-        elif not s.dynamic:
-          self.fw('  CALL init'+t.name+'py('+repr(i)+',obj__%'+s.name+
-                  ',obj__%cobj__)')
 
       # --- Write out calls to c routine passing down pointers to arrays
       # --- For f90, setpointers is not needed for dynamic arrays but is called

@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.5 2004/03/03 17:31:06 dave Exp $
+# $Id: wrappergenerator.py,v 1.6 2004/03/11 10:28:54 dave Exp $
 
 import sys
 import os.path
@@ -592,7 +592,8 @@ Usage:
 
     ###########################################################################
     # --- Write set pointers routine which gets all of the fortran pointers
-    self.cw('void '+fname(self.pname+'setscalarpointers')+'(int *i,char *p',noreturn=1)
+    self.cw('void '+fname(self.pname+'setscalarpointers')+
+            '(int *i,char *p',noreturn=1)
     if machine=='J90':
       self.cw(',int *iflag)')
     else:
@@ -605,7 +606,17 @@ Usage:
       self.cw('      '+self.pname+'_fscalars[*i].data=_fcdtocp((_fcd)p);}')
     self.cw('}')
 
-    self.cw('void '+fname(self.pname+'setarraypointers')+'(int *i,char *p',noreturn=1)
+    # --- A serarate routine is needed for derived types since the cobj__
+    # --- that is passed in is already a pointer, so **p is needed.
+    self.cw('void '+fname(self.pname+'setderivedtypepointers')+
+            '(int *i,char **p)')
+    self.cw('{')
+    self.cw('  /* Get pointers for the scalars */')
+    self.cw('  '+self.pname+'_fscalars[*i].data = (char *)(*p);')
+    self.cw('}')
+
+    self.cw('void '+fname(self.pname+'setarraypointers')+
+            '(int *i,char *p',noreturn=1)
     if machine=='J90':
       self.cw(',int *iflag)')
     else:
@@ -722,7 +733,12 @@ Usage:
     # --- Write out calls to c routine passing down pointers to scalars
     for i in range(len(slist)):
       s = slist[i]
-      if not s.derivedtype:
+      if s.dynamic: continue
+      if s.derivedtype:
+        self.fw('  call init'+s.type+'py('+repr(i)+','+s.name+','+
+                s.name+'%cobj__)')
+        self.fw('  call '+self.pname+'setderivedtypepointers('+repr(i)+','+s.name+'%cobj__)')
+      else:
         self.fw('  call '+self.pname+'setscalarpointers('+repr(i)+','+s.name,
                 noreturn=1)
         if machine == 'J90':
@@ -732,9 +748,6 @@ Usage:
             self.fw(',0)')
         else:
           self.fw(')')
-      elif not s.dynamic:
-        self.fw('  call init'+s.type+'py('+repr(i)+','+s.name+','+
-                s.name+'%cobj__)')
 
     # --- Write out calls to c routine passing down pointers to arrays
     # --- For f90, setpointers is not needed for dynamic arrays but is called
