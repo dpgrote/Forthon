@@ -145,6 +145,7 @@ testsub2(ii:integer,aa:real,dd:real) subroutine # Test setting of variable
                                                 # in fortran.
 testsub3(ii:integer,aa:real,nn:integer) subroutine # Test operating on
                                                    # derived type variables.
+testsub33() subroutine # Extra subroutine
 testsub4() subroutine # Extra subroutine
 testsub5() subroutine # Test operations on array pointer with undefined bounds
 testsub6(t:Type1) subroutine # Test passing derived type to fortran.
