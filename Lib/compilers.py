@@ -77,6 +77,7 @@ appropriate block for the machine.
     if debug:
       self.fopt = '-g'
       self.popt = '-g'
+      self.extra_link_args += ['-g']
 
   def findfile(self,file):
     if self.machine == 'win32': file = file + '.exe'
