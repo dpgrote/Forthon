@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.23 2004/10/04 21:29:13 rcohen Exp $
+# $Id: wrappergenerator.py,v 1.24 2004/10/07 20:08:23 dave Exp $
 
 import sys
 import os.path
@@ -22,6 +22,8 @@ Usage:
   -a       All groups will be allocated on initialization
   -t ARCH  Build for specified architecture (default is HP700)
   -d <.scalars file>  a .scalars file in another module that this module depends on
+  -F <compiler> The fortran compiler being used. This is needed since some
+                operations depend on the compiler specific oddities.
   --f90    F90 syntax will be assumed
   --f90f   F90 syntax will be assumed, dynamic arrays allocated in fortran
   --nowritemodules The modules will not be written out, assuming
@@ -35,7 +37,7 @@ Usage:
 
   def __init__(self,ifile,pname,f90=1,f90f=0,initialgallot=1,writemodules=1,
                otherinterfacefiles=[],other_scalar_dicts=[],timeroutines=0,
-               otherfortranfiles=[]):
+               otherfortranfiles=[],fcompname=None):
     self.ifile = ifile
     self.pname = pname
     self.f90 = f90
@@ -46,6 +48,7 @@ Usage:
     self.otherinterfacefiles = otherinterfacefiles
     self.other_scalar_dicts = other_scalar_dicts
     self.otherfortranfiles = otherfortranfiles
+    self.fcompname = fcompname
     self.isz = isz # isz defined in cfinterface
 
     self.createmodulefile()
@@ -660,11 +663,10 @@ Usage:
     self.cw('init'+self.pname+'py(void)')
     self.cw('{')
     self.cw('  PyObject *m;')
-    self.cw('  #ifdef NAG')
-    self.cw('    int argc; char **argv;')
-    self.cw('    Py_GetArgcArgv(&argc,&argv);')
-    self.cw('    f90_init(argc,argv);')
-    self.cw('  #endif')
+    if self.fcompname == 'nag':
+      self.cw('  int argc; char **argv;')
+      self.cw('  Py_GetArgcArgv(&argc,&argv);')
+      self.cw('  f90_init(argc,argv);')
 #   self.cw('  ForthonType.tp_getset = '+self.pname+'_getseters;')
 #   self.cw('  ForthonType.tp_methods = '+self.pname+'_methods;')
     self.cw('  if (PyType_Ready(&ForthonType) < 0)')
@@ -752,7 +754,7 @@ Usage:
     wrappergen_derivedtypes.ForthonDerivedType(typelist,self.pname,
                                self.pname+'pymodule.c',
                                self.pname+'_p.F90',self.f90,self.isz,
-                               self.writemodules)
+                               self.writemodules,self.fcompname)
     ###########################################################################
     ###########################################################################
 
@@ -766,6 +768,8 @@ Usage:
     if (self.f90 or self.f90f) and self.writemodules:
       if   self.f90 : dyntype = 'pointer'
       elif self.f90f: dyntype = 'allocatable,target'
+      if   self.fcompname == 'xlf': save = ',SAVE'
+      else:                         save = ''
       for g in groups+hidden_groups:
         self.fw('MODULE '+g)
         # --- Check if any variables are derived types. If so, the module
@@ -782,18 +786,18 @@ Usage:
           if s.group == g:
             self.fw('  '+fvars.ftof(s.type),noreturn=1)
             if s.dynamic: self.fw(',POINTER',noreturn=1)
-            self.fw('::'+s.name,noreturn=1)
+            self.fw(save+'::'+s.name,noreturn=1)
             if s.data: self.fw('='+s.data[1:-1],noreturn=1)
             self.fw('')
         for a in alist:
           if a.group == g:
             if a.dynamic:
               if a.type == 'character':
-                self.fw('  character(len='+a.dims[0].high+'),'+dyntype+'::'+
+                self.fw('  character(len='+a.dims[0].high+'),'+dyntype+save+'::'+
                         a.name,noreturn=1)
                 ndims = len(a.dims) - 1
               else:
-                self.fw('  '+fvars.ftof(a.type)+','+dyntype+'::'+a.name,
+                self.fw('  '+fvars.ftof(a.type)+','+dyntype+save+'::'+a.name,
                         noreturn=1)
                 ndims = len(a.dims)
               if ndims > 0:
@@ -801,10 +805,10 @@ Usage:
               self.fw('')
             else:
               if a.type == 'character':
-                self.fw('  character(len='+a.dims[0].high+')::'+a.name+
+                self.fw('  character(len='+a.dims[0].high+')'+save+'::'+a.name+
                         a.dimstring)
               else:
-                self.fw('  '+fvars.ftof(a.type)+'::'+a.name+a.dimstring)
+                self.fw('  '+fvars.ftof(a.type)+save+'::'+a.name+a.dimstring)
               if a.data:
                 # --- Add line continuation marks if the data line extends over
                 # --- multiple lines.
@@ -1010,7 +1014,7 @@ def get_another_scalar_dict(file_name):
 
 def wrappergenerator_main(argv=None):
   if argv is None: argv = sys.argv[1:]
-  optlist,args=getopt.getopt(argv,'at:d:',
+  optlist,args=getopt.getopt(argv,'at:d:F:',
                      ['f90','f90f','2underscores','nowritemodules',
                       'timeroutines','macros='])
 
@@ -1026,6 +1030,7 @@ def wrappergenerator_main(argv=None):
 
   # --- get other command line options and default actions
   initialgallot = 0
+  fcompname = None
   f90 = 0
   f90f = 0
   writemodules = 1
@@ -1038,6 +1043,7 @@ def wrappergenerator_main(argv=None):
   for o in optlist:
     if o[0]=='-a': initialgallot = 1
     elif o[0]=='-t': machine = o[1]
+    elif o[0]=='-F': fcompname = o[1]
     elif o[0]=='--f90': f90 = 1
     elif o[0]=='--f90f': f90f = 1
     elif o[0]=='-d': get_another_scalar_dict (o[1])
@@ -1047,7 +1053,7 @@ def wrappergenerator_main(argv=None):
 
   cc = PyWrap(ifile,pname,f90,f90f,initialgallot,writemodules,
               otherinterfacefiles,other_scalar_dicts,timeroutines,
-              otherfortranfiles)
+              otherfortranfiles,fcompname)
 
 if __name__ == '__main__':
   wrappergenerator_main(sys.argv[1:])
