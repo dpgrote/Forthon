@@ -31,7 +31,7 @@ appropriate block for the machine.
     self.static = static
     self.defines = []
     self.fopt = ''
-    self.popts = ''
+    self.popt = ''
     self.libs = []
     self.libdirs = []
     self.forthonargs = []
@@ -72,7 +72,9 @@ appropriate block for the machine.
       # --- Note that this error should never happed (except during debugging)
       raise "The fortran compiler definition is not correct, f90free and f90fixed must be defined."
 
-    if debug: self.fopt = '-g'
+    if debug:
+      self.fopt = '-g'
+      self.popt = '-g'
 
   def findfile(self,file):
     if self.machine == 'win32': file = file + '.exe'
@@ -91,7 +93,7 @@ appropriate block for the machine.
       # --- Intel8
       self.f90free  = 'ifort -nofor_main -free -r8 -DIFC -fpp -implicitnone -C90 -Zp8'
       self.f90fixed = 'ifort -nofor_main -132 -r8 -DIFC -fpp -implicitnone -C90 -Zp8'
-      self.popts = '-O'
+      self.popt = '-O'
       flibroot,b = os.path.split(self.findfile('ifort'))
       self.libdirs = [flibroot+'/lib']
       self.libs = ['ifcore','ifport','imf','svml','cxa','irc','unwind']
@@ -110,7 +112,7 @@ appropriate block for the machine.
       # --- Intel
       self.f90free  = 'ifc -132 -r8 -DIFC -fpp -implicitnone -C90 -Zp8'
       self.f90fixed = 'ifc -132 -r8 -DIFC -fpp -implicitnone -C90 -Zp8'
-      self.popts = '-O'
+      self.popt = '-O'
       flibroot,b = os.path.split(self.findfile('ifc'))
       self.libdirs = [flibroot+'/lib']
       self.libs = ['IEPCF90','CEPCF90','F90','intrins','imf','svml','irc','cxa']
@@ -129,7 +131,7 @@ appropriate block for the machine.
       # --- Portland group
       self.f90free  = 'pgf90 -Mextend -Mdclchk -r8'
       self.f90fixed = 'pgf90 -Mextend -Mdclchk -r8'
-      self.popts = '-Mcache_align'
+      self.popt = '-Mcache_align'
       flibroot,b = os.path.split(self.findfile('pgf90'))
       self.libdirs = [flibroot+'/lib']
       self.libs = ['pgf90'] # ???
@@ -225,7 +227,7 @@ appropriate block for the machine.
       # --- Portland group
       self.f90free  = 'pgf90 -Mextend -Mdclchk -r8'
       self.f90fixed = 'pgf90 -Mextend -Mdclchk -r8'
-      self.popts = '-Mcache_align'
+      self.popt = '-Mcache_align'
       flibroot,b = os.path.split(self.findfile('pgf90'))
       self.libdirs = [flibroot+'/Lib']
       self.libs = ['???']
@@ -252,7 +254,7 @@ appropriate block for the machine.
       # --- IBM SP, serial
       self.f90free  = 'xlf95 -c -qmaxmem=8192 -u -qdpc=e -qintsize=4 -qsave=defaultinit -qsuffix=f=f90:cpp=F90 -qfree=f90 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
       self.f90fixed = 'xlf95 -c -qmaxmem=8192 -u -qdpc=e -qintsize=4 -qsave=defaultinit -qfixed=132 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
-      self.popts = '-O'
+      self.popt = '-O'
       self.extra_link_args = ['-bmaxdata:0x70000000','-bmaxstack:0x10000000']
       self.ld = 'xlf -bmaxdata:0x70000000 -bmaxstack:0x10000000 -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp'
       self.libs = ['xlf90','xlopt','xlf','xlomp_ser','pthread','essl']
@@ -265,7 +267,7 @@ appropriate block for the machine.
       # --- IBM SP, parallel
       self.f90free  = 'mpxlf95 -c -qmaxmem=8192 -u -qdpc=e -qintsize=4 -qsave=defaultinit -WF,-DMPIPARALLEL -qsuffix=f=f90:cpp=F90 -qfree=f90 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
       self.f90fixed = 'mpxlf95 -c -qmaxmem=8192 -u -qdpc=e -qintsize=4 -qsave=defaultinit -WF,-DMPIPARALLEL -qfixed=132 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
-      self.popts = '-O'
+      self.popt = '-O'
       self.extra_link_args = ['-bmaxdata:0x70000000','-bmaxstack:0x10000000']
       self.ld = 'mpxlf_r -bmaxdata:0x70000000 -bmaxstack:0x10000000 -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp'
       self.libs = ['xlf90','xlopt','xlf','xlomp_ser','pthread','essl']
@@ -280,7 +282,7 @@ appropriate block for the machine.
       # --- IBM SP, OpenMP
       self.f90free  = 'xlf95_r -c -qmaxmem=8192 -u -qdpc=e -qintsize=4 -qsave=defaultinit -qsuffix=f=f90:cpp=F90 -qfree=f90 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
       self.f90fixed = 'xlf95 -c -qmaxmem=8192 -u -qdpc=e -qintsize=4 -qsave=defaultinit -qfixed=132 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
-      self.popts = '-O'
+      self.popt = '-O'
       self.extra_link_args = ['-bmaxdata:0x70000000','-bmaxstack:0x10000000']
       self.ld = 'xlf95_r -bmaxdata:0x70000000 -bmaxstack:0x10000000 -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp'
       self.libs = ['pthread','xlf90','xlopt','xlf','xlsmp']
