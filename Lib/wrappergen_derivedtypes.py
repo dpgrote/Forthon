@@ -5,12 +5,12 @@ import string,md5
 from cfinterface import *
 
 class ForthonDerivedType:
-  def __init__(self,typelist,pname,c,f,f90,isz,writemodules):
+  def __init__(self,typelist,pname,c,f,f90,isz,writemodules,fcompname):
     if not typelist: return
 
     self.cfile = open(c,'a')
     self.ffile = open(f,'a')
-    self.wrapderivedtypes(typelist,pname,f90,isz,writemodules)
+    self.wrapderivedtypes(typelist,pname,f90,isz,writemodules,fcompname)
     self.cfile.close()
     self.ffile.close()
 
@@ -80,7 +80,7 @@ class ForthonDerivedType:
       self.ffile.write(text+'\n')
 
   # --- This is the routine that does all of the work for derived types
-  def wrapderivedtypes(self,typelist,pname,f90,isz,writemodules):
+  def wrapderivedtypes(self,typelist,pname,f90,isz,writemodules,fcompname):
     for t in typelist:
       self.cw('')
       vlist = t.vlist[:]
@@ -552,17 +552,19 @@ class ForthonDerivedType:
         # --- Note that this fails with the IBM xlf compiler. It takes a
         # --- strict interpretation of the Fortran standard - an error value
         # --- is returned from the deallocate since the pointer points to
-        # --- (what appears to be) a static object.
+        # --- (what appears to be) a static object. So, for now, the
+        # --- the error is ignored and the object (probably) left allocated.
         self.fw('  SUBROUTINE '+t.name+'dealloc(oldobj__)')
         self.fw('    TYPE('+t.name+'),target:: oldobj__')
         self.fw('    TYPE('+t.name+'),pointer:: poldobj__')
         self.fw('    integer:: error')
         self.fw('    poldobj__ => oldobj__')
         self.fw('    DEALLOCATE(poldobj__,STAT=error)')
-        self.fw('    if (error /= 0) then')
-        self.fw('      print*,"ERROR during deallocation of '+t.name+'"')
-        self.fw('      stop')
-        self.fw('    endif')
+        if fcompname != 'xlf':
+          self.fw('    if (error /= 0) then')
+          self.fw('      print*,"ERROR during deallocation of '+t.name+'"')
+          self.fw('      stop')
+          self.fw('    endif')
         self.fw('    RETURN')
         self.fw('  END SUBROUTINE '+t.name+'dealloc')
 
