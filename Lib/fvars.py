@@ -1,5 +1,5 @@
 # Created by David P. Grote, March 6, 1998
-# $Id: fvars.py,v 1.2 2004/05/11 00:50:45 dave Exp $
+# $Id: fvars.py,v 1.3 2005/04/02 00:12:36 dave Exp $
 
 import cfinterface
 
@@ -48,8 +48,8 @@ ftoc_dict = {'integer':'long', 'real':'double', 'logical':'long',
 ftop_dict = {'integer':'LONG', 'real':'DOUBLE', 'logical':'LONG',
              'character':'CHAR','string':'CHAR','void':'VOID',
              'Filedes':'LONG','complex':'CDOUBLE'}
-fto1 = {'integer':'i',   'real':'d',      'logical':'i',   'character':'s',
-        'string':'s','Filedes':'i','complex':'D'}
+fto1 = {'integer':'l',   'real':'d',      'logical':'l',   'character':'s',
+        'string':'s','Filedes':'l','complex':'D'}
 ftof_dict = {'integer':'integer('+cfinterface.isz+')',
              'real':'real(kind=8)',
              'logical':'logical('+cfinterface.isz+')',

@@ -1,11 +1,12 @@
 # Created by David P. Grote, March 6, 1998
-# $Id: cfinterface.py,v 1.2 2004/10/07 19:56:45 dave Exp $
+# $Id: cfinterface.py,v 1.3 2005/04/02 00:12:36 dave Exp $
 
 # Routines which allows c functions to be callable by fortran
 import sys
 import getopt
 import string
 import re
+import struct
 
 # Set default values of inputs
 machine = sys.platform
@@ -34,6 +35,8 @@ except (getopt.error,IndexError):
 # Set size of fortran integers and logicals. This is almost alway 4.
 isz = 'kind=4'
 if machine in ['AXP','T3E','J90']:
+  isz = 'kind=8'
+if struct.calcsize('l') == 8:
   isz = 'kind=8'
 
 #----------------------------------------------------------------------------

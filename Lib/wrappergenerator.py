@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.27 2004/11/10 18:30:39 dave Exp $
+# $Id: wrappergenerator.py,v 1.28 2005/04/02 00:12:36 dave Exp $
 
 import sys
 import os.path
@@ -230,7 +230,7 @@ Usage:
                   '(ForthonObject **cobj__,long *obj,long *createnew);')
       for a in alist:
         self.cw('extern void '+fname(self.fsub('setpointer',a.name))+
-                '(char *p,long *cobj__,long *dims__);')
+                '(char *p,long *cobj__,int *dims__);')
         if re.search('fassign',a.attr):
           self.cw('extern void '+fname(self.fsub('getpointer',a.name))+
                   '(long *i,long *cobj__);')
@@ -243,7 +243,7 @@ Usage:
                   '(ForthonObject **cobj__,long *obj);')
       for a in alist:
         self.cw('extern void '+fname(self.fsub('setpointer',a.name))+
-                '(PyObject *p,long *cobj__,long *dims__);')
+                '(PyObject *p,long *cobj__,int *dims__);')
         if re.search('fassign',a.attr):
           self.cw('extern void '+fname(self.fsub('getpointer',a.name))+
                   '(long *i,long *cobj__);')
@@ -646,7 +646,7 @@ Usage:
     # --- This is only used for routines with the fassign attribute.
     # --- Note that the dimensions are stored in C order.
     self.cw('void '+fname(self.fsub('setarraydims'))+
-            '(Fortranarray *farray,int *dims)')
+            '(Fortranarray *farray,long *dims)')
     self.cw('{')
     if self.f90:
       self.cw('  int id;')
@@ -940,7 +940,7 @@ Usage:
               groupsprinted.append(g)
           self.fw('  USE '+a.group)
           self.fw('  integer('+self.isz+'):: cobj__')
-          self.fw('  integer('+self.isz+'):: dims__('+repr(len(a.dims))+')')
+          self.fw('  integer(4):: dims__('+repr(len(a.dims))+')')
           self.fw('  '+fvars.ftof(a.type)+',target::p__'+
                     self.prefixdimsf(a.dimstring))
           self.fw('  '+a.name+' => p__')
@@ -967,7 +967,7 @@ Usage:
               groupsprinted.append(g)
           self.fw('  USE '+a.group)
           self.fw('  integer('+self.isz+'):: cobj__')
-          self.fw('  integer('+self.isz+'):: dims__('+repr(len(a.dims))+')')
+          self.fw('  integer(4):: dims__('+repr(len(a.dims))+')')
           self.fw('  integer(kind=8)::p__)')
           self.fw('  allocate('+a.name+'('+self.prefixdimsf(a.dimstring)+'))')
           self.fw('  fortranarrayspointerassignment(p__,' + a.name+')')

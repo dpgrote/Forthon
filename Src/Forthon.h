@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.32 2005/03/24 19:15:51 dave Exp $ */
+/* $Id: Forthon.h,v 1.33 2005/04/02 00:10:21 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -190,7 +190,7 @@ static void Forthon_DeleteDicts(ForthonObject *self)
 
 /* ######################################################################### */
 /* # Update the data element of a derived type.                              */
-static void ForthonPackage_updatederivedtype(ForthonObject *self,int i,
+static void ForthonPackage_updatederivedtype(ForthonObject *self,long i,
                                              long createnew)
 {
   ForthonObject *objid;
@@ -229,7 +229,7 @@ static int dimensionsmatch(Fortranarray *farray)
   return result;
 }
 /* ------------------------------------------------------------------------- */
-static void ForthonPackage_updatearray(ForthonObject *self,int i)
+static void ForthonPackage_updatearray(ForthonObject *self,long i)
 {
   Fortranarray *farray = &(self->farrays[i]);
   /* If the getpointer routine exists, call it to assign a value to data.s */
@@ -307,8 +307,8 @@ static void ForthonPackage_staticarrays(ForthonObject *self)
         if ((c=memchr(self->farrays[i].data.s,0,
                      PyArray_SIZE(self->farrays[i].pya))))
           memset(c,(int)' ',
-                 PyArray_SIZE(self->farrays[i].pya)-(int)c+
-                 (int)self->farrays[i].data.s);
+                 (int)(PyArray_SIZE(self->farrays[i].pya)-(long)c+
+                 (long)self->farrays[i].data.s));
       /* Add the array size to totmembytes. */
       totmembytes += PyArray_NBYTES(self->farrays[i].pya);
       }
@@ -319,30 +319,30 @@ static void ForthonPackage_staticarrays(ForthonObject *self)
 /* # Get attribute handlers                                                  */
 static PyObject *Forthon_getscalardouble(ForthonObject *self,void *closure)
 {
-  Fortranscalar *fscalar = &(self->fscalars[(int)closure]);
+  Fortranscalar *fscalar = &(self->fscalars[(long)closure]);
   return Py_BuildValue("d",*((double *)(fscalar->data)));
 }
 /* ------------------------------------------------------------------------- */
 static PyObject *Forthon_getscalarcdouble(ForthonObject *self,void *closure)
 {
-  Fortranscalar *fscalar = &(self->fscalars[(int)closure]);
+  Fortranscalar *fscalar = &(self->fscalars[(long)closure]);
   return PyComplex_FromDoubles(((double *)fscalar->data)[0],
                                ((double *)fscalar->data)[1]);
 }
 /* ------------------------------------------------------------------------- */
 static PyObject *Forthon_getscalarinteger(ForthonObject *self,void *closure)
 {
-  Fortranscalar *fscalar = &(self->fscalars[(int)closure]);
-  return Py_BuildValue("i",*((int *)(fscalar->data)));
+  Fortranscalar *fscalar = &(self->fscalars[(long)closure]);
+  return Py_BuildValue("l",*((long *)(fscalar->data)));
 }
 /* ------------------------------------------------------------------------- */
 static PyObject *Forthon_getscalarderivedtype(ForthonObject *self,void *closure)
 {
-  Fortranscalar *fscalar = &(self->fscalars[(int)closure]);
+  Fortranscalar *fscalar = &(self->fscalars[(long)closure]);
   ForthonObject *objid;
   int createnew=1;
   /* These are attached to variables of fortran derived type */
-  ForthonPackage_updatederivedtype(self,(int)closure,createnew);
+  ForthonPackage_updatederivedtype(self,(long)closure,createnew);
   objid = (ForthonObject *)fscalar->data;
   if (objid != NULL) {
     Py_INCREF(objid);
@@ -354,15 +354,15 @@ static PyObject *Forthon_getscalarderivedtype(ForthonObject *self,void *closure)
 /* ------------------------------------------------------------------------- */
 static PyObject *Forthon_getarray(ForthonObject *self,void *closure)
 {
-  Fortranarray *farray = &(self->farrays[(int)closure]);
+  Fortranarray *farray = &(self->farrays[(long)closure]);
   /* Update the array if it is dynamic and fortran assignable. */
-  ForthonPackage_updatearray(self,(int)closure);
+  ForthonPackage_updatearray(self,(long)closure);
   /* Increment the python object counter to prepare handing it to the */
   /* interpreter. */
-  Py_XINCREF(farray->pya);
   if (farray->pya == NULL) {
     PyErr_SetString(ErrorObject,"Array is unallocated");
     return NULL;}
+  Py_XINCREF(farray->pya);
   if (farray->pya->nd==1 &&
       farray->pya->strides[0]==farray->pya->descr->elsize)
     farray->pya->flags |= CONTIGUOUS;
@@ -385,7 +385,7 @@ static PyObject *Forthon_getarraydict(ForthonObject *self,void *closure)
 /* Memory allocation routines */
 static int Forthon_freearray(ForthonObject *self,void *closure)
 {
-  Fortranarray *farray = &(self->farrays[(int)closure]);
+  Fortranarray *farray = &(self->farrays[(long)closure]);
 
   if (farray->dynamic) {
     if (farray->pya != NULL) {
@@ -408,7 +408,7 @@ static int Forthon_freearray(ForthonObject *self,void *closure)
 static int Forthon_setscalardouble(ForthonObject *self,PyObject *value,
                                    void *closure)
 {
-  Fortranscalar *fscalar = &(self->fscalars[(int)closure]);
+  Fortranscalar *fscalar = &(self->fscalars[(long)closure]);
   double lv;
   int e;
   if (value == NULL) {
@@ -426,7 +426,7 @@ static int Forthon_setscalardouble(ForthonObject *self,PyObject *value,
 static int Forthon_setscalarcdouble(ForthonObject *self,PyObject *value,
                                     void *closure)
 {
-  Fortranscalar *fscalar = &(self->fscalars[(int)closure]);
+  Fortranscalar *fscalar = &(self->fscalars[(long)closure]);
   Py_complex lv;
   int e;
   if (value == NULL) {
@@ -444,15 +444,15 @@ static int Forthon_setscalarcdouble(ForthonObject *self,PyObject *value,
 static int Forthon_setscalarinteger(ForthonObject *self,PyObject *value,
                                     void *closure)
 {
-  Fortranscalar *fscalar = &(self->fscalars[(int)closure]);
-  int lv;
+  Fortranscalar *fscalar = &(self->fscalars[(long)closure]);
+  long lv;
   int e;
   if (value == NULL) {
     PyErr_SetString(PyExc_TypeError, "Cannot delete the attribute");
     return -1;}
-  e = PyArg_Parse(value,"i",&lv);
+  e = PyArg_Parse(value,"l",&lv);
   if (e) {
-    memcpy((fscalar->data),&lv,sizeof(int));}
+    memcpy((fscalar->data),&lv,sizeof(long));}
   else {
     PyErr_SetString(ErrorObject,"Right hand side has incorrect type");
     return -1;}
@@ -462,7 +462,7 @@ static int Forthon_setscalarinteger(ForthonObject *self,PyObject *value,
 static int Forthon_setscalarderivedtype(ForthonObject *self,PyObject *value,
                                         void *closure)
 {
-  Fortranscalar *fscalar = &(self->fscalars[(int)closure]);
+  Fortranscalar *fscalar = &(self->fscalars[(long)closure]);
   void *d;
   int createnew;
   PyObject *oldobj;
@@ -471,7 +471,7 @@ static int Forthon_setscalarderivedtype(ForthonObject *self,PyObject *value,
   /* With a NULL value, the object will be decref'ed so there's no */
   /* point creating a new one. */
   createnew = (value != NULL);
-  ForthonPackage_updatederivedtype(self,(int)closure,createnew);
+  ForthonPackage_updatederivedtype(self,(long)closure,createnew);
 
   if (value == NULL) {
     if (fscalar->dynamic) {
@@ -507,7 +507,7 @@ static int Forthon_setscalarderivedtype(ForthonObject *self,PyObject *value,
 static int Forthon_setarray(ForthonObject *self,PyObject *value,
                             void *closure)
 {
-  Fortranarray *farray = &(self->farrays[(int)closure]);
+  Fortranarray *farray = &(self->farrays[(long)closure]);
   int j,k,r,d,setit;
   PyObject *pyobj;
   PyArrayObject *ax;
@@ -581,7 +581,7 @@ static int Forthon_setarray(ForthonObject *self,PyObject *value,
                       "Right hand side has incorrect dimensions");}}
   else {
     /* Update the array if it is dynamic and fortran assignable. */
-    ForthonPackage_updatearray(self,(int)closure);
+    ForthonPackage_updatearray(self,(long)closure);
     /* At this point, the array must already have been allocated */
     if (farray->pya == NULL) {
       Py_XDECREF(ax);
@@ -737,7 +737,7 @@ static char getdict_doc[] = "Builds a dictionary, including every variable in th
 static PyObject *ForthonPackage_getdict(PyObject *_self_,PyObject *args)
 {
   ForthonObject *self = (ForthonObject *)_self_;
-  int j;
+  long j;
   PyObject *dict=NULL;
   PyObject *v,*n;
   Fortranscalar *s;
@@ -988,7 +988,7 @@ static PyObject *ForthonPackage_gallot(PyObject *_self_,PyObject *args)
           }
         else if (self->farrays[i].type == PyArray_LONG) {
           for (j=0;j<PyArray_SIZE(self->farrays[i].pya);j++)
-            *((int *)((self->farrays[i].pya)->data)+j) = self->farrays[i].initvalue;
+            *((long *)((self->farrays[i].pya)->data)+j) = self->farrays[i].initvalue;
           }
         else if (self->farrays[i].type == PyArray_DOUBLE) {
           for (j=0;j<PyArray_SIZE(self->farrays[i].pya);j++)
@@ -1095,7 +1095,7 @@ static PyObject *ForthonPackage_gchange(PyObject *_self_,PyObject *args)
           }
         else if (self->farrays[i].type == PyArray_LONG) {
           for (j=0;j<PyArray_SIZE(ax);j++)
-            *((int *)(ax->data)+j) = self->farrays[i].initvalue;
+            *((long *)(ax->data)+j) = self->farrays[i].initvalue;
           }
         else if (self->farrays[i].type == PyArray_DOUBLE) {
           for (j=0;j<PyArray_SIZE(ax);j++)
@@ -1155,7 +1155,7 @@ static PyObject *ForthonPackage_getfobject(PyObject *_self_,PyObject *args)
 {
   ForthonObject *self = (ForthonObject *)_self_;
   if (!PyArg_ParseTuple(args,"")) return NULL;
-  return Py_BuildValue("i",(int)self->fobj);
+  return Py_BuildValue("l",(long)self->fobj);
 }
 
 /* ######################################################################### */
@@ -1474,7 +1474,8 @@ static char gfree_doc[] = "Frees the memory of all dynamic arrays in a group";
 static PyObject *ForthonPackage_gfree(PyObject *_self_,PyObject *args)
 {
   ForthonObject *self = (ForthonObject *)_self_;
-  int i,r=0;
+  long i;
+  int r=0;
   char *s=NULL;
   PyObject *star;
 
@@ -1771,7 +1772,7 @@ static void Forthon_dealloc(ForthonObject *self)
 /* # Get attribute handler                                                   */
 static PyObject *Forthon_getattro(ForthonObject *self,PyObject *oname)
 {
-  int i;
+  long i;
   PyObject *pyi;
   PyObject *meth;
   char *name;
@@ -1780,7 +1781,7 @@ static PyObject *Forthon_getattro(ForthonObject *self,PyObject *oname)
   /* If it is not found, the pyi is returned as NULL */
   pyi = PyDict_GetItem(self->scalardict,oname);
   if (pyi != NULL) {
-    PyArg_Parse(pyi,"i",&i);
+    PyArg_Parse(pyi,"l",&i);
     if (self->fscalars[i].type == PyArray_DOUBLE) {
       return Forthon_getscalardouble(self,(void *)i);}
     else if (self->fscalars[i].type == PyArray_CDOUBLE) {
@@ -1795,7 +1796,7 @@ static PyObject *Forthon_getattro(ForthonObject *self,PyObject *oname)
   /* If it is not found, the pyi is returned as NULL */
   pyi = PyDict_GetItem(self->arraydict,oname);
   if (pyi != NULL) {
-    PyArg_Parse(pyi,"i",&i);
+    PyArg_Parse(pyi,"l",&i);
     return Forthon_getarray(self,(void *)i);}
 
   /* Now convert oname into the actual string, checking for errors. */
@@ -1820,14 +1821,14 @@ static PyObject *Forthon_getattro(ForthonObject *self,PyObject *oname)
 /* # Set attribute handler                                                   */
 static int Forthon_setattro(ForthonObject *self,PyObject *oname,PyObject *v)
 {
-  int i;
+  long i;
   PyObject *pyi;
 
   /* Get index for variable from scalar dictionary */
   /* If it is not found, the pyi is returned as NULL */
   pyi = PyDict_GetItem(self->scalardict,oname);
   if (pyi != NULL) {
-    PyArg_Parse(pyi,"i",&i);
+    PyArg_Parse(pyi,"l",&i);
     if (self->fscalars[i].type == PyArray_DOUBLE) {
       return Forthon_setscalardouble(self,v,(void *)i);}
     else if (self->fscalars[i].type == PyArray_CDOUBLE) {
@@ -1842,7 +1843,7 @@ static int Forthon_setattro(ForthonObject *self,PyObject *oname,PyObject *v)
   /* If it is not found, the pyi is returned as NULL */
   pyi = PyDict_GetItem(self->arraydict,oname);
   if (pyi != NULL) {
-    PyArg_Parse(pyi,"i",&i);
+    PyArg_Parse(pyi,"l",&i);
     return Forthon_setarray(self,v,(void *)i);}
 
   PyErr_SetString(ErrorObject,"no such attribute");
@@ -1853,7 +1854,7 @@ static int Forthon_setattro(ForthonObject *self,PyObject *oname,PyObject *v)
 /* # Create output routines                                                  */
 static int Forthon_print(ForthonObject *self, FILE *fp, int flags)
 {
-  fprintf(fp,"<%s instance at address = %d>",self->name,(int)self);
+  fprintf(fp,"<%s instance at address = %d>",self->name,(long)self);
   return 0;
 }
 

@@ -129,7 +129,7 @@ class ForthonDerivedType:
                   '(ForthonObject **cobj__,char *obj,long *createnew__);')
       for a in alist:
         self.cw('extern void '+fname(self.fsub(t,'setpointer',a.name))+
-                  '(char *p,char *fobj,long *dims__);')
+                  '(char *p,char *fobj,int *dims__);')
         if a.dynamic or re.search('fassign',a.attr):
           self.cw('extern void '+fname(self.fsub(t,'getpointer',a.name))+
                   '(long *i,char* fobj);')
@@ -415,8 +415,11 @@ class ForthonDerivedType:
       # --- fortran and the last argument should be shape(array).
       # --- This is only used for routines with the fassign attribute.
       # --- Note that the dimensions are stored in C order.
+      # --- I should check the fortran standard - for the dims argument, the
+      # --- fortran is passing in shape(x). Apparently, it is the same length
+      # --- as longs.
       self.cw('void '+fname(self.fsub(t,'setarraydims'))+
-              '(Fortranarray *farray,int *dims)')
+              '(Fortranarray *farray,long *dims)')
       self.cw('{')
       if f90:
         self.cw('  int id;')
@@ -774,7 +777,7 @@ class ForthonDerivedType:
           self.fw('SUBROUTINE '+self.fsub(t,'setpointer',a.name)+'(p__,obj__,dims__)')
           self.fw('  USE '+t.name+'module')
           self.fw('  TYPE('+t.name+'):: obj__')
-          self.fw('  integer('+isz+'):: dims__('+repr(len(a.dims))+')')
+          self.fw('  integer(4):: dims__('+repr(len(a.dims))+')')
           self.fw('  '+fvars.ftof(a.type)+',target:: '+
                   'p__'+self.prefixdimsf(a.dimstring,sdict)+'')
           self.fw('  obj__%'+a.name+' => p__')

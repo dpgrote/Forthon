@@ -4,6 +4,7 @@ for it.
 
 import sys,os,re
 import string
+import struct
 
 class FCompiler:
   """
@@ -101,8 +102,8 @@ appropriate block for the machine.
         (self.fcompname=='intel8' or self.fcompname is None)):
       self.fcompname = 'ifort'
       # --- Intel8
-      self.f90free  = 'ifort -nofor_main -free -r8 -DIFC -fpp -implicitnone -C90 -Zp8'
-      self.f90fixed = 'ifort -nofor_main -132 -r8 -DIFC -fpp -implicitnone -C90 -Zp8'
+      self.f90free  = 'ifort -nofor_main -free -r8 -DIFC -fpp -implicitnone -Zp8 -fPIC'
+      self.f90fixed = 'ifort -nofor_main -132 -r8 -DIFC -fpp -implicitnone -Zp8 -fPIC'
       self.popt = '-O'
       flibroot,b = os.path.split(self.findfile('ifort'))
       self.libdirs = [flibroot+'/lib']
@@ -112,6 +113,10 @@ appropriate block for the machine.
         self.fopt = '-O3 -xK -tpp6 -ip -unroll -prefetch'
       elif re.search('AMD Athlon',cpuinfo):
         self.fopt = '-O3 -ip -unroll -prefetch'
+      elif struct.calcsize('l') == 8:
+        self.fopt = '-O3 -xW -tpp7 -ip -unroll -prefetch'
+        self.f90free = self.f90free + ' -DX86_64 -i8'
+        self.f90fixed = self.f90fixed + ' -DX86_64 -i8'
       else:
         self.fopt = '-O3 -xN -tpp7 -ip -unroll -prefetch'
       return 1
