@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.8 2004/04/01 16:33:09 dave Exp $
+# $Id: wrappergenerator.py,v 1.9 2004/04/08 19:30:44 dave Exp $
 
 import sys
 import os.path
@@ -742,7 +742,7 @@ Usage:
       if s.dynamic: continue
       if s.derivedtype:
         self.fw('  call init'+s.type+'py('+repr(i)+','+s.name+','+
-                s.name+'%cobj__)')
+                s.name+'%cobj__,1)')
         self.fw('  call '+self.pname+'setderivedtypepointers('+repr(i)+','+s.name+'%cobj__)')
       else:
         self.fw('  call '+self.pname+'setscalarpointers('+repr(i)+','+s.name,

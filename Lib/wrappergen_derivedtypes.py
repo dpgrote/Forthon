@@ -96,7 +96,8 @@ class ForthonDerivedType:
 
       #########################################################################
       # --- Print out the external commands
-      self.cw('extern void '+fname(t.name+'passpointers')+'(char *fobj);')
+      self.cw('extern void '+fname(t.name+'passpointers')+'(char *fobj,'+
+                                                       'long *setinitvalues);')
       self.cw('extern PyObject *'+fname(pname+'_'+t.name+'newf')+'(void);')
 
       # --- setpointer and getpointer routine for f90
@@ -241,7 +242,8 @@ class ForthonDerivedType:
       #########################################################################
       # --- And finally, the initialization function
       self.cw('void '+fname('init'+t.name+'py')+
-                   '(long *i,char *fobj,ForthonObject **cobj__)')
+                   '(long *i,char *fobj,ForthonObject **cobj__,'+
+                    'long *setinitvalues)')
       self.cw('{')
       self.cw('  ForthonObject *obj;')
       self.cw('  obj=(ForthonObject *) PyObject_NEW(ForthonObject,'+
@@ -261,7 +263,7 @@ class ForthonDerivedType:
       self.cw('  import_array();')
       self.cw('  Forthon_BuildDicts(obj);')
       self.cw('  ForthonPackage_allotdims(obj);')
-      self.cw('  '+fname(t.name+'passpointers')+'(fobj);')
+      self.cw('  '+fname(t.name+'passpointers')+'(fobj,setinitvalues);')
       self.cw('  ForthonPackage_staticarrays(obj);')
       self.cw('}')
 
@@ -346,7 +348,7 @@ class ForthonDerivedType:
         for v in slist + alist:
           if v.derivedtype:
             if v.type not in printedtypes:
-              self.fw('USE '+v.type+'module')
+              self.fw('  USE '+v.type+'module')
               printedtypes.append(v.type)
 
         self.fw('  SAVE')
@@ -402,7 +404,7 @@ class ForthonDerivedType:
         for s in slist:
           if s.dynamic:
             self.fw('    NULLIFY(newobj__%'+s.name+')')
-        self.fw('    call InitPyRef'+t.name+'(newobj__)')
+        self.fw('    call InitPyRef'+t.name+'(newobj__,1)')
         self.fw('    RETURN')
         self.fw('  END FUNCTION New'+t.name+'')
         self.fw('  SUBROUTINE Del'+t.name+'(oldobj__)')
@@ -423,45 +425,72 @@ class ForthonDerivedType:
       # --- out.
       # --- The InitPyRef and DelPyRef are called by the New and Del routines
       # --- if the modules are written. They are also meant to be explicitly
-      # --- called from the users Fortran code if the create and deletion
+      # --- called from the users Fortran code if the creation and deletion
       # --- of derived type instances is down there.
-      self.fw('SUBROUTINE InitPyRef'+t.name+'(newobj__)')
+      # --- The memory handling routines check if the cobj__ has been
+      # --- set - if not, then set it. Also delete it afterwards so there
+      # --- is not a memory leak. Note that the check may not always work
+      # --- since some compilers may leave garbage in cobj__ upon object
+      # --- creation.
+      self.fw('SUBROUTINE InitPyRef'+t.name+'(newobj__,setinitvalues)')
       self.fw('  USE '+t.name+'module')
       self.fw('  TYPE('+t.name+'):: newobj__')
-      self.fw('  call init'+t.name+'py(-1,newobj__,newobj__%cobj__)')
+      self.fw('  INTEGER('+isz+'):: setinitvalues')
+      self.fw('  call init'+t.name+'py(-1,newobj__,newobj__%cobj__,'+
+                                       'setinitvalues)')
       self.fw('  RETURN')
       self.fw('END SUBROUTINE InitPyRef'+t.name)
       self.fw('SUBROUTINE DelPyRef'+t.name+'(oldobj__)')
       self.fw('  USE '+t.name+'module')
       self.fw('  TYPE('+t.name+'):: oldobj__')
       self.fw('  call del'+t.name+'py(oldobj__%cobj__)')
+      self.fw('  oldobj__%cobj__ = 0')
       self.fw('  RETURN')
       self.fw('END SUBROUTINE DelPyRef'+t.name)
       self.fw('SUBROUTINE '+t.name+'allot(obj__)')
       self.fw('  USE '+t.name+'module')
       self.fw('  TYPE('+t.name+'):: obj__')
+      self.fw('  logical:: delcobj__ = .false.')
+      self.fw('  if (obj__%cobj__ == 0) then')
+      self.fw('    call InitPyRef'+t.name+'(obj__,0)')
+      self.fw('    delcobj__ = .true.')
+      self.fw('  endif')
       self.fw('  CALL tallot(obj__%cobj__)')
+      self.fw('  if (delcobj__) call DelPyRef'+t.name+'(obj__)')
       self.fw('  RETURN')
       self.fw('END SUBROUTINE '+t.name+'allot')
       self.fw('SUBROUTINE '+t.name+'change(obj__)')
       self.fw('  USE '+t.name+'module')
       self.fw('  TYPE('+t.name+'):: obj__')
+      self.fw('  logical:: delcobj__ = .false.')
+      self.fw('  if (obj__%cobj__ == 0) then')
+      self.fw('    call InitPyRef'+t.name+'(obj__,0)')
+      self.fw('    delcobj__ = .true.')
+      self.fw('  endif')
       self.fw('  CALL tchange(obj__%cobj__)')
+      self.fw('  if (delcobj__) call DelPyRef'+t.name+'(obj__)')
       self.fw('  RETURN')
       self.fw('END SUBROUTINE '+t.name+'change')
       self.fw('SUBROUTINE '+t.name+'free(obj__)')
       self.fw('  USE '+t.name+'module')
       self.fw('  TYPE('+t.name+'):: obj__')
+      self.fw('  logical:: delcobj__ = .false.')
+      self.fw('  if (obj__%cobj__ == 0) then')
+      self.fw('    call InitPyRef'+t.name+'(obj__,0)')
+      self.fw('    delcobj__ = .true.')
+      self.fw('  endif')
       self.fw('  CALL tfree(obj__%cobj__)')
+      self.fw('  if (delcobj__) call DelPyRef'+t.name+'(obj__)')
       self.fw('  RETURN')
       self.fw('END SUBROUTINE '+t.name+'free')
 
       #########################################################################
-      self.fw('SUBROUTINE '+t.name+'passpointers(obj__)')
+      self.fw('SUBROUTINE '+t.name+'passpointers(obj__,setinitvalues)')
 
       # --- Write out the Use statements
       self.fw('  USE '+t.name+'module')
       self.fw('  TYPE('+t.name+'):: obj__')
+      self.fw('  INTEGER('+isz+'):: setinitvalues')
  
       # --- Write out calls to c routine passing down pointers to scalars
       for i in range(len(slist)):
@@ -469,11 +498,10 @@ class ForthonDerivedType:
         if s.dynamic: continue
         if s.derivedtype:
           self.fw('  CALL init'+s.type+'py(-1,obj__%'+s.name+
-                  ',obj__%'+s.name+'%cobj__)')
+                  ',obj__%'+s.name+'%cobj__,setinitvalues)')
           self.fw('  CALL '+t.name+'setderivedtypepointers('+
                   repr(i)+',obj__%'+s.name+'%cobj__,obj__%cobj__)')
         else:
-          if s.data: self.fw('  obj__%'+s.name+' = '+s.data[1:-1])
           self.fw('  CALL '+t.name+'setscalarpointers('+
                   repr(i)+',obj__%'+s.name+',obj__%cobj__',noreturn=1)
           if machine == 'J90':
@@ -503,6 +531,16 @@ class ForthonDerivedType:
             if a.data: self.fw('  obj__%'+a.name+' = '+a.data[1:-1])
             self.fw('  CALL '+t.name+'setarraypointers('+repr(i)+
                     ',obj__%'+a.name+',obj__%cobj__'+str)
+
+      # --- Set the initial values only if the input flag is 1.
+      self.fw('  if (setinitvalues == 1) then')
+      for s in slist:
+        if s.dynamic or s.derivedtype or not s.data: continue
+        self.fw('    obj__%'+s.name+' = '+s.data[1:-1])
+      for a in alist:
+        if a.dynamic or a.derivedtype or not a.data: continue
+        self.fw('    obj__%'+a.name+' = '+a.data[1:-1])
+      self.fw('  endif')
 
       # --- Finish the routine
       self.fw('  RETURN')
@@ -574,7 +612,7 @@ class ForthonDerivedType:
       for s in slist:
         if s.dynamic:
           self.fw('  NULLIFY(newobj__%'+s.name+')')
-      self.fw('  call InitPyRef'+t.name+'(newobj__)')
+      self.fw('  call InitPyRef'+t.name+'(newobj__,1)')
       self.fw('  cobj__ = newobj__%cobj__')
       self.fw('  RETURN')
       self.fw('END')
