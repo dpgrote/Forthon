@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.21 2004/09/28 20:31:23 dave Exp $
+# $Id: wrappergenerator.py,v 1.22 2004/10/01 19:41:13 dave Exp $
 
 import sys
 import os.path
@@ -185,6 +185,7 @@ Usage:
 
     # --- Print out the external commands
     self.cw('extern void '+fname(self.fsub('passpointers'))+'(void);')
+    self.cw('extern void '+fname(self.fsub('nullifypointers'))+'(void);')
     if not self.f90 and not self.f90f:
       self.cw('extern void '+self.pname+'data();')
 
@@ -691,6 +692,7 @@ Usage:
     self.cw('  Forthon_BuildDicts('+self.pname+'Object);')
     self.cw('  ForthonPackage_allotdims('+self.pname+'Object);')
     self.cw('  '+fname(self.fsub('passpointers'))+'();')
+    self.cw('  '+fname(self.fsub('nullifypointers'))+'();')
     self.cw('  ForthonPackage_staticarrays('+self.pname+'Object);')
     if not self.f90 and not self.f90f:
       self.cw('  '+fname(self.fsub('data'))+'();')
@@ -859,6 +861,27 @@ Usage:
     self.fw('  return')
     self.fw('end')
 
+    ###########################################################################
+    # --- Nullifies the pointers of all dynamic variables. This is needed
+    # --- since in some compilers, the associated routine returns
+    # --- erroneous information if the status of a pointer is undefined.
+    # --- Pointers must be explicitly nullified in order to get
+    # --- associated to return a false value.
+    self.fw('SUBROUTINE '+self.fsub('nullifypointers')+'()')
+
+    # --- Write out the Use statements
+    for g in groups+hidden_groups:
+      self.fw('  USE '+g)
+ 
+    for i in range(len(slist)):
+      s = slist[i]
+      if s.dynamic: self.fw('  NULLIFY('+s.name+')')
+    for i in range(len(alist)):
+      a = alist[i]
+      if a.dynamic: self.fw('  NULLIFY('+a.name+')')
+
+    self.fw('  return')
+    self.fw('end')
     ###########################################################################
     # --- Write routine for each dynamic variable which gets the pointer from the
     # --- wrapper
