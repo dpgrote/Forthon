@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.26 2004/10/12 22:46:54 dave Exp $
+# $Id: wrappergenerator.py,v 1.27 2004/11/10 18:30:39 dave Exp $
 
 import sys
 import os.path
@@ -696,6 +696,8 @@ Usage:
                 self.pname+'Object);')
     self.cw('  ErrorObject = PyString_FromString("'+self.pname+'py.error");')
     self.cw('  PyModule_AddObject(m,"'+self.pname+'error", ErrorObject);')
+    self.cw('  PyModule_AddObject(m,"fcompname",'+
+               'PyString_FromString("'+self.fcompname+'"));')
     self.cw('  if (PyErr_Occurred())')
     self.cw('    Py_FatalError("can not initialize module '+self.pname+'");')
     self.cw('  import_array();')
