@@ -35,7 +35,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.5 2004/02/10 17:14:11 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.6 2004/03/16 17:25:30 dave Exp $"
 
 
 # --- The following routines deal with multiple packages. The ones setting
@@ -69,6 +69,10 @@ If name is not given, then returns a list of all registered packages."""
   setcurrpkg(name)
   _pkg_list.remove(name)
   _pkg_list.insert(0,name)
+
+def packageobject(name):
+  """Returns the package object, rather than the package name"""
+  return _pkg_dict[name]
 
 def gallot(group='*',iverbose=0):
   """Allocates all dynamic arrays in the specified group.
