@@ -6,20 +6,6 @@ c========================================================================
           integer(kind=4):: j
           real(kind=8):: b
         end type Type2
-      contains
-        ! This function must be added for each derived type, replacing 'Type2'
-        ! with the name of the type.
-        function NewType2() RESULT(newobj__)
-          type(Type2),pointer:: newobj__
-          integer:: error
-          allocate(newobj__,STAT=error)
-          if (error /= 0) then
-            print*,"ERROR during allocation of Type2"
-            stop
-          endif
-          call initType2py(-1,newobj__,newobj__%cobj__)
-          return
-        end function NewType2
       end module Type2module
 c========================================================================
       module Module2
@@ -35,6 +21,17 @@ c========================================================================
       real(8):: aa
       t1%j = ii
       t1%b = aa
+      allocate(t2)
+      call NewPyRefType2(t2) ! Must be added so t2 is accessible from python
+      t2%j = ii**2
+      t2%b = aa**2
+      return
+      end
+c========================================================================
+      subroutine testsub3()
+      use Module2
+      call DelPyRefType2(t2) ! Must be added to clean up memory
+      deallocate(t2)
       return
       end
 c========================================================================
