@@ -214,7 +214,7 @@ fcompiler = FCompiler(machine=machine,
 # --- Create some locals which are needed for strings below.
 f90free = fcompiler.f90free
 f90fixed = fcompiler.f90fixed
-popts = fcompiler.popts
+popt = fcompiler.popt
 forthonargs = forthonargs + fcompiler.forthonargs
 if fopt is None: fopt = fcompiler.fopt
 extra_link_args = fcompiler.extra_link_args
@@ -315,7 +315,7 @@ Forthon.c:%(forthonhome)s%(pathsep)sForthon.c
 	$(PYPREPROC) %(forthonhome)s%(pathsep)sForthon.c Forthon.c
 
 %(pkg)s_p%(osuffix)s:%(pkg)s_p.%(free_suffix)s %(wrapperdependency)s
-	%(f90free)s %(popts)s -c %(pkg)s_p.%(free_suffix)s
+	%(f90free)s %(popt)s %(fargs)s -c %(pkg)s_p.%(free_suffix)s
 %(pkg)spymodule.c %(pkg)s_p.%(free_suffix)s:%(interfacefile)s
 	%(python)s -c "from Forthon.wrappergenerator import wrappergenerator_main;wrappergenerator_main()" \\
 	%(f90)s -t %(machine)s %(forthonargs)s %(initialgallot)s \\
