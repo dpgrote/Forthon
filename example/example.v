@@ -92,7 +92,10 @@ example
 # Derived types are defined similarly to modules, except that the name is
 # preceded with %'s (instead of *'s). The % reflects the use of that character
 # in fortran to refer to elements of a derived type. Initial values can be
-# given, but not all compilers can deal with them (it is a Fortran95 feature).
+# given, but since not all compilers can deal with them (it is a Fortran95
+# feature), they are treated differently than for plain variables. The
+# only difference is that non-dynamic arrays can only be given a scalar
+# value (the same as dynamic arrays).
 # For all array pointers in a derived type, any variables used in the shape
 # must be an element of that derived type.
 #
@@ -123,11 +126,11 @@ xx real
 
 %%%%% Type1:
 $ Sample derived type
-j integer # Integer element of a derived type
+j integer /7/ # Integer element of a derived type
 b real # Real element of a derived type
-e(10) real # Static array element of a derived type
+e(10) real /8./ # Static array element of a derived type
 m integer # Size of array pointer in derived type
-y(0:m) _real # Array pointer element of a derived type
+y(0:m) _real /3./ # Array pointer element of a derived type
 static2 Type2 # Pointer to derived type object of the same type
 next _Type1 # Pointer to derived type object of the same type
 xxx(:,:) _real
