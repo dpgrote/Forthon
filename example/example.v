@@ -112,7 +112,7 @@ d(3) real /3*10./ # Sample static array
 n integer /0/ # Size of sample array pointer
 x(0:n) _real /1/ # Sample array pointer
 z(:) _real # Sample array pointer with undefined bounds.
-xxx(2:3,n:20) _real # Sample multidimensional array
+xxx(:,:) _real # Sample multidimensional array
 l1 logical /.false./ # Sample logical variable
 realvar real /1./
 varreal real /2./

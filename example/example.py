@@ -1,3 +1,4 @@
+from Forthon import *
 from examplepy import *
 
 print 'Testing basic call to fortran routine'
@@ -51,6 +52,23 @@ testsub6(example.t2)
 print 'Should be'
 print ' t%j =           20'
 print ''
+
+
+print 'Testing array assignment of the form pkg.x = x'
+xx = fzeros((2,2),'d')
+example.xxx = xx
+xx[1,1] = 1
+print 'The following two arrays should be identical, since only pointer'
+print 'referencing is done if the RHS array has fortran ordering.'
+print xx
+print example.xxx
+xx = zeros((2,2),'d')
+example.xxx = xx
+xx[1,1] = 1
+print 'The following two arrays should be different, since a copy is done'
+print 'if the RHS array has C ordering.'
+print xx
+print example.xxx
 
 
 print 'Tests complete'
