@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.15 2004/06/24 16:19:49 dave Exp $ */
+/* $Id: Forthon.h,v 1.16 2004/07/06 20:58:10 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -292,7 +292,7 @@ static PyObject *Forthon_getarray(ForthonObject *self,void *closure)
   /* If the getpointer routine exists, call it to assign a value to data.s */
   if (farray->getpointer != NULL) {
     (farray->getpointer)(farray,self->fobj);
-    /* If the data.s is NULL, then the fortran array is not associated */
+    /* If the data.s is NULL, then the fortran array is not associated. */
     /* Decrement the python object counter if there is one. */
     /* Set the pointer to the python object to NULL. */
     if (farray->data.s == NULL) {
@@ -342,6 +342,25 @@ static PyObject *Forthon_getarraydict(ForthonObject *self,void *closure)
 {
   Py_INCREF(self->arraydict);
   return self->arraydict;
+}
+
+/* ######################################################################### */
+/* Memory allocation routines */
+static int Forthon_freearray(ForthonObject *self,void *closure)
+{
+  Fortranarray *farray = &(self->farrays[(int)closure]);
+
+  if (farray->dynamic) {
+    if (farray->pya != NULL) {
+      /* Subtract the array size from totmembytes. */
+      totmembytes -= PyArray_NBYTES(farray->pya);
+      Py_XDECREF(farray->pya);
+      farray->pya = NULL;
+%py_ifelse(f90 and not f90f,0,'*(farray->data.d)=0;','')
+%py_ifelse(f90 and not f90f,1,'(farray->setpointer)(0,(self->fobj),farray->dimensions);','')
+      }
+    }
+  return 0;
 }
 
 /* ######################################################################### */
@@ -428,27 +447,48 @@ static int Forthon_setarray(ForthonObject *self,PyObject *value,
   PyArrayObject *ax;
 
   if (value == NULL) {
-    PyErr_SetString(PyExc_TypeError, "Cannot delete the attribute");
-    return -1;}
+    /* Deallocate the array. */
+    r = Forthon_freearray(self,closure);
+    return r;
+    }
 
   PyArg_Parse(value, "O", &pyobj);
   FARRAY_FROMOBJECT(ax,pyobj,farray->type);
-  if (farray->dynamic && ax->nd == farray->nd) {
-    setit = 1;
+  if (farray->dynamic && ax->nd == farray->nd ||
+      (farray->dynamic == 3 && farray->nd == 1 && ax->nd == 0 &&
+       farray->pya == NULL)) {
+    /* The long list of checks above looks for the special case of assigning */
+    /* a scalar to a 1-D deferred-shape array that is unallocated. In that   */
+    /* case, a 1-D array is created with the value of the scalar. If the     */
+    /* array is already allocated, the code below broadcasts the scalar over */
+    /* the array. */
     if (farray->dynamic == 3) {
-      /* This type of dynamic array does not have the dimensions */
-      /* specified so they can take on whatever is input. */
+      /* This type of dynamic array (deferred-shape) does not have the */
+      /* dimensions specified so they can take on whatever is input. */
       for (j=0;j<ax->nd;j++) {
         k = ax->nd - j - 1;
         farray->dimensions[j] = ax->dimensions[k];
         }
       }
+      if (ax->nd == 0) {
+        /* Special handling is needed when a 0-D array is assigned to a      */
+        /* 1-D deferred-shape array. The Numeric routine used by             */
+        /* FARRAY_FROMOBJECT returns a 0-D array when the input is a scalar. */
+        /* This can cause problems elsewhere, so it is replaced with a 1-D   */
+        /* array of length 1.                                                */
+        farray->dimensions[0] = 1;
+        Py_XDECREF(ax);
+        ax = (PyArrayObject *)PyArray_FromDims(1,farray->dimensions,
+                                               farray->type);
+        ax->descr->setitem(pyobj, ax->data);
+        }
     else {
       /* Call the routine which sets the dimensions */
       /* Note that this sets the dimensions for everything in the group. */
       /* This may cause some slow down, but is hard to get around. */
       (*self->setdims)(farray->group,self);
       }
+    setit = 1;
     for (j=0;j<ax->nd;j++) {
       k = ax->nd - j - 1;
       if (ax->dimensions[j] != farray->dimensions[k])
@@ -508,7 +548,6 @@ static int Forthon_setarraydict(ForthonObject *self,void *closure)
   PyErr_SetString(PyExc_TypeError, "Cannot set the arraydict attribute");
   return -1;
 }
-
 
 
 /* ######################################################################### */
@@ -805,7 +844,9 @@ static PyObject *ForthonPackage_gallot(PyObject *_self_,PyObject *args)
   for (i=0;i<self->narrays;i++) {
    if (strcmp(s,self->farrays[i].group)==0 || strcmp(s,"*")==0) {
     r = 1;
-    if (self->farrays[i].dynamic) {
+    /* Note that deferred-shape arrays shouldn't be allocated in this way */
+    /* since they have no specified dimensions. */
+    if (self->farrays[i].dynamic && self->farrays[i].dynamic != 3) {
       /* Subtract the array size from totmembytes. */
       if (self->farrays[i].pya != NULL)
         totmembytes -= PyArray_NBYTES(self->farrays[i].pya);
@@ -1182,17 +1223,7 @@ static PyObject *ForthonPackage_gfree(PyObject *_self_,PyObject *args)
 
   for (i=0;i<self->narrays;i++) {
     if (strcmp(s,self->farrays[i].group)==0 || strcmp(s,"*")==0) {
-      r = 1;
-      if (self->farrays[i].dynamic) {
-        /* Subtract the array size from totmembytes. */
-        if (self->farrays[i].pya != NULL) {
-          totmembytes -= PyArray_NBYTES(self->farrays[i].pya);
-          Py_XDECREF(self->farrays[i].pya);
-          self->farrays[i].pya = NULL;
-%py_ifelse(f90 and not f90f,0,'*(self->farrays[i].data.d)=0;','')
-%py_ifelse(f90 and not f90f,1,'(self->farrays[i].setpointer)(0,(self->fobj),self->farrays[i].dimensions);','')
-          }
-        }
+      r = Forthon_freearray(self,(void *)i);
       }
     }
 
