@@ -1,7 +1,7 @@
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 19, 1998
 # Parse the interface description file
-# $Id: interfaceparser.py,v 1.3 2004/02/10 17:59:14 dave Exp $
+# $Id: interfaceparser.py,v 1.4 2004/02/17 18:26:44 dave Exp $
 
 # This reads in the entire variable description file and extracts all of
 # the variable and subroutine information needed to create an interface
@@ -151,38 +151,38 @@ def processfile(packname,filename,othermacros=[]):
       i = 0
 
     # Check if type is real
-    elif text[0:4] == 'real':
+    elif re.match('real\s',text):
       v.type = 'real'
       i = 3
       readyfortype = 0
 
     # Check if type is integer
-    elif text[0:7] == 'integer':
+    elif re.match('integer\s',text):
       v.type = 'integer'
       i = 6
       readyfortype = 0
 
     # Check if type is logical
-    elif text[0:7] == 'logical':
+    elif re.match('logical\s',text):
       v.type = 'logical'
       i = 6
       readyfortype = 0
 
     # Check if type is Filedes (temporary fix for now)
-    elif text[0:7] == 'Filedes':
+    elif re.match('Filedes\s',text):
       v.type = 'integer'
       i = 6
       readyfortype = 0
 
     # Check if type is Filename (assumed to a string of length 256)
-    elif text[0:8] == 'Filename':
+    elif re.match('Filename\s',text):
       v.type = 'character'
       i = 7
       v.dims = ['256'] + v.dims
       readyfortype = 0
 
     # Check if type is character
-    elif text[0:9] == 'character':
+    elif re.match('character\s',text):
       v.type = 'character'
       v.array = 1
       i = re.search('[ \t\n]',text).start()
@@ -191,7 +191,7 @@ def processfile(packname,filename,othermacros=[]):
       readyfortype = 0
 
     # Check if type is complex
-    elif text[0:7] == 'complex':
+    elif re.match('complex\s',text):
       v.type = 'complex'
       i = 6
       readyfortype = 0
@@ -199,14 +199,14 @@ def processfile(packname,filename,othermacros=[]):
      #  v.dims = ['1']
 
     # Check if variable is a function
-    elif text[0:8] == 'function':
+    elif re.match('function\s',text):
       v.function = 1
       v.array = 0
       i = 7
       readyfortype = 0
 
     # Check if variable is a subroutine
-    elif text[0:10] == 'subroutine':
+    elif re.match('subroutine\s',text):
       v.function = 1
       v.array = 0
       v.type = 'void'
