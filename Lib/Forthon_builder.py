@@ -11,7 +11,8 @@ from distutils.core import setup, Extension
 
 optlist,args = getopt.getopt(sys.argv[1:],'agd:t:F:C:D:L:l:i:f:',
                          ['f90','f77','f90f','nowritemodules','macros=',
-                          'FOPTS','COPTS','static'])
+                          'FOPTS=','COPTS=','static',
+                          'free_suffix=','fixed_suffix='])
 
 if len(sys.argv) == 1:
   print """
@@ -74,15 +75,21 @@ One or more of the following options can be specified.
     between the interface file description and the actual module.
  --macros pkg.v
     Other interface files whose macros are needed
- --FOPTS
+ --FOPTS options
     Additional options to the fortran compiler line. For example to turn on
-    profiling.
- --COPTS
+    profiling. If there are any spaces in options, it must be surrounded in
+    double quotes.
+ --COPTS options
     Additional options to the C compiler line. For example to turn on
-    profiling.
+    profiling. If there are any spaces in options, it must be surrounded in
+    double quotes.
  --static
     Build the static version of the code by default, rather than the
     dynamically linker version. Not yet supported.
+ --free_suffix suffix
+    Suffix used for fortran files in free format. Defaults to F90
+ --fixed_suffix suffix
+    Suffix used for fortran files in fixed format. Defaults to F
   """
   sys.exit(0)
 
@@ -113,6 +120,8 @@ copts = ''
 libs = []
 libdirs = []
 static = 0
+free_suffix = 'F90'
+fixed_suffix = 'F'
 
 for o in optlist:
   if o[0]=='-a': initialgallot = '-a'
@@ -133,6 +142,8 @@ for o in optlist:
   elif o[0] == '--COPTS': copts = o[1]
   elif o[0] == '--static': static = 1
   elif o[0] == '--macros': othermacros.append(o[1])
+  elif o[0] == '--free_suffix': free_suffix = o[1]
+  elif o[0] == '--fixed_suffix': fixed_suffix = o[1]
 
 if machine is None:
   machine = sys.platform
@@ -160,8 +171,6 @@ def fixpath(path):
 # --- from distutils to be robust.
 pywrapperhome = os.path.join(distutils.sysconfig.get_python_lib(),'Forthon')
 pywrapperhome = fixpath(pywrapperhome)
-#pywrapperhome = os.path.join(sys.prefix,'lib','python'+sys.version[:3],'site-packages','Forthon')
-
 
 # --- f90free is set here so that a check can be made later to determine if
 # --- it was reset. If it wasn't, that means that a fortran compiler was not
@@ -330,10 +339,10 @@ extraobjectslist = []
 extracfiles = []
 for f in extrafiles:
   root,suffix = os.path.splitext(f)
-  if suffix in ['.F','.F90','.f']:
+  if suffix[1:] in ['F','F90','f',fixed_suffix,free_suffix]:
     extraobjects = extraobjects + root + '.o '
     extraobjectslist = extraobjectslist + [root + '.o']
-  elif suffix in ['.c']:
+  elif suffix[1:] in ['c']:
     extracfiles.append(f)
 
 # --- Make string containing other macros files
@@ -360,23 +369,23 @@ PYPREPROC = %(python)s -c "from Forthon.preprocess import main;main()" %(f90)s -
 
 %(default)s
 
-%%.o: %%.F %(pkg)s_p.o
+%%.o: %%.%(fixed_suffix)s %(pkg)s_p.o
 	%(f90fixed)s %(fopts)s -c $<
-%%.o: %%.F90 %(pkg)s_p.o
+%%.o: %%.%(free_suffix)s %(pkg)s_p.o
 	%(f90free)s %(fopts)s -c $<
 Forthon.h:%(pywrapperhome)s/Forthon.h
 	$(PYPREPROC) %(pywrapperhome)s/Forthon.h Forthon.h
 Forthon.c:%(pywrapperhome)s/Forthon.c
 	$(PYPREPROC) %(pywrapperhome)s/Forthon.c Forthon.c
 
-%(pkg)s_p.o:%(pkg)s_p.F90
-	%(f90free)s %(popt)s -c %(pkg)s_p.F90
-%(pkg)spymodule.c %(pkg)s_p.F90:%(interfacefile)s
+%(pkg)s_p.o:%(pkg)s_p.%(free_suffix)s
+	%(f90free)s %(popt)s -c %(pkg)s_p.%(free_suffix)s
+%(pkg)spymodule.c %(pkg)s_p.%(free_suffix)s:%(interfacefile)s
 	%(python)s -c "from Forthon.wrappergenerator import wrappergenerator_main;wrappergenerator_main()" \\
 	%(f90)s -t %(machine)s %(pywrapperargs)s %(initialgallot)s \\
         %(othermacstr)s %(interfacefile)s %(dep)s
 clean:
-	rm -rf *.o *_p.F90 *.mod *module.c *.scalars *.so Forthon.c Forthon.h forthonf2c.h build
+	rm -rf *.o *_p.%(free_suffix)s *.mod *module.c *.scalars *.so Forthon.c Forthon.h forthonf2c.h build
 """%(locals())
 makefile = open('Makefile.%s'%pkg,'w')
 makefile.write(makefiletext)
