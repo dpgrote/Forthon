@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.1 2004/01/06 18:35:37 dave Exp $ */
+/* $Id: Forthon.h,v 1.2 2004/02/10 17:13:40 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -923,13 +923,19 @@ static PyObject *ForthonPackage_listvar(PyObject *_self_,PyObject *args)
       PyString_ConcatAndDel(&doc,PyString_FromString("double"));}
     else if (self->farrays[i].type == PyArray_CDOUBLE) {
       PyString_ConcatAndDel(&doc,PyString_FromString("double complex"));}
+
+    PyString_ConcatAndDel(&doc,PyString_FromString("\nAddress:    "));
     if (self->farrays[i].pya == NULL) {
-      PyString_ConcatAndDel(&doc,PyString_FromString("\nAddress:    NULL"));}
+      PyString_ConcatAndDel(&doc,PyString_FromString("unallocated"));}
     else {
-      PyString_ConcatAndDel(&doc,PyString_FromString("\nAddress:    "));
       PyString_ConcatAndDel(&doc,PyObject_Str(PyInt_FromLong((long)((self->farrays[i].pya)->data))));}
-    PyString_ConcatAndDel(&doc,PyString_FromString("\nPyaddress:   "));
-    PyString_ConcatAndDel(&doc,PyObject_Str(PyInt_FromLong((long)(self->farrays[i].pya))));
+
+    PyString_ConcatAndDel(&doc,PyString_FromString("\nPyaddress:  "));
+    if ((self->farrays[i].pya) == 0)
+      PyString_ConcatAndDel(&doc,PyString_FromString("unallocated"));
+    else
+      PyString_ConcatAndDel(&doc,PyObject_Str(PyInt_FromLong((long)(self->farrays[i].pya))));
+
     PyString_ConcatAndDel(&doc,PyString_FromString("\nComment:   "));
     PyString_ConcatAndDel(&doc,PyString_FromString(self->farrays[i].comment));
     PyString_ConcatAndDel(&doc,PyString_FromString("\n"));
