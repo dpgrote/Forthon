@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.23 2004/09/30 22:20:18 dave Exp $ */
+/* $Id: Forthon.h,v 1.24 2004/10/05 19:55:39 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -1573,6 +1573,7 @@ static PyMethodDef *getForthonPackage_methods(void)
 static void Forthon_dealloc(ForthonObject *self)
 {
   int i;
+  void *d;
   /* PyObject *objid; */
   if (self->garbagecollected) PyObject_GC_UnTrack((PyObject *) self);
 
@@ -1592,8 +1593,9 @@ static void Forthon_dealloc(ForthonObject *self)
           /* Py_XINCREF((PyObject *)self->fscalars[i].data); */
         /* } */
       if (self->fscalars[i].data != NULL) {
+        d = ((ForthonObject *)self->fscalars[i].data)->fobjdeallocate;
         Py_DECREF((PyObject *)self->fscalars[i].data);
-        if (((ForthonObject *)self->fscalars[i].data)->fobjdeallocate != NULL)
+        if (d != NULL)
           (self->fscalars[i].setpointer)(0,(self->fobj));
         self->fscalars[i].data = 0;
         }
