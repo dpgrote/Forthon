@@ -1,3 +1,4 @@
+import example2py
 from example2py import *
 
 print 'Testing basic call to fortran routine'
@@ -12,9 +13,9 @@ print '25 36.0'
 print ''
 
 testsub3()
-print example2.t2
-print 'Should be'
-print 'unallocated'
-
+try:
+  print example2.t2
+except example2py.error:
+  print "printing t2 produced the correct error since it is unassociated"
 
 print 'Tests complete'
