@@ -98,6 +98,8 @@ appropriate block for the machine.
       cpuinfo = open('/proc/cpuinfo','r').read()
       if re.search('Pentium III',cpuinfo):
         self.fopt = '-O3 -xK -tpp6 -ip -unroll -prefetch'
+      elif re.search('AMD Athlon',cpuinfo):
+        self.fopt = '-O3 -ip -unroll -prefetch'
       else:
         self.fopt = '-O3 -xN -tpp7 -ip -unroll -prefetch'
       return 1
@@ -115,6 +117,8 @@ appropriate block for the machine.
       cpuinfo = open('/proc/cpuinfo','r').read()
       if re.search('Pentium III',cpuinfo):
         self.fopt = '-O3 -xK -tpp6 -ip -unroll -prefetch'
+      elif re.search('AMD Athlon',cpuinfo):
+        self.fopt = '-O3 -ip -unroll -prefetch'
       else:
         self.fopt = '-O3 -xW -tpp7 -ip -unroll -prefetch'
       return 1
