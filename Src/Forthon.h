@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.7 2004/03/17 14:23:08 dave Exp $ */
+/* $Id: Forthon.h,v 1.8 2004/04/01 16:33:09 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -1212,10 +1212,111 @@ static PyObject *ForthonObject_New(PyObject *self, PyObject *args)
   return (PyObject *)new;
 }
 
-static void Forthon_dalloc(ForthonObject *self)
+static void Forthon_dealloc(ForthonObject *self)
 {
-  PyMem_DEL(self);
+  /* This should really also clean up all memory allocated during the init */
+  self->ob_type->tp_free((PyObject*)self);
 }
+
+/* ######################################################################### */
+/* # Get attribute handler                                                   */
+static PyObject *Forthon_getscalardouble(ForthonObject *self,void *closure)
+{
+  int i = (int) closure;
+  return Py_BuildValue("d",*((double *)(self->fscalars[i].data)));
+}
+static PyObject *Forthon_getscalarcdouble(ForthonObject *self,void *closure)
+{
+  int i = (int) closure;
+  return PyComplex_FromDoubles(((double *)self->fscalars[i].data)[0],
+                               ((double *)self->fscalars[i].data)[1]);
+}
+static PyObject *Forthon_getscalarinteger(ForthonObject *self,void *closure)
+{
+  int i = (int) closure;
+  return Py_BuildValue("i",*((int *)(self->fscalars[i].data)));
+}
+static PyObject *Forthon_getscalarderivedtype(ForthonObject *self,void *closure)
+{
+  int i = (int) closure;
+  ForthonObject *objid;
+  /* These are attached to variables of fortran derived type */
+  if (self->fscalars[i].dynamic) {
+    /* If dynamic, use getpointer to get the current address of the */
+    /* python object from the fortran variable. */
+    /* This is needed since the association may have changed in fortran. */
+    (self->fscalars[i].getpointer)(&objid,self->fobj);
+    /* Make sure that the correct python object is pointed to. */
+    self->fscalars[i].data = (char *)objid;}
+  else {
+    /* If not dynamic, the data element will not have changed. */
+    objid = (ForthonObject *)self->fscalars[i].data;}
+  if (objid != NULL) {
+    Py_XINCREF(objid);
+    return (PyObject *)objid;}
+  else {
+    PyErr_SetString(ErrorObject,"variable unassociated");
+    return NULL;}
+}
+
+static PyObject *Forthon_getarrray(ForthonObject *self,void *closure)
+{
+  int i = (int) closure;
+  /* If the getpointer routine exists, call it to assign a value to data.s */
+  if (self->farrays[i].getpointer != NULL) {
+    (self->farrays[i].getpointer)(&i,self->fobj);
+    /* If the data.s is NULL, then the fortran array is not associated */
+    /* Decrement the python object counter if there is one. */
+    /* Set the pointer to the python object to NULL. */
+    if (self->farrays[i].data.s == NULL) {
+      if (self->farrays[i].pya != NULL) {Py_XDECREF(self->farrays[i].pya);}
+      self->farrays[i].pya = NULL;}
+    else if (self->farrays[i].pya == NULL ||
+             self->farrays[i].data.s != self->farrays[i].pya->data) {
+      /* If data.s is not NULL and there is no python object or its */
+      /* data is different, then create a new one. */
+      if (self->farrays[i].pya != NULL) {Py_XDECREF(self->farrays[i].pya);}
+      /* Call the routine which sets the dimensions */
+      /* (*self->setdims)(self->farrays[i].group,self); */
+      self->farrays[i].pya = (PyArrayObject *)PyArray_FromDimsAndData(
+                       self->farrays[i].nd,self->farrays[i].dimensions,
+                       self->farrays[i].type,self->farrays[i].data.s);
+      /* Reverse the order of the dims and strides so       */
+      /* indices can be refered to in the correct (fortran) */
+      /* order in python                                    */
+      ARRAY_REVERSE_STRIDE(self->farrays[i].pya);
+      ARRAY_REVERSE_DIM(self->farrays[i].pya);
+      Py_XINCREF(self->farrays[i].pya);
+      }
+    else {
+      /* If the data is the same data, then increment the python */
+      /* object counter to prepare handing it to the interpreter. */
+      Py_XINCREF(self->farrays[i].pya);}
+    }
+  else {
+    /* If there is not getpointer routine, then increment the python */
+    /* object counter to prepare handing it to the interpreter. */
+    Py_XINCREF(self->farrays[i].pya);}
+  if (self->farrays[i].pya == NULL) {
+    PyErr_SetString(ErrorObject,"Array is unallocated");
+    return NULL;}
+  if (self->farrays[i].pya->nd==1 &&
+      self->farrays[i].pya->strides[0]==self->farrays[i].pya->descr->elsize)
+    self->farrays[i].pya->flags |= CONTIGUOUS;
+  return (PyObject *)self->farrays[i].pya;
+}
+
+static PyObject *Forthon_getscalardict(ForthonObject *self,void *closure)
+{
+  Py_INCREF(self->scalardict);
+  return self->scalardict;
+}
+static PyObject *Forthon_getarrraydict(ForthonObject *self,void *closure)
+{
+  Py_INCREF(self->arraydict);
+  return self->arraydict;
+}
+
 
 /* ######################################################################### */
 /* # Get attribute handler                                                   */
@@ -1448,20 +1549,26 @@ static PyObject *Forthon_repr(ForthonObject *self)
 /* ######################################################################### */
 /* # Package object declaration                                              */
 static PyTypeObject ForthonType = {
-  PyObject_HEAD_INIT(&PyType_Type)
+  PyObject_HEAD_INIT(NULL)
   0,                                   /*ob_size*/
   "Forthon",                           /*tp_name*/
   sizeof(ForthonObject),               /*tp_basicsize*/
   0,                                   /*tp_itemsize*/
-  /* methods */
-  (destructor)Forthon_dalloc,          /*tp_dealloc*/
+  (destructor)Forthon_dealloc,         /*tp_dealloc*/
   (printfunc)Forthon_print,            /*tp_print*/
   (getattrfunc)Forthon_getattr,        /*tp_getattr*/
   (setattrfunc)Forthon_setattr,        /*tp_setattr*/
-  (cmpfunc)0,                          /*tp_compare*/
+  0,                                   /*tp_compare*/
   (reprfunc)Forthon_repr,              /*tp_repr*/
   0,                                   /*tp_as_number*/
   0,                                   /*tp_as_sequence*/
   0,                                   /*tp_as_mapping*/
-  (hashfunc)0,                         /*tp_hash*/
+  0,                                   /*tp_hash*/
+  0,                                   /*tp_call*/
+  0,                                   /*tp_str*/
+  0,                                   /*tp_getattro*/
+  0,                                   /*tp_setattro*/
+  0,                                   /*tp_as_buffer*/
+  Py_TPFLAGS_DEFAULT,                  /*tp_flags*/
+  "Forthon objects",                   /*tp_doc*/
 };

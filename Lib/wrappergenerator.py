@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.7 2004/03/17 14:23:08 dave Exp $
+# $Id: wrappergenerator.py,v 1.8 2004/04/01 16:33:09 dave Exp $
 
 import sys
 import os.path
@@ -533,11 +533,12 @@ Usage:
     # --- And finally, the initialization function
     self.cw('void init'+self.pname+'py()')
     self.cw('{')
-    self.cw('  PyObject *m, *d;')
+    self.cw('  PyObject *m;')
+    self.cw('  if (PyType_Ready(&ForthonType) < 0)')
+    self.cw('    return;')
     self.cw('  m = Py_InitModule("'+self.pname+'py",'+self.pname+'_methods);')
-    self.cw('  d = PyModule_GetDict(m);')
-    self.cw('  PyDict_SetItemString(d,"Py'+self.pname+'Type",'+
-               '(PyObject *)&ForthonType);')
+   #self.cw('  PyModule_AddObject(m,"'+self.pname+'Type",'+
+   #               '(PyObject *)&ForthonType);')
     self.cw('  '+self.pname+'Object=(ForthonObject *)'+
                'ForthonObject_New(NULL,NULL);')
     self.cw('  '+self.pname+'Object->name = "'+self.pname+'";')
@@ -551,10 +552,10 @@ Usage:
                 self.pname+'setstaticdims;')
     self.cw('  '+self.pname+'Object->fmethods = '+self.pname+'_methods;')
     self.cw('  '+self.pname+'Object->fobj = NULL;')
-    self.cw('  PyDict_SetItemString(d,"'+self.pname+'",(PyObject *)'+
+    self.cw('  PyModule_AddObject(m,"'+self.pname+'",(PyObject *)'+
                 self.pname+'Object);')
     self.cw('  ErrorObject = PyString_FromString("'+self.pname+'py.error");')
-    self.cw('  PyDict_SetItemString(d, "error", ErrorObject);')
+    self.cw('  PyModule_AddObject(m,"'+self.pname+'error", ErrorObject);')
     self.cw('  if (PyErr_Occurred())')
     self.cw('    Py_FatalError("can not initialize module '+self.pname+'");')
     self.cw('  import_array();')
