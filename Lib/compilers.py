@@ -34,7 +34,7 @@ appropriate block for the machine.
     self.popts = ''
     self.libs = []
     self.libdirs = []
-    self.forthonargs = ''
+    self.forthonargs = []
 
     # --- Pick the fortran compiler
     # --- When adding a new compiler, it must be listed here under the correct
@@ -135,7 +135,7 @@ appropriate block for the machine.
       # --- Absoft
       self.f90free  = 'f90 -B108 -N113 -W132 -YCFRL=1 -YEXT_NAMES=ASIS'
       self.f90fixed = 'f90 -B108 -N113 -W132 -YCFRL=1 -YEXT_NAMES=ASIS'
-      self.forthonargs = '--2underscores'
+      self.forthonargs = ['--2underscores']
       flibroot,b = os.path.split(self.findfile('f90'))
       self.libdirs = [flibroot+'/lib']
       self.libs = ['U77','V77','f77math','f90math','fio']

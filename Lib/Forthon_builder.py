@@ -116,6 +116,7 @@ f90f = 0
 writemodules = 1
 othermacros = []
 debug = 0
+twounderscores = 0
 fopt = None
 fargs = ''
 libs = []
@@ -142,10 +143,15 @@ for o in optlist:
   elif o[0] == '--fopt': fopt = o[1]
   elif o[0] == '--fargs': fargs = o[1]
   elif o[0] == '--static': static = 1
+  elif o[0] == '--nowritemodules': writemodules = 0
   elif o[0] == '--macros': othermacros.append(o[1])
   elif o[0] == '--free_suffix': free_suffix = o[1]
   elif o[0] == '--fixed_suffix': fixed_suffix = o[1]
 
+# --- Set arguments to Forthon, based on defaults and any inputs.
+forthonargs = []
+if twounderscores: forthonargs.append('--2underscores')
+if not writemodules: forthonargs.append('--nowritemodules')
 
 # --- Fix path - needed for Cygwin
 def fixpath(path):
@@ -176,7 +182,7 @@ fcompiler = FCompiler(machine=machine,
 f90free = fcompiler.f90free
 f90fixed = fcompiler.f90fixed
 popts = fcompiler.popts
-forthonargs = fcompiler.forthonargs
+forthonargs = forthonargs + fcompiler.forthonargs
 if fopt is None: fopt = fcompiler.fopt
 
 # --- Find location of the python libraries and executable.
@@ -215,12 +221,29 @@ for d in (defines + fcompiler.defines):
   definesstr = definesstr + d + '\n'
 
 # --- Define default rule. Note that static doesn't work yet.
+fortranroot,suffix = os.path.splitext(fortranfile)
 if fcompiler.static:
   defaultrule = 'static:'
   raise "Static linking not supported at this time"
 else:
-  fortranroot,suffix = os.path.splitext(fortranfile)
   defaultrule = 'dynamic: %(pkg)s_p.o %(fortranroot)s.o %(pkg)spymodule.c Forthon.h Forthon.c %(extraobjectsstr)s'%locals()
+
+if writemodules:
+  # --- Fortran modules are written by the wrapper to the _p file.
+  # --- The rest of the fortran files will depend in this ones obhect file.
+  # --- This file doesn't depend on any fortran files.
+  modulecontainer = pkg+'_p'
+  wrapperdependency = ''
+else:
+  # --- If nowritemodules is set, then it is assumed that modules are contained
+  # --- in the main fortran file. In this case, set the dependencies in the
+  # --- makefile so that all files depend on the main file, rather than the
+  # --- wrapper fortran file.
+  modulecontainer = fortranroot
+  wrapperdependency = fortranroot+'.o'
+
+# --- convert list of fortranargs into a string
+forthonargs = string.join(forthonargs,' ')
 
 # --- First, create Makefile.pkg which has all the needed definitions
 makefiletext = """
@@ -231,16 +254,16 @@ PYPREPROC = %(python)s -c "from Forthon.preprocess import main;main()" %(f90)s -
 
 %(defaultrule)s
 
-%%.o: %%.%(fixed_suffix)s %(pkg)s_p.o
+%%.o: %%.%(fixed_suffix)s %(modulecontainer)s.o
 	%(f90fixed)s %(fopt)s %(fargs)s -c $<
-%%.o: %%.%(free_suffix)s %(pkg)s_p.o
+%%.o: %%.%(free_suffix)s %(modulecontainer)s.o
 	%(f90free)s %(fopt)s %(fargs)s -c $<
 Forthon.h:%(forthonhome)s%(pathsep)sForthon.h
 	$(PYPREPROC) %(forthonhome)s%(pathsep)sForthon.h Forthon.h
 Forthon.c:%(forthonhome)s%(pathsep)sForthon.c
 	$(PYPREPROC) %(forthonhome)s%(pathsep)sForthon.c Forthon.c
 
-%(pkg)s_p.o:%(pkg)s_p.%(free_suffix)s
+%(pkg)s_p.o:%(pkg)s_p.%(free_suffix)s %(wrapperdependency)s
 	%(f90free)s %(popts)s -c %(pkg)s_p.%(free_suffix)s
 %(pkg)spymodule.c %(pkg)s_p.%(free_suffix)s:%(interfacefile)s
 	%(python)s -c "from Forthon.wrappergenerator import wrappergenerator_main;wrappergenerator_main()" \\
