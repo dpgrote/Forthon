@@ -9,9 +9,10 @@ class FCompiler:
   """
 Determines which compiler to use and sets up description of how to use it.
 To add a new compiler, create a new method which a name using the format
-machine_compiler. The first line of the function must be of the following form
+machine_compiler. The first lines of the function must be of the following form
     if (self.findfile(compexec) and
-        (self.fcompiler==compname or self.fcompiler is None)):
+        (self.fcompname==compname or self.fcompname is None)):
+      self.fcompname = compname
 where compexec is the executable name of the compiler and compname is a
 descriptive (or company) name for the compiler. They can be the same.
 In the function, the two attributes f90free and f90fixed must be defined. Note
@@ -21,13 +22,13 @@ Also, the new function must be included in the while loop below in the
 appropriate block for the machine.
   """
 
-  def __init__(self,machine=None,debug=0,fcompiler=None,static=0):
+  def __init__(self,machine=None,debug=0,fcompname=None,static=0):
     if machine is None: machine = sys.platform
     self.machine = machine
 
     self.paths = string.split(os.environ['PATH'],os.pathsep)
 
-    self.fcompiler = fcompiler
+    self.fcompname = fcompname
     self.static = static
     self.defines = []
     self.fopt = ''
@@ -36,6 +37,7 @@ appropriate block for the machine.
     self.libdirs = []
     self.forthonargs = []
     self.extra_link_args = []
+    self.extra_compile_args = []
     self.define_macros = []
 
     # --- Pick the fortran compiler
@@ -78,6 +80,10 @@ appropriate block for the machine.
       self.fopt = '-g'
       self.popt = '-g'
       self.extra_link_args += ['-g']
+      self.extra_compile_args += ['-g']
+
+    # --- Add the compiler name to the forthon arguments
+    self.forthonargs += ['-F '+self.fcompname]
 
   def findfile(self,file):
     if self.machine == 'win32': file = file + '.exe'
@@ -92,7 +98,8 @@ appropriate block for the machine.
   # --- LINUX
   def linux_intel8(self):
     if (self.findfile('ifort') and
-        (self.fcompiler=='intel8' or self.fcompiler is None)):
+        (self.fcompname=='intel8' or self.fcompname is None)):
+      self.fcompname = 'ifort'
       # --- Intel8
       self.f90free  = 'ifort -nofor_main -free -r8 -DIFC -fpp -implicitnone -C90 -Zp8'
       self.f90fixed = 'ifort -nofor_main -132 -r8 -DIFC -fpp -implicitnone -C90 -Zp8'
@@ -111,7 +118,8 @@ appropriate block for the machine.
 
   def linux_intel(self):
     if (self.findfile('ifc') and
-        (self.fcompiler=='intel' or self.fcompiler is None)):
+        (self.fcompname=='intel' or self.fcompname is None)):
+      self.fcompname = 'ifc'
       # --- Intel
       self.f90free  = 'ifc -132 -r8 -DIFC -fpp -implicitnone -C90 -Zp8'
       self.f90fixed = 'ifc -132 -r8 -DIFC -fpp -implicitnone -C90 -Zp8'
@@ -130,7 +138,8 @@ appropriate block for the machine.
 
   def linux_g95(self):
     if (self.findfile('g95') and
-        (self.fcompiler=='g95' or self.fcompiler is None)):
+        (self.fcompname=='g95' or self.fcompname is None)):
+      self.fcompname = 'g95'
       # --- Intel
       self.f90free  = 'g95 -r8'
       self.f90fixed = 'g95 -ffixed-line-length-132 -r8'
@@ -149,7 +158,8 @@ appropriate block for the machine.
 
   def linux_pg(self):
     if (self.findfile('pgf90') and
-        (self.fcompiler=='pg' or self.fcompiler is None)):
+        (self.fcompname=='pg' or self.fcompname is None)):
+      self.fcompname = 'pgi'
       # --- Portland group
       self.f90free  = 'pgf90 -Mextend -Mdclchk -r8'
       self.f90fixed = 'pgf90 -Mextend -Mdclchk -r8'
@@ -161,7 +171,8 @@ appropriate block for the machine.
 
   def linux_absoft(self):
     if (self.findfile('f90') and
-        (self.fcompiler=='absoft' or self.fcompiler is None)):
+        (self.fcompname=='absoft' or self.fcompname is None)):
+      self.fcompname = 'absoft'
       # --- Absoft
       self.f90free  = 'f90 -B108 -N113 -W132 -YCFRL=1 -YEXT_NAMES=ASIS'
       self.f90fixed = 'f90 -B108 -N113 -W132 -YCFRL=1 -YEXT_NAMES=ASIS'
@@ -174,7 +185,8 @@ appropriate block for the machine.
 
   def linux_lahey(self):
     if (self.findfile('lf95') and
-        (self.fcompiler=='lahey' or self.fcompiler is None)):
+        (self.fcompname=='lahey' or self.fcompname is None)):
+      self.fcompname = 'lahey'
       # --- Lahey
       # in = implicit none
       # dbl = real*8 (variables or constants?)
@@ -200,7 +212,8 @@ appropriate block for the machine.
   # --- MAC OSX
   def macosx_gfortran(self):
     if (self.findfile('gfortran') and
-        (self.fcompiler=='gfortran' or self.fcompiler is None)):
+        (self.fcompname=='gfortran' or self.fcompname is None)):
+      self.fcompname = 'gfortran'
       print "WARNING: This compiler might cause a bus error."
       # --- g95
       self.f90free  = 'gfortran -x f95'
@@ -212,7 +225,8 @@ appropriate block for the machine.
 
   def macosx_xlf(self):
     if (self.findfile('xlf90') and
-        (self.fcompiler=='xlf90' or self.fcompiler is None)):
+        (self.fcompname=='xlf90' or self.fcompname is None)):
+      self.fcompname = 'xlf'
       # --- XLF
       self.f90free  = 'xlf90 -qsuffix=f=F90 -qextname'
       self.f90fixed = 'xlf90 -qsuffix=f=F90 -qextname'
@@ -225,7 +239,8 @@ appropriate block for the machine.
 
   def macosx_absoft(self):
     if (self.findfile('f90') and
-        (self.fcompiler=='absoft' or self.fcompiler is None)):
+        (self.fcompname=='absoft' or self.fcompname is None)):
+      self.fcompname = 'absoft'
       print 'compiler is ABSOFT!'
       # --- Absoft
       self.f90free  = 'f90 -N11 -N113 -YEXT_NAMES=LCS -YEXT_SFX=_'
@@ -239,7 +254,8 @@ appropriate block for the machine.
 
   def macosx_nag(self):
     if (self.findfile('f95') and
-        (self.fcompiler=='nag' or self.fcompiler is None)):
+        (self.fcompname=='nag' or self.fcompname is None)):
+      self.fcompname = 'nag'
       # --- NAG
       self.f90free  = 'f95 -132 -fpp -Wp,-macro=no_com -Wc,-O3 -Wc,-funroll-loops -free -PIC -u -w -mismatch_all -kind=byte -r8'
       self.f90fixed = 'f95 -132 -fpp -u -Wp,-macro=no_com -Wp,-fixed -fixed -Wc,-O3 -Wc,-funroll-loops -PIC -w -mismatch_all -kind=byte -r8'
@@ -253,7 +269,8 @@ appropriate block for the machine.
 
   def macosx_gnu(self):
     if (self.findfile('gfortran') and
-        (self.fcompiler=='gnu' or self.fcompiler is None)):
+        (self.fcompname=='gnu' or self.fcompname is None)):
+      self.fcompname = 'gnu'
       # --- GNU
       self.f90free  = 'f95 -132 -fpp -Wp,-macro=no_com -free -PIC -w -mismatch_all -kind=byte -r8'
       self.f90fixed = 'f95 -132 -fpp -Wp,-macro=no_com -Wp,-fixed -fixed -PIC -w -mismatch_all -kind=byte -r8'
@@ -269,7 +286,8 @@ appropriate block for the machine.
   # --- WIN32
   def win32_pg(self):
     if (self.findfile('pgf90') and
-        (self.fcompiler=='pg' or self.fcompiler is None)):
+        (self.fcompname=='pg' or self.fcompname is None)):
+      self.fcompname = 'pgi'
       # --- Portland group
       self.f90free  = 'pgf90 -Mextend -Mdclchk -r8'
       self.f90fixed = 'pgf90 -Mextend -Mdclchk -r8'
@@ -282,7 +300,8 @@ appropriate block for the machine.
 
   def win32_intel(self):
     if (self.findfile('ifl') and
-        (self.fcompiler=='intel' or self.fcompiler is None)):
+        (self.fcompname=='intel' or self.fcompname is None)):
+      self.fcompname = 'ifl'
       # --- Intel
       self.f90free  = 'ifl -Qextend_source -Qautodouble -DIFC -FR -Qfpp -4Yd -C90 -Zp8 -Qlowercase -us -MT -Zl -static'
       self.f90fixed = 'ifl -Qextend_source -Qautodouble -DIFC -FI -Qfpp -4Yd -C90 -Zp8 -Qlowercase -us -MT -Zl -static'
@@ -295,8 +314,9 @@ appropriate block for the machine.
   #-----------------------------------------------------------------------------
   # --- AIX
   def aix_xlf(self):
-    if (self.fcompiler=='xlf' or
-        (self.fcompiler is None and self.findfile('xlf95'))):
+    if (self.fcompname=='xlf' or
+        (self.fcompname is None and self.findfile('xlf95'))):
+      self.fcompname = 'xlf'
       # --- IBM SP, serial
       self.f90free  = 'xlf95 -c -qmaxmem=8192 -u -qdpc=e -qintsize=4 -qsave=defaultinit -qsuffix=f=f90:cpp=F90 -qfree=f90 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
       self.f90fixed = 'xlf95 -c -qmaxmem=8192 -u -qdpc=e -qintsize=4 -qsave=defaultinit -qfixed=132 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
@@ -308,8 +328,9 @@ appropriate block for the machine.
       return 1
 
   def aix_mpxlf(self):
-    if (self.fcompiler=='mpxlf' or
-        (self.fcompiler is None and self.findfile('mpxlf95'))):
+    if (self.fcompname=='mpxlf' or
+        (self.fcompname is None and self.findfile('mpxlf95'))):
+      self.fcompname = 'xlf'
       # --- IBM SP, parallel
       self.f90free  = 'mpxlf95 -c -qmaxmem=8192 -u -qdpc=e -qintsize=4 -qsave=defaultinit -WF,-DMPIPARALLEL -qsuffix=f=f90:cpp=F90 -qfree=f90 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
       self.f90fixed = 'mpxlf95 -c -qmaxmem=8192 -u -qdpc=e -qintsize=4 -qsave=defaultinit -WF,-DMPIPARALLEL -qfixed=132 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
@@ -323,8 +344,9 @@ appropriate block for the machine.
       return 1
 
   def aix_xlf_r(self):
-    if (self.fcompiler=='xlf_r' or
-        (self.fcompiler is None and self.findfile('xlf95_r'))):
+    if (self.fcompname=='xlf_r' or
+        (self.fcompname is None and self.findfile('xlf95_r'))):
+      self.fcompname = 'xlf'
       # --- IBM SP, OpenMP
       self.f90free  = 'xlf95_r -c -qmaxmem=8192 -u -qdpc=e -qintsize=4 -qsave=defaultinit -qsuffix=f=f90:cpp=F90 -qfree=f90 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
       self.f90fixed = 'xlf95 -c -qmaxmem=8192 -u -qdpc=e -qintsize=4 -qsave=defaultinit -qfixed=132 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
