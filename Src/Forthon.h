@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.26 2004/10/07 16:20:20 dave Exp $ */
+/* $Id: Forthon.h,v 1.27 2004/10/08 23:48:18 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -115,6 +115,7 @@ typedef struct {
   void (*fobjdeallocate)();
   void (*nullifycobj)();
   int allocated;
+  int referenceclaimed;
   int garbagecollected;
 } ForthonObject;
 staticforward PyTypeObject ForthonType;
@@ -184,6 +185,47 @@ static void Forthon_DeleteDicts(ForthonObject *self)
 {
   Py_XDECREF(self->scalardict);
   Py_XDECREF(self->arraydict);
+}
+
+/* ######################################################################### */
+/* # Update the data element of a derived type.                              */
+static void ForthonPackage_updatederivedtype(ForthonObject *self,int i,
+                                             long createnew)
+{
+  ForthonObject *objid;
+  if (self->fscalars[i].type == PyArray_OBJECT && self->fscalars[i].dynamic) {
+    /* If dynamic, use getpointer to get the current address of the */
+    /* python object from the fortran variable. */
+    /* This is needed since the association may have changed in fortran. */
+    (self->fscalars[i].getpointer)(&objid,self->fobj,&createnew);
+    /* If the address has changed, that means that a reassignment was done */
+    /* in fortran. The data needs to be updated and the reference */
+    /* count possibly incremented. */
+    if (self->fscalars[i].data != (char *)objid) {
+      /* Make sure that the correct python object is pointed to. */
+      self->fscalars[i].data = (char *)objid;
+      /* When the python object for a derived type is created, its */
+      /* reference count is 1, but nothing owns that reference - the flag */
+      /* referenceclaimed will be 0. With the line above, the fscalar is */
+      /* claiming a reference.  (That reference is a stand in the for */
+      /* fortran reference.) If the reference is unclaimed, then claim it, */
+      /* otherwise claim a new reference and increment the counter. */
+      if (objid != NULL) {
+        if (objid->referenceclaimed) {
+          Py_XINCREF((PyObject *)self->fscalars[i].data);
+          }
+        else {
+          /* XXX XXX This extra incref is wrong XXX */
+          /* Somewhere, a reference is not being accounted for properly */
+          /* and an object is being deallocated twice during the clean up */
+          /* on exit. This incref fixes it, but will certainly lead to */
+          /* memory leaks. */
+          Py_XINCREF((PyObject *)self->fscalars[i].data);
+          objid->referenceclaimed = 1;
+          }
+        }
+      }
+    }
 }
 
 /* ######################################################################### */
@@ -267,25 +309,10 @@ static PyObject *Forthon_getscalarderivedtype(ForthonObject *self,void *closure)
 {
   Fortranscalar *fscalar = &(self->fscalars[(int)closure]);
   ForthonObject *objid;
+  int createnew=1;
   /* These are attached to variables of fortran derived type */
-  if (fscalar->dynamic) {
-    /* If dynamic, use getpointer to get the current address of the */
-    /* python object from the fortran variable. */
-    /* This is needed since the association may have changed in fortran. */
-    /* If a new object is created, the first reference is kept by forthon. */
-    /* The further INCREF is still needed below for the variable getting */
-    /* the result. */
-    (fscalar->getpointer)(&objid,self->fobj);
-    if (fscalar->data != (char *)objid) {
-      /* Decrement the old reference before reassigning .data. */
-      Py_XDECREF((PyObject *)fscalar->data);
-      /* Make sure that the correct python object is pointed to. */
-      fscalar->data = (char *)objid;
-      }
-    }
-  else {
-    /* If not dynamic, the data element will not have changed. */
-    objid = (ForthonObject *)fscalar->data;}
+  ForthonPackage_updatederivedtype(self,(int)closure,createnew);
+  objid = (ForthonObject *)fscalar->data;
   if (objid != NULL) {
     Py_INCREF(objid);
     return (PyObject *)objid;}
@@ -445,23 +472,20 @@ static int Forthon_setscalarderivedtype(ForthonObject *self,PyObject *value,
 {
   Fortranscalar *fscalar = &(self->fscalars[(int)closure]);
   void *d;
-  /* ForthonObject *objid; */
+  int createnew;
+
+  createnew = (value != NULL);
+  ForthonPackage_updatederivedtype(self,(int)closure,createnew);
 
   if (value == NULL) {
     if (fscalar->dynamic) {
-      /* (fscalar->getpointer)(&objid,self->fobj); */
-      /* if (fscalar->data != (char *)objid) { */
-        /* Decrement the old reference before reassigning .data. */
-        /* Py_XDECREF((PyObject *)fscalar->data); */
-        /* Make sure that the correct python object is pointed to. */
-        /* fscalar->data = (char *)objid;} */
       if (fscalar->data != NULL) {
         /* Decrement the reference counter and nullify the fortran pointer. */
         d = (void *)((ForthonObject *)fscalar->data)->fobjdeallocate;
         Py_DECREF((PyObject *)fscalar->data);
         if (d != NULL)
           (fscalar->setpointer)(0,(self->fobj));
-        fscalar->data = (char *)0;
+        fscalar->data = NULL;
         }
       return 0;
       }
@@ -606,7 +630,9 @@ static int Forthon_setarraydict(ForthonObject *self,void *closure)
 static int Forthon_traverse(ForthonObject *self,visitproc visit,void *arg)
 {
   int i;
+  long createnew=0;
   for (i=0;i<self->nscalars;i++) {
+    ForthonPackage_updatederivedtype(self,i,createnew);
     if (self->fscalars[i].type == PyArray_OBJECT &&
         self->fscalars[i].dynamic &&
         self->fscalars[i].data != NULL &&
@@ -622,7 +648,10 @@ static int Forthon_traverse(ForthonObject *self,visitproc visit,void *arg)
 static int Forthon_clear(ForthonObject *self)
 {
   int i;
+  long createnew=0;
+  ForthonObject *objid;
   for (i=0;i<self->nscalars;i++) {
+    ForthonPackage_updatederivedtype(self,i,createnew);
     if (self->fscalars[i].type == PyArray_OBJECT &&
         self->fscalars[i].dynamic &&
         self->fscalars[i].data != NULL &&
@@ -712,6 +741,7 @@ static PyObject *ForthonPackage_allocated(PyObject *_self_,PyObject *args)
   ForthonObject *self = (ForthonObject *)_self_;
   PyObject *pyi;
   int i;
+  long createnew=1;
   char *name;
   if (!PyArg_ParseTuple(args,"s",&name)) return NULL;
 
@@ -720,6 +750,7 @@ static PyObject *ForthonPackage_allocated(PyObject *_self_,PyObject *args)
   if (pyi != NULL) {
     PyArg_Parse(pyi,"i",&i);
     if (self->fscalars[i].type == PyArray_OBJECT) {
+      ForthonPackage_updatederivedtype(self,i,createnew);
       if (self->fscalars[i].data == NULL) {return Py_BuildValue("i",0);}
       else {
         return Py_BuildValue("i",
@@ -1392,6 +1423,8 @@ static PyObject *ForthonPackage_listvar(PyObject *_self_,PyObject *args)
     else if (self->fscalars[i].type == PyArray_CDOUBLE) {
       PyString_ConcatAndDel(&doc,PyString_FromString("double complex"));}
     PyString_ConcatAndDel(&doc,PyString_FromString("\nAddress:    "));
+    if (self->fscalars[i].type == PyArray_OBJECT)
+      ForthonPackage_updatederivedtype(self,i,(long) 1);
     PyString_ConcatAndDel(&doc,PyObject_Str(PyInt_FromLong((long)(self->fscalars[i].data))));
     PyString_ConcatAndDel(&doc,PyString_FromString("\nComment:\n"));
     PyString_ConcatAndDel(&doc,PyString_FromString(self->fscalars[i].comment));
@@ -1576,32 +1609,21 @@ static PyMethodDef *getForthonPackage_methods(void)
 
 static void Forthon_dealloc(ForthonObject *self)
 {
-  int i;
+  int i,createnew=0;
   void *d;
-  /* PyObject *objid; */
+  ForthonObject *objid;
   if (self->garbagecollected) PyObject_GC_UnTrack((PyObject *) self);
 
   for (i=0;i<self->nscalars;i++) {
     if (self->fscalars[i].type == PyArray_OBJECT)
       {
-      /* if (self->fscalars[i].dynamic) { */
-        /* XXX This doesn't seem to help anything and causes core dumps. */
-        /* If dynamic, use getpointer to get the current address of the */
-        /* python object from the fortran variable. */
-        /* This is needed since the association may have changed in fortran. */
-        /* (self->fscalars[i].getpointer)(&objid,self->fobj); */
-        /* if (self->fscalars[i].data != (char *)objid) { */
-          /* Decrement the old reference before reassigning .data */
-          /* Py_XDECREF((PyObject *)self->fscalars[i].data); */
-          /* self->fscalars[i].data = (char *)objid;} */
-          /* Py_XINCREF((PyObject *)self->fscalars[i].data); */
-        /* } */
+      ForthonPackage_updatederivedtype(self,i,createnew);
       if (self->fscalars[i].data != NULL) {
         d = (void *)((ForthonObject *)self->fscalars[i].data)->fobjdeallocate;
         Py_DECREF((PyObject *)self->fscalars[i].data);
         if (d != NULL)
           (self->fscalars[i].setpointer)(0,(self->fobj));
-        self->fscalars[i].data = 0;
+        self->fscalars[i].data = NULL;
         }
       }
     }

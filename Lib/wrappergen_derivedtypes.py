@@ -126,7 +126,7 @@ class ForthonDerivedType:
                 '(char *p,char *fobj);')
         if s.dynamic:
           self.cw('extern void '+fname(self.fsub(t,'getpointer',s.name))+
-                  '(ForthonObject **cobj__,char *obj);')
+                  '(ForthonObject **cobj__,char *obj,long *createnew__);')
       for a in alist:
         self.cw('extern void '+fname(self.fsub(t,'setpointer',a.name))+
                   '(char *p,char *fobj,long *dims__);')
@@ -291,7 +291,10 @@ class ForthonDerivedType:
       self.cw('PyObject *'+pname+'_'+t.name+
               'New(PyObject *self, PyObject *args)')
       self.cw('{')
-      self.cw('return '+fname(self.fsub(t,'newf'))+'();')
+      self.cw('  ForthonObject *result;')
+      self.cw('  result = (ForthonObject *)'+fname(self.fsub(t,'newf'))+'();')
+      self.cw('  result->referenceclaimed = 1;')
+      self.cw('  return (PyObject *)result;')
       self.cw('}')
       #########################################################################
       # --- Write out an empty list of methods
@@ -319,6 +322,7 @@ class ForthonDerivedType:
       self.cw('    obj->fobjdeallocate = NULL;')
       self.cw('  obj->nullifycobj=*'+fname(self.fsub(t,'nullifycobjf'))+';')
       self.cw('  obj->allocated = 0;')
+      self.cw('  obj->referenceclaimed = 0;')
       self.cw('  obj->garbagecollected = %d;'%garbagecollected)
       self.cw('  *cobj__ = obj;')
       self.cw('  if (PyErr_Occurred())')
@@ -745,12 +749,13 @@ class ForthonDerivedType:
         self.fw('  RETURN')
         self.fw('END')
         if s.dynamic:
-          self.fw('SUBROUTINE '+self.fsub(t,'getpointer',s.name)+'(cobj__,obj__)')
+          self.fw('SUBROUTINE '+self.fsub(t,'getpointer',s.name)+
+                          '(cobj__,obj__,createnew__)')
           self.fw('  USE '+t.name+'module')
-          self.fw('  integer('+isz+'):: cobj__')
+          self.fw('  integer('+isz+'):: cobj__,createnew__')
           self.fw('  TYPE('+t.name+'):: obj__')
           self.fw('  if (ASSOCIATED(obj__%'+s.name+')) then')
-          self.fw('    if (obj__%'+s.name+'%cobj__ == 0) '+
+          self.fw('    if (obj__%'+s.name+'%cobj__ == 0 .and. createnew__==1) '+
                         'call init'+s.type+'py(-1,obj__%'+s.name+','+
                                                'obj__%'+s.name+'%cobj__,0,0)')
           self.fw('    cobj__ = obj__%'+s.name+'%cobj__')

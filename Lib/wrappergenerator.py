@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.24 2004/10/07 20:08:23 dave Exp $
+# $Id: wrappergenerator.py,v 1.25 2004/10/08 23:48:18 dave Exp $
 
 import sys
 import os.path
@@ -689,6 +689,10 @@ Usage:
     self.cw('  '+self.pname+'Object->fmethods = '+self.pname+'_methods;')
     self.cw('  '+self.pname+'Object->fobj = NULL;')
     self.cw('  '+self.pname+'Object->fobjdeallocate = NULL;')
+    self.cw('  '+self.pname+'Object->nullifycobj = NULL;')
+    self.cw('  '+self.pname+'Object->allocated = 0;')
+    self.cw('  '+self.pname+'Object->referenceclaimed = 0;')
+    self.cw('  '+self.pname+'Object->garbagecollected = 0;')
     self.cw('  PyModule_AddObject(m,"'+self.pname+'",(PyObject *)'+
                 self.pname+'Object);')
     self.cw('  ErrorObject = PyString_FromString("'+self.pname+'py.error");')
