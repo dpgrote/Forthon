@@ -45,7 +45,7 @@ setup (name = "Forthon",
        platforms = "Unix, Windows (cygwin), Mac OSX",
        packages = ['Forthon'],
        package_dir = {'Forthon': 'Lib'},
-       data_files = [(data_files_home,['Src/Forthon.h','Src/Forthon.c'])],
+       data_files = [(data_files_home,['Notice','Src/Forthon.h','Src/Forthon.c'])],
        scripts = [Forthon]
        )
 
