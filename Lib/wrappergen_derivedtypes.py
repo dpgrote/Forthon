@@ -526,8 +526,13 @@ class ForthonDerivedType:
       self.fw('SUBROUTINE DelPyRef'+t.name+'(oldobj__)')
       self.fw('  USE '+t.name+'module')
       self.fw('  TYPE('+t.name+'):: oldobj__')
-      self.fw('  call del'+t.name+'py(oldobj__%cobj__)')
+      self.fw('  INTEGER('+isz+'):: cobj__')
+      self.fw('  cobj__ = oldobj__%cobj__')
+      # --- Note that during the deltypepy call, this object may become
+      # --- deallocated (if there are no other references to it). So, this
+      # --- assignment must be done first.
       self.fw('  oldobj__%cobj__ = 0')
+      self.fw('  call del'+t.name+'py(cobj__)')
       self.fw('  RETURN')
       self.fw('END SUBROUTINE DelPyRef'+t.name)
       # --- The memory handling routines check if the cobj__ has been
