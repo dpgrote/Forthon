@@ -330,6 +330,10 @@ cfiles = map(addbuilddir,[pkg+'pymodule.c','Forthon.c'])
 ofiles = map(addbuilddir,[pkg+'.o',pkg+'_p.o']+extraobjectslist)
 
 sys.argv = ['Forthon','build','--build-platlib','.']
+
+# --- DOS requires an extra argument to build properly
+if machine == 'win32': sys.argv.append('--compiler=mingw32')
+
 setup(name = pkg,
       ext_modules = [Extension(pkg+'py',
                                cfiles+extracfiles,
