@@ -55,14 +55,14 @@ print ''
 
 
 print 'Testing array assignment of the form pkg.x = x'
-xx = fzeros((2,2),'d')
+xx = fzeros((3,2),'d')
 example.xxx = xx
 xx[1,1] = 1
 print 'The following two arrays should be identical, since only pointer'
 print 'referencing is done if the RHS array has fortran ordering.'
 print xx
 print example.xxx
-xx = zeros((2,2),'d')
+xx = zeros((3,2),'d')
 example.xxx = xx
 xx[1,1] = 1
 print 'The following two arrays should be different, since a copy is done'
