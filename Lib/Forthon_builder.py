@@ -1,21 +1,4 @@
-#! python
-"""Does everything that is needed to build an individual package.
 """
-
-import sys,os,re
-import getopt
-import string
-import distutils
-import distutils.sysconfig
-from distutils.core import setup, Extension
-
-optlist,args = getopt.getopt(sys.argv[1:],'agd:t:F:C:D:L:l:i:f:',
-                         ['f90','f77','f90f','nowritemodules','macros=',
-                          'FOPTS=','COPTS=','static',
-                          'free_suffix=','fixed_suffix='])
-
-if len(sys.argv) == 1:
-  print """
 Forthon [options] pkgname [extra files to be compiled]
 
 pkgname is the name of the package.
@@ -24,14 +7,14 @@ file and the fortran file. The default name for the interface file is
 pkgname.v.  Note that the first line of the interface file must be the package
 name. The default name for the fortran file is pkgname.F
 
+Extra files can for fortran or C files that are to be compiled and included
+in the package.
+
 One or more of the following options can be specified.
 
  -a
     When specified, all groups will be allocated when package is imported
     into python. By default, groups are not allocated.
- -C command
-    C compiler, one of gcc, icc.  Will automatically be determined if
-    not supplied.
  -d package
     Specifies that a package that the package being built depends upon.
     This option can be specified multiple times.
@@ -41,16 +24,16 @@ One or more of the following options can be specified.
     be specified multiple times.
  -F command
     Fortran compiler.  Will automatically be determined if not supplied.
-    It can be one of the following, depending on the machine
-    intel8, intel, pg, absort, nag, xlf, mpxlf, xlf_r
+    It can be one of the following, depending on the machine:
+    intel8, intel, pg, absort, nag, xlf, mpxlf, xlf_r.
  -g
-    Turns off optimization for fortran compiler
+    Turns off optimization for fortran compiler.
  -i filename
-    Specify full name of interface file. It defaults to pkgname.v
+    Specify full name of interface file. It defaults to pkgname.v.
  -f filename
-    Specifiy full name of main fortran file. It defaults to pkgname.F
+    Specifiy full name of main fortran file. It defaults to pkgname.F.
  -L path
-    Addition library directories
+    Addition library paths
  -l library
     Additional libraries that are needed. Note that the prefix 'lib' and any
     suffixes should not be included.
@@ -90,26 +73,44 @@ One or more of the following options can be specified.
     Suffix used for fortran files in free format. Defaults to F90
  --fixed_suffix suffix
     Suffix used for fortran files in fixed format. Defaults to F
-  """
+"""
+
+import sys,os,re
+import getopt
+import string
+import distutils
+import distutils.sysconfig
+from distutils.core import setup, Extension
+from Forthon.compilers import FCompiler
+
+# --- Print help and then exit if not arguments are given
+if len(sys.argv) == 1:
+  print __doc__
   sys.exit(0)
+
+# --- Process command line arguments
+optlist,args = getopt.getopt(sys.argv[1:],'agd:t:F:D:L:l:i:f:',
+                         ['f90','f77','f90f','nowritemodules','macros=',
+                          'FOPTS=','COPTS=','static',
+                          'free_suffix=','fixed_suffix='])
 
 # --- Get the package name
 pkg = args[0]
 
-# --- Get any other extra fortan files
+# --- Get any other extra files
 if len(args) > 1:
   extrafiles = args[1:]
 else:
   extrafiles = []
 
 # --- Set default values for command line options
+machine = sys.platform
 interfacefile = pkg + '.v'
 fortranfile = pkg + '.F'
 initialgallot = ''
 dependencies = []
 defines = []
-machine = None
-fcompiler = None
+fcomp = None
 f90 = '--f90'
 f90f = 0
 writemodules = 1
@@ -127,7 +128,7 @@ for o in optlist:
   if o[0]=='-a': initialgallot = '-a'
   elif o[0] == '-g': debug = 1
   elif o[0] == '-t': machine = o[1]
-  elif o[0] == '-F': fcompiler = o[1]
+  elif o[0] == '-F': fcomp = o[1]
   elif o[0] == '-d': dependencies.append(o[1])
   elif o[0] == '-D': defines.append(o[1])
   elif o[0] == '-L': libdirs.append(o[1])
@@ -145,19 +146,8 @@ for o in optlist:
   elif o[0] == '--free_suffix': free_suffix = o[1]
   elif o[0] == '--fixed_suffix': fixed_suffix = o[1]
 
-if machine is None:
-  machine = sys.platform
 
-paths = string.split(os.environ['PATH'],os.pathsep)
-def findfile(file,paths):
-  if machine == 'win32': file = file + '.exe'
-  for path in paths:
-    try:
-      if file in os.listdir(path): return path
-    except:
-      pass
-  return None
-
+# --- Fix path - needed for Cygwin
 def fixpath(path):
   if machine == 'win32':
     # --- Cygwin does path mangling, requiring two back slashes
@@ -172,156 +162,20 @@ def fixpath(path):
 pywrapperhome = os.path.join(distutils.sysconfig.get_python_lib(),'Forthon')
 pywrapperhome = fixpath(pywrapperhome)
 
-# --- f90free is set here so that a check can be made later to determine if
-# --- it was reset. If it wasn't, that means that a fortran compiler was not
-# --- found.
-f90free = None
-pywrapperargs = ''
-
 # --- Pick the fortran compiler
-#-----------------------------------------------------------------------------
-if machine == 'linux2':
-  if findfile('ifort',paths) and (fcompiler=='intel8' or fcompiler is None):
-    # --- Intel
-    f90free  = 'ifort -nofor_main -free -r8 -DIFC -fpp -implicitnone -C90 -Zp8'
-    f90fixed = 'ifort -nofor_main -132 -r8 -DIFC -fpp -implicitnone -C90 -Zp8'
-    popt = '-O'
-    flibroot,b = os.path.split(findfile('ifort',paths))
-    libdirs.append(flibroot+'/lib')
-    libs = libs + ['ifcore','ifport','imf','svml','cxa','irc','unwind']
-    if not fopts:
-      cpuinfo = open('/proc/cpuinfo','r').read()
-      if re.search('Pentium III',cpuinfo):
-        fopts = '-O3 -xK -tpp6 -ip -unroll -prefetch'
-      else:
-        fopts = '-O3 -xW -tpp7 -ip -unroll -prefetch'
-  elif findfile('ifc',paths) and (fcompiler=='intel' or fcompiler is None):
-    # --- Intel
-    f90free  = 'ifc -132 -r8 -DIFC -fpp -implicitnone -C90 -Zp8'
-    f90fixed = 'ifc -132 -r8 -DIFC -fpp -implicitnone -C90 -Zp8'
-    popt = '-O'
-    flibroot,b = os.path.split(findfile('ifc',paths))
-    libdirs.append(flibroot+'/lib')
-    libs = libs + ['IEPCF90','CEPCF90','F90','intrins','imf','svml','irc','cxa']
-    if not fopts:
-      cpuinfo = open('/proc/cpuinfo','r').read()
-      if re.search('Pentium III',cpuinfo):
-        fopts = '-O3 -xK -tpp6 -ip -unroll -prefetch'
-      else:
-        fopts = '-O3 -xW -tpp7 -ip -unroll -prefetch'
-  elif findfile('pgf90',paths) and (fcompiler=='pg' or fcompiler is None):
-    # --- Portland group
-    f90free  = 'pgf90 -Mextend -Mdclchk -r8'
-    f90fixed = 'pgf90 -Mextend -Mdclchk -r8'
-    popt = '-Mcache_align'
-    flibroot,b = os.path.split(findfile('pgf90',paths))
-    libdirs.append(flibroot+'/lib')
-    libs = libs + ['pgf90'] # ???
-    if not fopts: fopts = '-fast -Mcache_align'
-  elif findfile('f90',paths) and (fcompiler=='absoft' or fcompiler is None):
-    # --- Absoft
-    f90free  = 'f90 -B108 -N113 -W132 -YCFRL=1 -YEXT_NAMES=ASIS'
-    f90fixed = 'f90 -B108 -N113 -W132 -YCFRL=1 -YEXT_NAMES=ASIS'
-    popt = ''
-    pywrapperargs = '--2underscores'
-    flibroot,b = os.path.split(findfile('f90',paths))
-    libdirs.append(flibroot+'/lib')
-    libs = libs + ['U77','V77','f77math','f90math','fio']
-    if not fopts: fopts = '-O'
+fcompiler = FCompiler(machine=machine,
+                      debug=debug,
+                      fcompiler=fcomp,
+                      static=static)
 
-#-----------------------------------------------------------------------------
-elif machine == 'darwin':
-  # --- MAC OSX
-  if findfile('f90',paths) and (fcompiler=='absoft' or fcompiler is None):
-    # --- Absoft
-    f90free  = 'f90 -N11 -N113 -YEXT_NAMES=LCS -YEXT_SFX=_'
-    f90fixed = 'f90 -f fixed -W 132 -N11 -N113 -YEXT_NAMES=LCS -YEXT_SFX=_'
-    popt = ''
-    pywrapperargs = ''
-    flibroot,b = os.path.split(findfile('pgf90',paths))
-    libdirs.append(flibroot+'/lib')
-    libs = libs + ['fio','f77math','f90math','f90math_altivec']
-    if not fopts: fopts = '-O2'
+# --- Create some locals which are needed for strings below.
+f90free = fcompiler.f90free
+f90fixed = fcompiler.f90fixed
+fopts = fopts + ' ' + fcompiler.fopts
+popts = fcompiler.popts
+pywrapperargs = fcompiler.pywrapperargs
 
-  elif findfile('f95',paths) and (fcompiler=='nag' or fcompiler is None):
-    # --- NAG
-    f90free  = 'f95 -132 -fpp -Wp,-macro=no_com -free -PIC -w -mismatch_all -kind=byte -r8'
-    f90fixed = 'f95 -132 -fpp -Wp,-macro=no_com -Wp,-fixed -fixed -PIC -w -mismatch_all -kind=byte -r8'
-    popt = ''
-    flibroot,b = os.path.split(findfile('f95',paths))
-    libdirs.append(flibroot+'/lib')
-    pywrapperargs = ''
-    libdirs.append('???')
-    libs = libs + ['???']
-    if not fopts: fopts = '-Wc,-O3 -Wc,-funroll-loops -O3 -Ounroll=2'
-
-#-----------------------------------------------------------------------------
-elif machine == 'win32':
-  if findfile('pgf90',paths) and (fcompiler=='pg' or fcompiler is None):
-    # --- Portland group
-    f90free  = 'pgf90 -Mextend -Mdclchk -r8'
-    f90fixed = 'pgf90 -Mextend -Mdclchk -r8'
-    popt = '-Mcache_align'
-    flibroot,b = os.path.split(findfile('pgf90',paths))
-    libdirs.append(flibroot+'/Lib')
-    libs = libs + ['???']
-    if not fopts: fopts = '-fast -Mcache_align'
-  elif findfile('ifl',paths) and (fcompiler=='intel' or fcompiler is None):
-    # --- Intel
-    f90free  = 'ifl -Qextend_source -Qautodouble -DIFC -FR -Qfpp -4Yd -C90 -Zp8 -Qlowercase -us -MT -Zl -static'
-    f90fixed = 'ifl -Qextend_source -Qautodouble -DIFC -FI -Qfpp -4Yd -C90 -Zp8 -Qlowercase -us -MT -Zl -static'
-    popt = ''
-    flibroot,b = os.path.split(findfile('ifl',paths))
-    libdirs.append(flibroot+'/Lib')
-    libs = libs + ['CEPCF90MD','F90MD','intrinsMD']
-    if not fopts: fopts = '-O3'
-
-#-----------------------------------------------------------------------------
-elif machine == 'aix4':
-  static = 1
-  if fcompiler=='mpxlf' or (fcompiler is None and findfile('mpxlf95',paths)):
-    # --- IBM SP, parallel
-    f90free  = 'mpxlf95 -c -qmaxmem=8192 -u -qdpc=e -qintsize=4 -qsave=defaultinit -WF,-DMPIPARALLEL -qsuffix=f=f90:cpp=F90 -qfree=f90 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
-    f90fixed = 'mpxlf95 -c -qmaxmem=8192 -u -qdpc=e -qintsize=4 -qsave=defaultinit -WF,-DMPIPARALLEL -qfixed=132 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
-    popt = '-O'
-    ld = 'mpxlf_r -bmaxdata:0x70000000 -bmaxstack:0x10000000 -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp'
-    libs = libs + ' $(PYMPI)/driver.o $(PYMPI)/patchedmain.o -L$(PYMPI) -lpympi -lpthread'
-    if len(defines) == 0:
-      defines.append('PYMPI=/usr/common/homes/g/grote/pyMPI')
-    if not fopts:
-      fopts = '-O3 -qstrict -qarch=pwr3 -qtune=pwr3'
-
-  elif fcompiler=='xlf' or (fcompiler is None and findfile('xlf95',paths)):
-    # --- IBM SP, serial
-    f90free  = 'xlf95 -c -qmaxmem=8192 -u -qdpc=e -qintsize=4 -qsave=defaultinit -qsuffix=f=f90:cpp=F90 -qfree=f90 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
-    f90fixed = 'xlf95 -c -qmaxmem=8192 -u -qdpc=e -qintsize=4 -qsave=defaultinit -qfixed=132 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
-    popt = '-O'
-    ld = 'xlf -bmaxdata:0x70000000 -bmaxstack:0x10000000 -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp'
-    libs = libs + ' -lpthread'
-    if not fopts:
-      fopts = '-O3 -qstrict -qarch=pwr3 -qtune=pwr3'
-
-  elif fcompiler=='xlf_r' or (fcompiler is None and findfile('xlf90_r',paths)):
-    # --- IBM SP, OpenMP
-    f90free  = 'xlf90_r -c -qmaxmem=8192 -u -qdpc=e -qintsize=4 -qsave=defaultinit -qsuffix=f=f90:cpp=F90 -qfree=f90 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
-    f90fixed = 'xlf95 -c -qmaxmem=8192 -u -qdpc=e -qintsize=4 -qsave=defaultinit -qfixed=132 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
-    popt = '-O'
-    ld = 'xlf90_r -bmaxdata:0x70000000 -bmaxstack:0x10000000 -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp'
-    libs = libs + ' -lpthread -lxlf90_r -lxlopt -lxlf -lxlsmp'
-    if not fopts:
-      fopts = '-O3 -qstrict -qarch=pwr3 -qtune=pwr3 -qsmp=omp'
-
-else:
-  raise SystemExit,'Machine type %s is unknown'%machine
-
-
-if f90free is None:
-  raise SystemExit,'Fortran compiler not found'
-
-# --- Force debugging option if specified
-if debug: fopts = '-g'
-
-#-------------------------------------------------------------------------
+# --- Find location of the python libraries and executable.
 prefix = fixpath(sys.prefix)
 pyvers = sys.version[:3]
 python = fixpath(sys.executable)
@@ -332,15 +186,15 @@ for d in dependencies:
   dep = dep + ' -d %s.scalars'%d
 
 # --- Loop over extrafiles. For each fortran file, append the object name
-# --- to be used in the makefile. For each C file, add to a list to be
-# --- included in the setup command.
-extraobjects = ''
+# --- to be used in the makefile and for setup. For each C file, add to a
+# --- list to be included in setup.
+extraobjectsstr = ''
 extraobjectslist = []
 extracfiles = []
 for f in extrafiles:
   root,suffix = os.path.splitext(f)
   if suffix[1:] in ['F','F90','f',fixed_suffix,free_suffix]:
-    extraobjects = extraobjects + root + '.o '
+    extraobjectsstr = extraobjectsstr + root + '.o '
     extraobjectslist = extraobjectslist + [root + '.o']
   elif suffix[1:] in ['c']:
     extracfiles.append(f)
@@ -350,15 +204,19 @@ othermacstr = ''
 for f in othermacros:
   othermacstr = othermacstr + ' --macros ' + f
 
+# --- Put any defines in a string that will appear at the beginning of the
+# --- makefile.
+definesstr = ''
+for d in (defines + fcompiler.defines):
+  definesstr = definesstr + d + '\n'
+
 # --- Define default rule. Note that static doesn't work yet.
-if static:
-  default = 'static:'
+if fcompiler.static:
+  defaultrule = 'static:'
+  raise "Static linking not supported at this time"
 else:
   fortranroot,suffix = os.path.splitext(fortranfile)
-  default = 'dynamic: %(pkg)s_p.o %(fortranroot)s.o %(pkg)spymodule.c Forthon.h Forthon.c %(extraobjects)s'%locals()
-
-definesstr = ''
-for d in defines: definesstr = definesstr + d + '\n'
+  defaultrule = 'dynamic: %(pkg)s_p.o %(fortranroot)s.o %(pkg)spymodule.c Forthon.h Forthon.c %(extraobjectsstr)s'%locals()
 
 # --- First, create Makefile.pkg which has all the needed definitions
 makefiletext = """
@@ -367,7 +225,7 @@ PYTHON = %(prefix)s
 PYVERS = %(pyvers)s
 PYPREPROC = %(python)s -c "from Forthon.preprocess import main;main()" %(f90)s -t%(machine)s %(pywrapperargs)s
 
-%(default)s
+%(defaultrule)s
 
 %%.o: %%.%(fixed_suffix)s %(pkg)s_p.o
 	%(f90fixed)s %(fopts)s -c $<
@@ -379,7 +237,7 @@ Forthon.c:%(pywrapperhome)s/Forthon.c
 	$(PYPREPROC) %(pywrapperhome)s/Forthon.c Forthon.c
 
 %(pkg)s_p.o:%(pkg)s_p.%(free_suffix)s
-	%(f90free)s %(popt)s -c %(pkg)s_p.%(free_suffix)s
+	%(f90free)s %(popts)s -c %(pkg)s_p.%(free_suffix)s
 %(pkg)spymodule.c %(pkg)s_p.%(free_suffix)s:%(interfacefile)s
 	%(python)s -c "from Forthon.wrappergenerator import wrappergenerator_main;wrappergenerator_main()" \\
 	%(f90)s -t %(machine)s %(pywrapperargs)s %(initialgallot)s \\
@@ -409,7 +267,7 @@ setup(name = pkg,
                         [pkg+'pymodule.c','Forthon.c']+extracfiles,
                         include_dirs=[pywrapperhome,'.'],
                         extra_objects=[pkg+'.o',pkg+'_p.o']+extraobjectslist,
-                        library_dirs=libdirs,
-                        libraries=libs)]
+                        library_dirs=fcompiler.libdirs,
+                        libraries=fcompiler.libs)]
      )
 

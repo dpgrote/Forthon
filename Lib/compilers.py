@@ -16,25 +16,24 @@ where compexec is the executable name of the compiler and compname is a
 descriptive (or company) name for the compiler. They can be the same.
 In the function, the two attributes f90free and f90fixed must be defined. Note
 that the final linking is done with gcc, so any fortran libraries will need to
-be added to libs (and there locations to libdirs).
-Also, the new function must be included in the while loop below.
+be added to libs (and their locations to libdirs).
+Also, the new function must be included in the while loop below in the
+appropriate block for the machine.
   """
 
-  def __init__(self,machine=None,debug=0,fcompiler=None,defines=[],
-                    fopts='',copts='',popt='',libs=[],libdirs=[],static=0):
+  def __init__(self,machine=None,debug=0,fcompiler=None,static=0):
     if machine is None: machine = sys.platform
     self.machine = machine
 
     self.paths = string.split(os.environ['PATH'],os.pathsep)
 
-    self.defines = defines
     self.fcompiler = fcompiler
-    self.fopts = fopts
-    self.copts = copts
-    self.popt = popt
-    self.libs = libs
     self.static = static
-    self.libdirs = libdirs
+    self.defines = []
+    self.fopts = ''
+    self.popts = ''
+    self.libs = []
+    self.libdirs = []
     self.pywrapperargs = ''
 
     # --- Pick the fortran compiler
@@ -60,11 +59,6 @@ Also, the new function must be included in the while loop below.
       else:
         raise SystemExit,'Machine type %s is unknown'%self.machine
       raise SystemExit,'Fortran compiler not found'
-
-      f90free
-      f90fixed
-      libdirs
-      libs
 
     # --- The following two quantities must be defined.
     try:
@@ -93,16 +87,15 @@ Also, the new function must be included in the while loop below.
       # --- Intel8
       self.f90free  = 'ifort -nofor_main -free -r8 -DIFC -fpp -implicitnone -C90 -Zp8'
       self.f90fixed = 'ifort -nofor_main -132 -r8 -DIFC -fpp -implicitnone -C90 -Zp8'
-      self.popt = '-O'
+      self.popts = '-O'
       flibroot,b = os.path.split(self.findfile('ifort'))
-      self.libdirs.append(flibroot+'/lib')
-      self.libs = self.libs + ['ifcore','ifport','imf','svml','cxa','irc','unwind']
-      if not self.fopts:
-        cpuinfo = open('/proc/cpuinfo','r').read()
-        if re.search('Pentium III',cpuinfo):
-          self.fopts = '-O3 -xK -tpp6 -ip -unroll -prefetch'
-        else:
-          self.fopts = '-O3 -xW -tpp7 -ip -unroll -prefetch'
+      self.libdirs = [flibroot+'/lib']
+      self.libs = ['ifcore','ifport','imf','svml','cxa','irc','unwind']
+      cpuinfo = open('/proc/cpuinfo','r').read()
+      if re.search('Pentium III',cpuinfo):
+        self.fopts = '-O3 -xK -tpp6 -ip -unroll -prefetch'
+      else:
+        self.fopts = '-O3 -xW -tpp7 -ip -unroll -prefetch'
       return 1
 
   def linux_intel(self):
@@ -111,16 +104,15 @@ Also, the new function must be included in the while loop below.
       # --- Intel
       self.f90free  = 'ifc -132 -r8 -DIFC -fpp -implicitnone -C90 -Zp8'
       self.f90fixed = 'ifc -132 -r8 -DIFC -fpp -implicitnone -C90 -Zp8'
-      self.popt = '-O'
+      self.popts = '-O'
       flibroot,b = os.path.split(self.findfile('ifc'))
-      self.libdirs.append(flibroot+'/lib')
-      self.libs = self.libs + ['IEPCF90','CEPCF90','F90','intrins','imf','svml','irc','cxa']
-      if not self.fopts:
-        cpuinfo = open('/proc/cpuinfo','r').read()
-        if re.search('Pentium III',cpuinfo):
-          self.fopts = '-O3 -xK -tpp6 -ip -unroll -prefetch'
-        else:
-          self.fopts = '-O3 -xW -tpp7 -ip -unroll -prefetch'
+      self.libdirs = [flibroot+'/lib']
+      self.libs = ['IEPCF90','CEPCF90','F90','intrins','imf','svml','irc','cxa']
+      cpuinfo = open('/proc/cpuinfo','r').read()
+      if re.search('Pentium III',cpuinfo):
+        self.fopts = '-O3 -xK -tpp6 -ip -unroll -prefetch'
+      else:
+        self.fopts = '-O3 -xW -tpp7 -ip -unroll -prefetch'
       return 1
 
   def linux_pg(self):
@@ -129,11 +121,11 @@ Also, the new function must be included in the while loop below.
       # --- Portland group
       self.f90free  = 'pgf90 -Mextend -Mdclchk -r8'
       self.f90fixed = 'pgf90 -Mextend -Mdclchk -r8'
-      self.popt = '-Mcache_align'
+      self.popts = '-Mcache_align'
       flibroot,b = os.path.split(self.findfile('pgf90'))
-      self.libdirs.append(flibroot+'/lib')
-      self.libs = self.libs + ['pgf90'] # ???
-      if not self.fopts: self.fopts = '-fast -Mcache_align'
+      self.libdirs = [flibroot+'/lib']
+      self.libs = ['pgf90'] # ???
+      self.fopts = '-fast -Mcache_align'
 
   def linux_absoft(self):
     if (self.findfile('f90') and
@@ -141,12 +133,11 @@ Also, the new function must be included in the while loop below.
       # --- Absoft
       self.f90free  = 'f90 -B108 -N113 -W132 -YCFRL=1 -YEXT_NAMES=ASIS'
       self.f90fixed = 'f90 -B108 -N113 -W132 -YCFRL=1 -YEXT_NAMES=ASIS'
-      self.popt = ''
       self.pywrapperargs = '--2underscores'
       flibroot,b = os.path.split(self.findfile('f90'))
-      self.libdirs.append(flibroot+'/lib')
-      self.libs = self.libs + ['U77','V77','f77math','f90math','fio']
-      if not self.fopts: self.fopts = '-O'
+      self.libdirs = [flibroot+'/lib']
+      self.libs = ['U77','V77','f77math','f90math','fio']
+      self.fopts = '-O'
       return 1
 
   #-----------------------------------------------------------------------------
@@ -157,12 +148,10 @@ Also, the new function must be included in the while loop below.
       # --- Absoft
       self.f90free  = 'f90 -N11 -N113 -YEXT_NAMES=LCS -YEXT_SFX=_'
       self.f90fixed = 'f90 -f fixed -W 132 -N11 -N113 -YEXT_NAMES=LCS -YEXT_SFX=_'
-      self.popt = ''
-      self.pywrapperargs = ''
       flibroot,b = os.path.split(self.findfile('pgf90'))
-      self.libdirs.append(flibroot+'/lib')
-      self.libs = self.libs + ['fio','f77math','f90math','f90math_altivec']
-      if not self.fopts: self.fopts = '-O2'
+      self.libdirs = [flibroot+'/lib']
+      self.libs = ['fio','f77math','f90math','f90math_altivec']
+      self.fopts = '-O2'
       return 1
 
   def macosx_nag(self):
@@ -171,13 +160,10 @@ Also, the new function must be included in the while loop below.
       # --- NAG
       self.f90free  = 'f95 -132 -fpp -Wp,-macro=no_com -free -PIC -w -mismatch_all -kind=byte -r8'
       self.f90fixed = 'f95 -132 -fpp -Wp,-macro=no_com -Wp,-fixed -fixed -PIC -w -mismatch_all -kind=byte -r8'
-      self.popt = ''
       flibroot,b = os.path.split(self.findfile('f95'))
-      self.libdirs.append(flibroot+'/lib')
-      self.pywrapperargs = ''
-      self.libdirs.append('???')
-      self.libs = self.libs + ['???']
-      if not self.fopts: self.fopts = '-Wc,-O3 -Wc,-funroll-loops -O3 -Ounroll=2'
+      self.libdirs = [flibroot+'/lib']
+      self.libs = ['???']
+      self.fopts = '-Wc,-O3 -Wc,-funroll-loops -O3 -Ounroll=2'
       return 1
 
   #-----------------------------------------------------------------------------
@@ -188,11 +174,11 @@ Also, the new function must be included in the while loop below.
       # --- Portland group
       self.f90free  = 'pgf90 -Mextend -Mdclchk -r8'
       self.f90fixed = 'pgf90 -Mextend -Mdclchk -r8'
-      self.popt = '-Mcache_align'
+      self.popts = '-Mcache_align'
       flibroot,b = os.path.split(self.findfile('pgf90'))
-      self.libdirs.append(flibroot+'/Lib')
-      self.libs = self.libs + ['???']
-      if not self.fopts: self.fopts = '-fast -Mcache_align'
+      self.libdirs = [flibroot+'/Lib']
+      self.libs = ['???']
+      self.fopts = '-fast -Mcache_align'
       return 1
 
   def win32_intel(self):
@@ -201,11 +187,10 @@ Also, the new function must be included in the while loop below.
       # --- Intel
       self.f90free  = 'ifl -Qextend_source -Qautodouble -DIFC -FR -Qfpp -4Yd -C90 -Zp8 -Qlowercase -us -MT -Zl -static'
       self.f90fixed = 'ifl -Qextend_source -Qautodouble -DIFC -FI -Qfpp -4Yd -C90 -Zp8 -Qlowercase -us -MT -Zl -static'
-      self.popt = ''
       flibroot,b = os.path.split(self.findfile('ifl'))
-      self.libdirs.append(flibroot+'/Lib')
-      self.libs = self.libs + ['CEPCF90MD','F90MD','intrinsMD']
-      if not self.fopts: self.fopts = '-O3'
+      self.libdirs = [flibroot+'/Lib']
+      self.libs = ['CEPCF90MD','F90MD','intrinsMD']
+      self.fopts = '-O3'
       return 1
 
   #-----------------------------------------------------------------------------
@@ -216,13 +201,11 @@ Also, the new function must be included in the while loop below.
       # --- IBM SP, parallel
       self.f90free  = 'mpxlf95 -c -qmaxmem=8192 -u -qdpc=e -qintsize=4 -qsave=defaultinit -WF,-DMPIPARALLEL -qsuffix=f=f90:cpp=F90 -qfree=f90 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
       self.f90fixed = 'mpxlf95 -c -qmaxmem=8192 -u -qdpc=e -qintsize=4 -qsave=defaultinit -WF,-DMPIPARALLEL -qfixed=132 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
-      self.popt = '-O'
+      self.popts = '-O'
       self.ld = 'mpxlf_r -bmaxdata:0x70000000 -bmaxstack:0x10000000 -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp'
-      self.libs = self.libs + ' $(PYMPI)/driver.o $(PYMPI)/patchedmain.o -L$(PYMPI) -lpympi -lpthread'
-      if len(self.defines) == 0:
-        self.defines.append('PYMPI=/usr/common/homes/g/grote/pyMPI')
-      if not self.fopts:
-        self.fopts = '-O3 -qstrict -qarch=pwr3 -qtune=pwr3'
+      self.libs = ' $(PYMPI)/driver.o $(PYMPI)/patchedmain.o -L$(PYMPI) -lpympi -lpthread'
+      self.defines = ['PYMPI=/usr/common/homes/g/grote/pyMPI']
+      self.fopts = '-O3 -qstrict -qarch=pwr3 -qtune=pwr3'
       return 1
 
   def aix_xlf(self):
@@ -231,11 +214,10 @@ Also, the new function must be included in the while loop below.
       # --- IBM SP, serial
       self.f90free  = 'xlf95 -c -qmaxmem=8192 -u -qdpc=e -qintsize=4 -qsave=defaultinit -qsuffix=f=f90:cpp=F90 -qfree=f90 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
       self.f90fixed = 'xlf95 -c -qmaxmem=8192 -u -qdpc=e -qintsize=4 -qsave=defaultinit -qfixed=132 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
-      self.popt = '-O'
+      self.popts = '-O'
       self.ld = 'xlf -bmaxdata:0x70000000 -bmaxstack:0x10000000 -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp'
-      self.libs = self.libs + ' -lpthread'
-      if not self.fopts:
-        self.fopts = '-O3 -qstrict -qarch=pwr3 -qtune=pwr3'
+      self.libs = ['pthread']
+      self.fopts = '-O3 -qstrict -qarch=pwr3 -qtune=pwr3'
       return 1
 
   def aix_xlf_r(self):
@@ -244,10 +226,9 @@ Also, the new function must be included in the while loop below.
       # --- IBM SP, OpenMP
       self.f90free  = 'xlf90_r -c -qmaxmem=8192 -u -qdpc=e -qintsize=4 -qsave=defaultinit -qsuffix=f=f90:cpp=F90 -qfree=f90 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
       self.f90fixed = 'xlf95 -c -qmaxmem=8192 -u -qdpc=e -qintsize=4 -qsave=defaultinit -qfixed=132 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
-      self.popt = '-O'
+      self.popts = '-O'
       self.ld = 'xlf90_r -bmaxdata:0x70000000 -bmaxstack:0x10000000 -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp'
-      self.libs = self.libs + ' -lpthread -lxlf90_r -lxlopt -lxlf -lxlsmp'
-      if not self.fopts:
-        self.fopts = '-O3 -qstrict -qarch=pwr3 -qtune=pwr3 -qsmp=omp'
+      self.libs = ' -lpthread -lxlf90_r -lxlopt -lxlf -lxlsmp'
+      self.fopts = '-O3 -qstrict -qarch=pwr3 -qtune=pwr3 -qsmp=omp'
       return 1
 
