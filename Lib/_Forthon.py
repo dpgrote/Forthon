@@ -36,7 +36,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.12 2004/10/01 20:45:33 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.13 2004/10/01 22:35:00 dave Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling
@@ -235,6 +235,7 @@ def fzeros(shape,typecode=Int):
 
 # --- Prints out the documentation of the subroutine or variable.
 def doc(f,printit=1):
+  fname = None
   # --- The for loop only gives the code something to break out of. There's
   # --- probably a better way of doing this.
   for i in range(1):
@@ -255,12 +256,14 @@ def doc(f,printit=1):
             except KeyError:
               pass
           if d is None: d = ''
+          fname = determineoriginatingfile(m)
           break
         except ImportError:
           pass
         # --- Try to get the actual value of the object
         try:
           v = __main__.__dict__[f]
+          fname = determineoriginatingfile(v)
           d = v.__doc__
           break
         except KeyError:
@@ -268,33 +271,51 @@ def doc(f,printit=1):
         except AttributeError:
           d = "No documentation found"
     else:
+      fname = determineoriginatingfile(f)
       # --- Check if it has a doc string
       try:
         d = f.__doc__
       except AttributeError:
         d = "No documentation found"
-  if printit: print d
-  else:       return d
+  if fname is not None: result = 'From file ' + fname + '\n'
+  else:                 result = ''
+  result += d
+  if printit: print result
+  else:       return result
 
 def determineoriginatingfile(o):
   """
-Attempts to determine the name of the file where the given object was defined.
-The input can be an object or a string. If it is a string, it tries to find
-the object in the __main__. If it can't find anything, it returns None.
-Note there are cases where the file name can not be determined - in those
-cases None is returned.
+Attempts to determine the name of the file where the given object was
+defined.  The input can be an object or a string. If it is a string, it
+tries to find the object in __main__ or looks for a module with that
+name. If it can't find anything, it returns None. If an object is passed in,
+introspection is used to find the file name. Note there are cases
+where the file name can not be determined - None is returned.
   """
   if type(o) is StringType:
+    # --- First, deal with strings
     try:
+      # --- Look in __main__
       o = __main__.__dict__[o]
     except KeyError:
+      # --- If not there, try to find a module with that name.
+      # --- Note: this could return a different module than the original
+      # --- if module names are redundant and/or the sys.path has changed.
       try:
         o = __import__(o)
       except ImportError:
+        # --- If that fails, just return None
         return None
+  # --- Now deal with the various types.
+  # --- Note that this is done recursively in some cases to reduce redundant
+  # --- coding.
+  # --- For all other types, either the information is not available,
+  # --- or it doesn't make sense.
   if type(o) is ModuleType:
-    try: return o.__file__
-    except AttributeError: return '(statically linked into python)'
+    try:
+      return o.__file__
+    except AttributeError:
+      return '%s (statically linked into python)'%o.__name__
   if type(o) in [MethodType,UnboundMethodType]:
     return determineoriginatingfile(o.im_class)
   if type(o) in [FunctionType,LambdaType]:
