@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.22 2004/09/14 17:36:13 dave Exp $ */
+/* $Id: Forthon.h,v 1.23 2004/09/30 22:20:18 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -297,7 +297,8 @@ static int dimensionsmatch(Fortranarray *farray)
   int i;
   int result = 1;
   for (i=0;i<farray->nd;i++) {
-    if (farray->dimensions[i] != farray->pya->dimensions[i]) result = 0;}
+    if (farray->dimensions[i] != farray->pya->dimensions[farray->nd-1-i])
+      result = 0;}
   return result;
 }
 /* ------------------------------------------------------------------------- */
@@ -372,6 +373,9 @@ static int Forthon_freearray(ForthonObject *self,void *closure)
       Py_XDECREF(farray->pya);
       farray->pya = NULL;
 %py_ifelse(f90 and not f90f,0,'*(farray->data.d)=0;','')
+      /* Note that the dimensions passed in are in the wrong (C) order, but */
+      /* here it doesn't matter since the array pointer is just be zero. */
+      /* This probably should be done correctly just to avoid any error. */
 %py_ifelse(f90 and not f90f,1,'(farray->setpointer)(0,(self->fobj),farray->dimensions);','')
       }
     }
@@ -540,7 +544,9 @@ static int Forthon_setarray(ForthonObject *self,PyObject *value,
     if (setit) {
       if (farray->pya != NULL) {Py_XDECREF(farray->pya);}
       farray->pya = ax;
-%py_ifelse(f90 and not f90f,1,'(farray->setpointer)((farray->pya)->data,(self->fobj),farray->dimensions);','')
+      /* Note that pya->dimensions are in the correct fortran order, but */
+      /* farray->dimensions are in C order. */
+%py_ifelse(f90 and not f90f,1,'(farray->setpointer)((farray->pya)->data,(self->fobj),(farray->pya)->dimensions);','')
 %py_ifelse(f90 and not f90f,0,'*(farray->data.d)=(farray->pya)->data;','')
       r = 0;}
     else {
@@ -855,7 +861,9 @@ static PyObject *ForthonPackage_forceassign(PyObject *_self_,PyObject *args)
         totmembytes -= PyArray_NBYTES(self->farrays[i].pya);
       Py_XDECREF(self->farrays[i].pya);
       self->farrays[i].pya = ax;
-%py_ifelse(f90 and not f90f,1,'(self->farrays[i].setpointer)((self->farrays[i].pya)->data,(self->fobj),self->farrays[i].dimensions);','')
+      /* Note that pya->dimensions are in the correct fortran order, but */
+      /* farray->dimensions are in C order. */
+%py_ifelse(f90 and not f90f,1,'(self->farrays[i].setpointer)((self->farrays[i].pya)->data,(self->fobj),(self->farrays[i].pya)->dimensions);','')
 %py_ifelse(f90 and not f90f,0,'*(self->farrays[i].data.d)=(self->farrays[i].pya)->data;','')
       totmembytes += PyArray_NBYTES(self->farrays[i].pya);
       returnnone;}
@@ -935,6 +943,9 @@ static PyObject *ForthonPackage_gallot(PyObject *_self_,PyObject *args)
         if (self->farrays[i].dimensions[j] <= 0) allotit = 0;
       if (allotit) {
         /* Use array routine to create space */
+        /* Note that in the call to setpointer, the dimensions are in the */
+        /* wrong order. It is not fixed since the f90f is not really supported*/
+        /* nor needed. */
 %py_ifelse(f90f,0,'self->farrays[i].pya = (PyArrayObject *)PyArray_FromDims(self->farrays[i].nd,self->farrays[i].dimensions,self->farrays[i].type);')
 %py_ifelse(f90f,1,'(self->farrays[i].setpointer)(&(self->farrays[i]),(self->fobj),self->farrays[i].dimensions);')
 %py_ifelse(f90f,1,'self->farrays[i].pya = (PyArrayObject *)PyArray_FromDimsAndData(self->farrays[i].nd,self->farrays[i].dimensions,self->farrays[i].type,self->farrays[i].data.s);')
@@ -953,8 +964,10 @@ static PyObject *ForthonPackage_gallot(PyObject *_self_,PyObject *args)
         ARRAY_REVERSE_STRIDE(self->farrays[i].pya);
         ARRAY_REVERSE_DIM(self->farrays[i].pya);
         /* Point fortran pointer to new space */
+        /* Note that pya->dimensions are in the correct fortran order, but */
+        /* farray->dimensions are in C order. */
 %py_ifelse(f90 and not f90f,0,'*(self->farrays[i].data.d)=(self->farrays[i].pya)->data;','')
-%py_ifelse(f90 and not f90f,1,'(self->farrays[i].setpointer)((self->farrays[i].pya)->data,(self->fobj),self->farrays[i].dimensions);','')
+%py_ifelse(f90 and not f90f,1,'(self->farrays[i].setpointer)((self->farrays[i].pya)->data,(self->fobj),(self->farrays[i].pya)->dimensions);','')
         /* Fill array with initial value. A check could probably be made */
         /* of whether the initial value is zero since the initialization */
         /* doesn't need to be done then. Not having the check gaurantees */
@@ -1097,7 +1110,9 @@ static PyObject *ForthonPackage_gchange(PyObject *_self_,PyObject *args)
         /* Point pointers to new space. */
         Py_XDECREF(self->farrays[i].pya);
         self->farrays[i].pya = ax;
-%py_ifelse(f90 and not f90f,1,'(self->farrays[i].setpointer)((self->farrays[i].pya)->data,(self->fobj),self->farrays[i].dimensions);','')
+        /* Note that pya->dimensions are in the correct fortran order, but */
+        /* farray->dimensions are in C order. */
+%py_ifelse(f90 and not f90f,1,'(self->farrays[i].setpointer)((self->farrays[i].pya)->data,(self->fobj),(self->farrays[i].pya)->dimensions);','')
 %py_ifelse(f90 and not f90f,0,'*(self->farrays[i].data.d)=(self->farrays[i].pya)->data;','')
         /* Add the array size to totmembytes. */
         totmembytes += PyArray_NBYTES(self->farrays[i].pya);
