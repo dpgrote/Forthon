@@ -298,22 +298,28 @@ class ForthonDerivedType:
 
       self.cw('void '+fname(t.name+'setarraypointers')+
               '(int *i,char *p,ForthonObject **obj',noreturn=1)
-      if f90:
-        self.cw(',int *nd, int *dims',noreturn=1)
       if machine=='J90':
         self.cw(',int *iflag)')
       else:
         self.cw(')')
       self.cw('{')
-      self.cw('  int id;')
       self.cw('  /* Get pointers for the arrays */')
       self.cw('  (*obj)->farrays[*i].data.s = (char *)p;')
-      if f90:
-        self.cw('  for (id=0;id<*nd;id++)')
-        self.cw('    (*obj)->farrays[*i].dimensions[id] = dims[id];')
       if machine=='J90':
         self.cw('    if (iflag) {')
         self.cw('      (*obj)->farrays[*i].data.s=_fcdtocp((_fcd)p);}')
+      self.cw('}')
+
+      # --- This routine gets the dimensions from an array. It is called from
+      # --- fortran and the last argument should be shape(array).
+      # --- This is only used for routines with the fassign attribute.
+      self.cw('void '+fname(t.name+'setarraydims')+
+              '(int *i,ForthonObject **obj,int *nd,int *dims)')
+      self.cw('{')
+      if f90:
+        self.cw('  int id;')
+        self.cw('  for (id=0;id<*nd;id++)')
+        self.cw('    (*obj)->farrays[*i].dimensions[id] = dims[id];')
       self.cw('}')
 
       #########################################################################
@@ -465,8 +471,7 @@ class ForthonDerivedType:
         if not a.dynamic:
           if not a.derivedtype:
             self.fw('  CALL '+t.name+'setarraypointers('+repr(i)+
-                    ',obj__%'+a.name+',obj__%cobj__,'+repr(len(a.dims))+
-                    ',shape(obj__%'+a.name+')'+str)
+                    ',obj__%'+a.name+',obj__%cobj__'+str)
 
       # --- Finish the routine
       self.fw('  RETURN')
@@ -511,7 +516,9 @@ class ForthonDerivedType:
             self.fw('  USE '+t.name+'module')
             self.fw('  integer('+isz+'):: i__')
             self.fw('  TYPE('+t.name+'):: obj__')
-            self.fw('    call '+t.name+'setarraypointers(i__,obj__%'+a.name+
+            self.fw('  call '+t.name+'setarraypointers(i__,obj__%'+a.name+
+                ',obj__%cobj__)')
+            self.fw('  call '+t.name+'setarraydims(i__'+
                 ',obj__%cobj__,'+repr(len(a.dims))+',shape(obj__%'+a.name+'))')
             self.fw('  return')
             self.fw('end')

@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.1 2004/01/06 18:35:13 dave Exp $
+# $Id: wrappergenerator.py,v 1.2 2004/01/08 22:55:22 dave Exp $
 
 import sys
 import interfaceparser
@@ -597,22 +597,27 @@ Usage:
     self.cw('}')
 
     self.cw('void '+fname(self.pname+'setarraypointers')+'(int *i,char *p',noreturn=1)
-    if self.f90:
-      self.cw(',int *nd, int *dims',noreturn=1)
     if machine=='J90':
       self.cw(',int *iflag)')
     else:
       self.cw(')')
     self.cw('{')
-    self.cw('  int id;')
     self.cw('  /* Get pointers for the arrays */')
-    self.cw('   '+self.pname+'_farrays[*i].data.s = (char *)p;')
-    if self.f90:
-      self.cw('  for (id=0;id<*nd;id++)')
-      self.cw('    '+self.pname+'_farrays[*i].dimensions[id] = dims[id];')
+    self.cw('  '+self.pname+'_farrays[*i].data.s = (char *)p;')
     if machine=='J90':
       self.cw('    if (iflag) {')
       self.cw('      '+self.pname+'_farrays[*i].data.s=_fcdtocp((_fcd)p);}')
+    self.cw('}')
+
+    # --- This routine gets the dimensions from an array. It is called from
+    # --- fortran and the last argument should be shape(array).
+    # --- This is only used for routines with the fassign attribute.
+    self.cw('void '+fname(self.pname+'setarraydims')+'(int *i,int *nd,int *dims)')
+    self.cw('{')
+    if self.f90:
+      self.cw('  int id;')
+      self.cw('  for (id=0;id<*nd;id++)')
+      self.cw('    '+self.pname+'_farrays[*i].dimensions[id] = dims[id];')
     self.cw('}')
 
     ###########################################################################
@@ -665,7 +670,7 @@ Usage:
           if s.group == g:
             self.fw('  '+fvars.ftof(s.type),noreturn=1)
             if s.dynamic: self.fw(',POINTER',noreturn=1)
-            self.fw(',SAVE::'+s.name,noreturn=1)
+            self.fw('::'+s.name,noreturn=1)
             if s.data: self.fw('='+s.data[1:-1],noreturn=1)
             self.fw('')
         for a in alist:
@@ -692,7 +697,7 @@ Usage:
                 # --- Add line continuation marks if the data line extends over
                 # --- multiple lines.
                 dd = re.sub(r'\n','&\n',a.data)
-                self.fw('data '+a.name+dd)
+                self.fw('  data '+a.name+dd)
         self.fw('END MODULE '+g)
 
     ###########################################################################
@@ -739,8 +744,7 @@ Usage:
           self.fw('  call '+self.pname+'setarraypointers('+repr(i)+','+
                   'p'+a.name+str)
       else:
-        self.fw('  call '+self.pname+'setarraypointers('+repr(i)+','+a.name+','+
-                   repr(len(a.dims))+',shape('+a.name+')'+str)
+        self.fw('  call '+self.pname+'setarraypointers('+repr(i)+','+a.name+str)
 
     # --- Finish the routine
     self.fw('  return')
@@ -791,7 +795,8 @@ Usage:
             self.fw('SUBROUTINE '+self.pname+'getpointer'+a.name+'(i__,obj__)')
             self.fw('  USE '+a.group)
             self.fw('  integer('+self.isz+'):: i__,obj__')
-            self.fw('  call '+self.pname+'setarraypointers(i__,'+a.name+','+
+            self.fw('  call '+self.pname+'setarraypointers(i__,'+a.name+')')
+            self.fw('  call '+self.pname+'setarraydims(i__,'+
                        repr(len(a.dims))+',shape('+a.name+'))')
             self.fw('  return')
             self.fw('end')
