@@ -9,6 +9,7 @@ from types import *
 import string
 import re
 import os
+import copy
 try:
   import PW
   import PR
@@ -35,7 +36,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.7 2004/05/14 23:42:16 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.8 2004/06/03 22:21:41 dave Exp $"
 
 
 # --- The following routines deal with multiple packages. The ones setting
@@ -64,8 +65,10 @@ def registerpackage(pkg,name):
 
 def package(name=None):
   """Sets the default package - sets global currpkg variable.
-If name is not given, then returns a list of all registered packages."""
-  if name is None: return _pkg_list
+If name is not given, then returns a copy of the list of all registered
+packages.
+  """
+  if name is None: return copy.deepcopy(_pkg_list)
   setcurrpkg(name)
   _pkg_list.remove(name)
   _pkg_list.insert(0,name)
