@@ -1,33 +1,33 @@
 # Created by David P. Grote, March 6, 1998
-# $Id: fvars.py,v 1.1 2004/01/06 18:35:13 dave Exp $
+# $Id: fvars.py,v 1.2 2004/05/11 00:50:45 dave Exp $
 
 import cfinterface
 
 # Declare a class to hold fortran variable info
 class Fvars:
-  name = ""
-  type = ""
+  name = ''
+  type = ''
   dims = []
   args = []
   dynamic = 0
-  data = ""
-  unit = ""
-  comment = ""
-  group = ""
-  attr = ""
-  limit = ""
-  dimstring = ""
+  data = ''
+  unit = ''
+  comment = ''
+  group = ''
+  attr = ''
+  limit = ''
+  dimstring = ''
   array = 0
   function = 0
   derivedtype = 0
 
 class Fargs:
-  name = ""
-  type = ""
+  name = ''
+  type = ''
 
 class Fdims:
-  low = ""
-  high = ""
+  low = ''
+  high = ''
 
 class Ftype:
   def __init__(s,name,attr):
@@ -37,10 +37,10 @@ class Ftype:
   def addvar(s,v):
     s.vlist.append(v)
   def display(s):
-    print "name = ",s.name
-    print "variables:"
+    print 'name = ',s.name
+    print 'variables:'
     for v in s.vlist:
-      print "  ",v.name,"  ",v.type
+      print '  ',v.name,'  ',v.type
 
 ftoc_dict = {'integer':'long', 'real':'double', 'logical':'long',
              'character':'FSTRING', 'string':'FSTRING',
