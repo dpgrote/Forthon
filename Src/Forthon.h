@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.3 2004/02/14 00:02:15 dave Exp $ */
+/* $Id: Forthon.h,v 1.4 2004/02/17 18:36:22 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -173,6 +173,9 @@ static void ForthonPackage_allotdims(ForthonObject *self)
       printf("Failure allocating space for array dimensions.\n");
       exit(EXIT_FAILURE);
       }
+    /* Fill the dimensions with zeros. This is only needed for arrays with */
+    /* unspecified shape, since setdims won't fill the dimensions. */
+    memset(self->farrays[i].dimensions,0,self->farrays[i].nd*sizeof(int));
     }
 }
 
