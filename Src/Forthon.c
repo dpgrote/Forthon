@@ -226,6 +226,7 @@ void
 %py_ifelse(f90 or f90f,1,'(double *cpu, double *io, double *sys, double *mem)')
 %py_ifelse(f90 or f90f,0,py_ifelse(machine,'T3E','(double *cpu, double *io, double *sys, double *mem)','(float *cpu, float *io, float *sys, float *mem)'))
 {
+  /*
   double utime,stime;
   struct tms usage;
   long hardware_ticks_per_second;
@@ -237,6 +238,25 @@ void
   *cpu = (double) utime;
   *io  = (double) 0.;
   *sys = (double) stime;
+  *mem = (double) 0.;
+  */
+
+  /* This should be more robust, since it lets python take care of the */
+  /* portability. */
+  PyObject *m, *d, *f, *r;
+  m = PyImport_ImportModule("time");
+  if (m != NULL) {
+    d = PyModule_GetDict(m);
+    if (d != NULL) {
+      f = PyDict_GetItemString(d,"clock");
+      if (f != NULL) {
+        r = PyObject_CallFunction(f,NULL);
+        *cpu = PyFloat_AS_DOUBLE(r);
+        Py_XDECREF(r);
+  }}}
+  Py_XDECREF(m);
+  *io  = (double) 0.;
+  *sys = (double) 0.;
   *mem = (double) 0.;
 }
 
