@@ -1,7 +1,7 @@
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 19, 1998
 # Parse the interface description file
-# $Id: interfaceparser.py,v 1.4 2004/02/17 18:26:44 dave Exp $
+# $Id: interfaceparser.py,v 1.5 2004/02/19 00:19:25 dave Exp $
 
 # This reads in the entire variable description file and extracts all of
 # the variable and subroutine information needed to create an interface
@@ -182,7 +182,7 @@ def processfile(packname,filename,othermacros=[]):
       readyfortype = 0
 
     # Check if type is character
-    elif re.match('character\s',text):
+    elif re.match('character[\s*]',text):
       v.type = 'character'
       v.array = 1
       i = re.search('[ \t\n]',text).start()
