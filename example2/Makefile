@@ -4,4 +4,4 @@ example2: example2.F example2.v
 	python example2.py
 
 clean:
-	make -f Makefile.example2 clean
+	rm -rf build example2py.so
