@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.25 2004/10/06 21:05:13 dave Exp $ */
+/* $Id: Forthon.h,v 1.26 2004/10/07 16:20:20 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -272,13 +272,15 @@ static PyObject *Forthon_getscalarderivedtype(ForthonObject *self,void *closure)
     /* If dynamic, use getpointer to get the current address of the */
     /* python object from the fortran variable. */
     /* This is needed since the association may have changed in fortran. */
+    /* If a new object is created, the first reference is kept by forthon. */
+    /* The further INCREF is still needed below for the variable getting */
+    /* the result. */
     (fscalar->getpointer)(&objid,self->fobj);
     if (fscalar->data != (char *)objid) {
       /* Decrement the old reference before reassigning .data. */
       Py_XDECREF((PyObject *)fscalar->data);
       /* Make sure that the correct python object is pointed to. */
       fscalar->data = (char *)objid;
-      Py_XINCREF(objid);
       }
     }
   else {
