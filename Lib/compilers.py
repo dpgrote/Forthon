@@ -46,6 +46,8 @@ appropriate block for the machine.
         if self.linux_pg() is not None: break
         if self.linux_absoft() is not None: break
       elif self.machine == 'darwin':
+        if self.macosx_xlf() is not None: break
+        if self.macosx_gfortran() is not None: break
         if self.macosx_absoft() is not None: break
         if self.macosx_nag() is not None: break
       elif self.machine == 'win32':
@@ -142,6 +144,31 @@ appropriate block for the machine.
 
   #-----------------------------------------------------------------------------
   # --- MAC OSX
+  def macosx_gfortran(self):
+    if (self.findfile('gfortran') and
+        (self.fcompiler=='gfortran' or self.fcompiler is None)):
+      print "WARNING: This compiler might cause a bus error."
+      # --- g95
+      self.f90free  = 'gfortran -x f95'
+      self.f90fixed = 'gfortran -x f95'
+      flibroot,b = os.path.split(self.findfile('gfortran'))
+      self.libdirs = [flibroot+'/lib']
+      self.libs = ['gfortran','mx']
+      return 1
+
+  def macosx_xlf(self):
+    if (self.findfile('xlf90') and
+        (self.fcompiler=='xlf90' or self.fcompiler is None)):
+      # --- XLF
+      self.f90free  = 'xlf90 -qsuffix=f=F90 -qextname'
+      self.f90fixed = 'xlf90 -qsuffix=f=F90 -qextname'
+      #self.f90free  = 'xlf90 -qsuffix=f=F90'
+      #self.f90fixed = 'xlf90 -qsuffix=f=F90'
+      flibroot,b = os.path.split(self.findfile('xlf90'))
+      self.libdirs = [flibroot+'/lib']
+      self.libs = ['xlf90','xl','xlfmath']
+      return 1
+
   def macosx_absoft(self):
     if (self.findfile('f90') and
         (self.fcompiler=='absoft' or self.fcompiler is None)):
