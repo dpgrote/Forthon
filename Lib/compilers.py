@@ -100,7 +100,7 @@ appropriate block for the machine.
 
   def linux_intel(self):
     if (self.findfile('ifc') and
-        (self.self.fcompiler=='intel' or self.self.fcompiler is None)):
+        (self.fcompiler=='intel' or self.fcompiler is None)):
       # --- Intel
       self.f90free  = 'ifc -132 -r8 -DIFC -fpp -implicitnone -C90 -Zp8'
       self.f90fixed = 'ifc -132 -r8 -DIFC -fpp -implicitnone -C90 -Zp8'
