@@ -48,6 +48,7 @@ appropriate block for the machine.
         if self.linux_g95() is not None: break
         if self.linux_pg() is not None: break
         if self.linux_absoft() is not None: break
+        if self.linux_lahey() is not None: break
       elif self.machine == 'darwin':
         if self.macosx_gnu() is not None: break
         if self.macosx_xlf() is not None: break
@@ -168,6 +169,30 @@ appropriate block for the machine.
       self.libdirs = [flibroot+'/lib']
       self.libs = ['U77','V77','f77math','f90math','fio']
       self.fopt = '-O'
+      return 1
+
+  def linux_lahey(self):
+    if (self.findfile('lf95') and
+        (self.fcompiler=='lahey' or self.fcompiler is None)):
+      # --- Lahey
+      # in = implicit none
+      # dbl = real*8 (variables or constants?)
+      # [n]fix = fixed or free form
+      # wide = column width longer than 72
+      # ap = preserve arithmetic precision
+      self.f90free  = 'lf95 --dbl --ap --nfix --in'
+      self.f90fixed = 'lf95 --wide --dbl --ap --fix --in'
+      self.popt = '-O'
+      flibroot,b = os.path.split(self.findfile('lf95'))      
+      self.libdirs = [flibroot+'/lib']
+      self.libs = []
+      cpuinfo = open('/proc/cpuinfo','r').read()
+      if re.search('Pentium III',cpuinfo):
+        self.fopt = '--O2 --unroll --prefetch'
+      elif re.search('AMD Athlon',cpuinfo):
+        self.fopt = '--O2 --unroll --prefetch'
+      else:
+        self.fopt = '--O2 --unroll --prefetch'
       return 1
 
   #-----------------------------------------------------------------------------
