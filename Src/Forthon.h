@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.14 2004/04/27 17:43:39 dave Exp $ */
+/* $Id: Forthon.h,v 1.15 2004/06/24 16:19:49 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -276,6 +276,16 @@ static PyObject *Forthon_getscalarderivedtype(ForthonObject *self,void *closure)
     return NULL;}
 }
 /* ------------------------------------------------------------------------- */
+static int dimensionsmatch(Fortranarray *farray)
+{
+  int i,k;
+  int result = 1;
+  for (i=0;i<farray->nd;i++) {
+    k = farray->nd - i - 1;
+    if (farray->dimensions[i] != farray->pya->dimensions[k]) result = 0;}
+  return result;
+}
+/* ------------------------------------------------------------------------- */
 static PyObject *Forthon_getarray(ForthonObject *self,void *closure)
 {
   Fortranarray *farray = &(self->farrays[(int)closure]);
@@ -289,12 +299,11 @@ static PyObject *Forthon_getarray(ForthonObject *self,void *closure)
       if (farray->pya != NULL) {Py_XDECREF(farray->pya);}
       farray->pya = NULL;}
     else if (farray->pya == NULL ||
-             farray->data.s != farray->pya->data) {
+             farray->data.s != farray->pya->data ||
+             !dimensionsmatch(farray)) {
       /* If data.s is not NULL and there is no python object or its */
       /* data is different, then create a new one. */
       if (farray->pya != NULL) {Py_XDECREF(farray->pya);}
-      /* Call the routine which sets the dimensions */
-      /* (*self->setdims)(farray->group,self); */
       farray->pya = (PyArrayObject *)PyArray_FromDimsAndData(
                        farray->nd,farray->dimensions,
                        farray->type,farray->data.s);
