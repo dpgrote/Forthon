@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.2 2004/02/10 17:13:40 dave Exp $ */
+/* $Id: Forthon.h,v 1.3 2004/02/14 00:02:15 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -112,8 +112,8 @@ typedef struct {
 staticforward PyTypeObject ForthonType;
 
 /* This is needed to settle circular dependencies */
-static PyObject *Forthon_getattr();
-static int Forthon_setattr();
+static PyObject *Forthon_getattr(ForthonObject *self,char *name);
+static int Forthon_setattr(ForthonObject *self,char *name,PyObject *v);
 
 /* ######################################################################### */
 /* ######################################################################### */
@@ -202,11 +202,11 @@ static void ForthonPackage_staticarrays(ForthonObject *self)
       ARRAY_REVERSE_DIM(self->farrays[i].pya);
       /* For strings, replace nulls with blank spaces */
       if (self->farrays[i].type == PyArray_CHAR)
-       if (c=memchr(self->farrays[i].data.s,0,
-           PyArray_SIZE(self->farrays[i].pya)))
-        memset(c,(int)' ',
-               PyArray_SIZE(self->farrays[i].pya)-(int)c+
-               (int)self->farrays[i].data.s);
+        if ((c=memchr(self->farrays[i].data.s,0,
+                     PyArray_SIZE(self->farrays[i].pya))))
+          memset(c,(int)' ',
+                 PyArray_SIZE(self->farrays[i].pya)-(int)c+
+                 (int)self->farrays[i].data.s);
       /* Add the array size to totmembytes. */
       totmembytes += PyArray_NBYTES(self->farrays[i].pya);
       }
@@ -649,9 +649,6 @@ static char getfobject_doc[] = "Gets id to f object";
 static PyObject *ForthonPackage_getfobject(PyObject *_self_,PyObject *args)
 {
   ForthonObject *self = (ForthonObject *)_self_;
-  PyObject *pyi;
-  int i;
-  char *name;
   if (!PyArg_ParseTuple(args,"")) return NULL;
   return Py_BuildValue("i",(int)self->fobj);
 }
@@ -693,10 +690,7 @@ static PyObject *ForthonPackage_getpyobject(PyObject *_self_,PyObject *args)
 {
   ForthonObject *self = (ForthonObject *)_self_;
   PyObject *obj;
-  PyObject *pyi;
-  int i;
   char *name;
-  ForthonObject *objid;
   if (!PyArg_ParseTuple(args,"s",&name)) return NULL;
 
   obj = Forthon_getattr(self,name);
@@ -787,7 +781,6 @@ static PyObject *ForthonPackage_gfree(PyObject *_self_,PyObject *args)
   int i,r=0;
   char *s=NULL;
   PyObject *star;
-  ForthonObject *objid;
 
   if (!PyArg_ParseTuple(args,"|s",&s)) return NULL;
   if (s == NULL) s = "*";
@@ -953,7 +946,7 @@ static PyObject *ForthonPackage_reprefix(PyObject *_self_,PyObject *args)
   ForthonObject *self = (ForthonObject *)_self_;
   PyObject *m,*d;
   PyObject *klist,*vlist,*v;
-  int j,p,e,vlen;
+  int j,e,vlen;
   PyObject *vname;
   char *name;
   if (!PyArg_ParseTuple(args,"")) return NULL;
@@ -1112,14 +1105,13 @@ static PyObject *Forthon_getattr(ForthonObject *self,char *name)
       /* Decrement the python object counter if there is one. */
       /* Set the pointer to the python object to NULL. */
       if (self->farrays[i].data.s == NULL) {
-        if (self->farrays[i].pya != NULL) Py_XDECREF(self->farrays[i].pya);
+        if (self->farrays[i].pya != NULL) {Py_XDECREF(self->farrays[i].pya);}
         self->farrays[i].pya = NULL;}
       else if (self->farrays[i].pya == NULL ||
                self->farrays[i].data.s != self->farrays[i].pya->data) {
         /* If data.s is not NULL and there is no python object or its */
         /* data is different, then create a new one. */
-        if (self->farrays[i].pya != NULL)
-          Py_XDECREF(self->farrays[i].pya);
+        if (self->farrays[i].pya != NULL) {Py_XDECREF(self->farrays[i].pya);}
         /* Call the routine which sets the dimensions */
         /* (*self->setdims)(self->farrays[i].group,self); */
         self->farrays[i].pya = (PyArrayObject *)PyArray_FromDimsAndData(
@@ -1189,6 +1181,7 @@ static int Forthon_setattr(ForthonObject *self,char *name,PyObject *v)
       Py_XINCREF(v);
       self->fscalars[i].data = (char *)v;
       (self->fscalars[i].setpointer)(((ForthonObject *)v)->fobj,(self->fobj));
+      e = 1;
       }
     else {
       int lv;
@@ -1224,7 +1217,7 @@ static int Forthon_setattr(ForthonObject *self,char *name,PyObject *v)
         if (ax->dimensions[j] != self->farrays[i].dimensions[j])
           setit=0;
       if (setit) {
-        if (self->farrays[i].pya != NULL) Py_XDECREF(self->farrays[i].pya);
+        if (self->farrays[i].pya != NULL) {Py_XDECREF(self->farrays[i].pya);}
         self->farrays[i].pya = ax;
 %py_ifelse(f90 and not f90f,1,'(self->farrays[i].setpointer)((self->farrays[i].pya)->data,(self->fobj),self->farrays[i].dimensions);','')
 %py_ifelse(f90 and not f90f,0,'*(self->farrays[i].data.d)=(self->farrays[i].pya)->data;','')
@@ -1273,7 +1266,7 @@ static int Forthon_setattr(ForthonObject *self,char *name,PyObject *v)
 /* # Create output routines                                                  */
 static int Forthon_print(ForthonObject *self, FILE *fp, int flags)
 {
-  fprintf(fp,"<%s instance at address = %d>",self->name,self);
+  fprintf(fp,"<%s instance at address = %d>",self->name,(int)self);
   return 0;
 }
 

@@ -147,7 +147,7 @@ void
 %fname('remark')+'(FSTRING text SL1)'
 {
   char *ctext;
-  PyObject *pystdout,*pystr;
+  PyObject *pystdout;
   ctext = cstrfromfstr(FSTRPTR(text),FSTRLEN1(text));
   pystdout = PySys_GetObject("stdout");
   PyFile_WriteString(ctext,pystdout);
@@ -246,7 +246,7 @@ void
 %py_ifelse(machine,'T3E','#include <errno.h>','')
 
 double
-%fname('py_tremain')+'()'
+%fname('py_tremain')+'(void)'
 {
 %py_ifelse(machine,'T3E','','/*')
   job_t job;
@@ -260,16 +260,16 @@ void
 %fname('setshape')+'(FSTRING s,int *v SL1)'
 {}
 void
-%fname('parsetuf')+'()'
+%fname('parsetuf')+'(void)'
 {}
 void
-%fname('rtserv')+'()'
+%fname('rtserv')+'(void)'
 {}
 void
-%fname('glbpknam')+'()'
+%fname('glbpknam')+'(void)'
 {}
 void
-%fname('change')+'()'
+%fname('change')+'(void)'
 {}
 void
 %fname('edit')+'(int *iunit,FSTRING s SL1)'

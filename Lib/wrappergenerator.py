@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.3 2004/02/02 22:34:48 dave Exp $
+# $Id: wrappergenerator.py,v 1.4 2004/02/14 00:02:15 dave Exp $
 
 import sys
 import os.path
@@ -165,7 +165,7 @@ Usage:
     self.cw('ForthonObject *'+self.pname+'Object;')
 
     # --- Print out the external commands
-    self.cw('extern void '+fname(self.pname+'passpointers')+'();')
+    self.cw('extern void '+fname(self.pname+'passpointers')+'(void);')
     if not self.f90 and not self.f90f:
       self.cw('extern void '+self.pname+'data();')
 
@@ -175,6 +175,7 @@ Usage:
       self.cw('extern '+fvars.ftoc(f.type)+' '+fnameofobj(f)+'(',noreturn=1)
       i = 0
       istr = 0
+      if len(f.args) == 0: self.cw('void',noreturn=1)
       for a in f.args:
         if i > 0:
           self.cw(',',noreturn=1)
@@ -190,7 +191,7 @@ Usage:
           self.cw(',int sl'+repr(i),noreturn=1)
       self.cw(');')
     for t in typelist:
-      self.cw('extern PyObject *'+self.cname(t.name)+'New();')
+      self.cw('extern PyObject *'+self.cname(t.name)+'New(PyObject *self, PyObject *args);')
     self.cw('')
 
     # --- setpointer and getpointer routine for f90
@@ -326,7 +327,6 @@ Usage:
       lv = repr(len(f.args))
       self.cw('  PyObject * pyobj['+lv+'];')
       self.cw('  PyArrayObject * ax['+lv+'];')
-      self.cw('  PyObject *t;')
       self.cw('  int i,argno=0;')
       self.cw('  char e[80];')
 
@@ -366,16 +366,19 @@ Usage:
             istr = istr + 1
         else:
           self.cw('  ax['+repr(i)+'] = NULL;')
+          self.cw('  {')
+          self.cw('  PyObject *t;')
           self.cw('  t = PyObject_Type(pyobj['+repr(i)+']);')
           self.cw('  if (strcmp(((PyTypeObject *)t)->tp_name,"Forthon") != 0)'+
                      'goto err;')
           self.cw('  Py_DECREF(t);')
           self.cw('  if (((ForthonObject *)pyobj['+repr(i)+'])->typename!="'+
                      f.args[i].type+'") goto err;')
+          self.cw('  }')
 
       # --- Write the actual call to the fortran routine.
       if f.type == 'void':
-        self.cw('')
+        self.cw('  ')
       else:
         self.cw('  r = ')
       self.cw(fnameofobj(f)+'(',noreturn=1)
@@ -410,7 +413,7 @@ Usage:
       self.cw('    if (PyArray_Check(pyobj[i])) {')
       self.cw('      if (pyobj[i] != (PyObject *)ax[i])')
       self.cw('        PyArray_CopyArray((PyArrayObject *)pyobj[i],ax[i]);}')
-      self.cw('    if (ax[i] != NULL) Py_XDECREF(ax[i]);}')
+      self.cw('    if (ax[i] != NULL) {Py_XDECREF(ax[i]);}}')
 
       # --- Write return sequence
       if f.type == 'void':
@@ -426,7 +429,7 @@ Usage:
       self.cw('  sprintf(e,"There is an error in argument %d",argno);')
       self.cw('  PyErr_SetString(ErrorObject,e);')
       self.cw('  for (i=0;i<'+repr(len(f.args))+';i++)')
-      self.cw('    if (ax[i] != NULL) Py_XDECREF(ax[i]);')
+      self.cw('    if (ax[i] != NULL) {Py_XDECREF(ax[i]);}')
       self.cw('  return NULL;')
 
       self.cw('}')
@@ -525,7 +528,7 @@ Usage:
     # --- And finally, the initialization function
     self.cw('void init'+self.pname+'py()')
     self.cw('{')
-    self.cw('  PyObject *m, *d, *s;')
+    self.cw('  PyObject *m, *d;')
     self.cw('  m = Py_InitModule("'+self.pname+'py",'+self.pname+'_methods);')
     self.cw('  d = PyModule_GetDict(m);')
     self.cw('  PyDict_SetItemString(d,"Py'+self.pname+'Type",'+
@@ -557,12 +560,16 @@ Usage:
     if not self.f90 and not self.f90f:
       self.cw('  '+fname(self.pname+'data')+'();')
     if self.initialgallot:
+      self.cw('  {')
+      self.cw('  PyObject *s;')
       self.cw('  s = Py_BuildValue("(s)","*");')
       self.cw('  ForthonPackage_gallot((PyObject *)'+self.pname+'Object,s);')
       self.cw('  Py_XDECREF(s);')
+      self.cw('  }')
 
     self.cw('  {')
     self.cw('  PyObject *m, *d, *f, *r;')
+    self.cw('  r = NULL;')
     self.cw('  m = PyImport_ImportModule("Forthon");')
     self.cw('  if (m != NULL) {')
     self.cw('    d = PyModule_GetDict(m);')

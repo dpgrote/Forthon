@@ -97,7 +97,7 @@ class ForthonDerivedType:
       #########################################################################
       # --- Print out the external commands
       self.cw('extern void '+fname(t.name+'passpointers')+'(char *fobj);')
-      self.cw('extern PyObject *'+fname(pname+'_'+t.name+'newf')+'();')
+      self.cw('extern PyObject *'+fname(pname+'_'+t.name+'newf')+'(void);')
 
       # --- setpointer and getpointer routine for f90
       for s in slist:
@@ -242,7 +242,6 @@ class ForthonDerivedType:
                    '(long *i,char *fobj,ForthonObject **cobj__)')
       self.cw('{')
       self.cw('  ForthonObject *obj;')
-      self.cw('  PyObject *s;\n')
       self.cw('  obj=(ForthonObject *) PyObject_NEW(ForthonObject,'+
                  '&ForthonType);')
       self.cw('  if (*i > 0) {obj->name = '+pname+'_fscalars[*i].name;}')
