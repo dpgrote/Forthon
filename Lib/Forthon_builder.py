@@ -1,5 +1,5 @@
 """
-Forthon [options] pkgname [extra files to be compiled]
+Forthon [options] pkgname [extra Fortran or C files to be compiled or objects to link]
 
 pkgname is the name of the package.
 A complete package will have at least two files, the interface description
@@ -219,13 +219,14 @@ for d in dependencies:
 
 # --- Loop over extrafiles. For each fortran file, append the object name
 # --- to be used in the makefile and for setup. For each C file, add to a
-# --- list to be included in setup.
+# --- list to be included in setup. For each object file, add to the list
+# --- of extra objects passed to setup.
 extraobjectsstr = ''
 extraobjectslist = []
 extracfiles = []
 for f in extrafiles:
   root,suffix = os.path.splitext(f)
-  if suffix[1:] in ['F','F90','f',fixed_suffix,free_suffix]:
+  if suffix[1:] in ['F','F90','f',fixed_suffix,free_suffix,'o']:
     extraobjectsstr = extraobjectsstr + root + '.o '
     extraobjectslist = extraobjectslist + [root + '.o']
   elif suffix[1:] in ['c']:
