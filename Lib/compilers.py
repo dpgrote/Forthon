@@ -36,6 +36,7 @@ appropriate block for the machine.
     self.libdirs = []
     self.forthonargs = []
     self.extra_link_args = []
+    self.define_macros = []
 
     # --- Pick the fortran compiler
     # --- When adding a new compiler, it must be listed here under the correct
@@ -192,6 +193,7 @@ appropriate block for the machine.
       self.extra_link_args = ['-flat_namespace','-Wl,-undefined,suppress','-framework vecLib','/usr/local/lib/NAGWare/quickfit.o','/usr/local/lib/NAGWare/libf96.dylib','/usr/local/lib/NAGWare/libf97.dylib']
       self.libs = ['f96','m']
       self.fopt = '-Wc,-O3 -Wc,-funroll-loops -O3 -Ounroll=2'
+      self.define_macros.append(('NAG','1'))
       return 1
 
   #-----------------------------------------------------------------------------
