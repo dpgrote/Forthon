@@ -209,7 +209,7 @@ interfacefile = fixpath(os.path.join(upbuilddir,interfacefile))
 # --- Pick the fortran compiler
 fcompiler = FCompiler(machine=machine,
                       debug=debug,
-                      fcompiler=fcomp,
+                      fcompname=fcomp,
                       static=static)
 
 # --- Create some locals which are needed for strings below.
@@ -219,6 +219,7 @@ popt = fcompiler.popt
 forthonargs = forthonargs + fcompiler.forthonargs
 if fopt is None: fopt = fcompiler.fopt
 extra_link_args = fcompiler.extra_link_args
+extra_compile_args = fcompiler.extra_compile_args
 
 # --- Create path to fortran files for the Makefile since they will be
 # --- referenced from the build directory.
@@ -367,6 +368,7 @@ setup(name = pkg,
                                library_dirs=fcompiler.libdirs+libdirs,
                                libraries=fcompiler.libs+libs,
                                define_macros=fcompiler.define_macros,
+                               extra_compile_args=extra_compile_args,
                                extra_link_args=extra_link_args)]
      )
 
