@@ -8,6 +8,7 @@ from Numeric import *
 from types import *
 import string
 import re
+import os
 try:
   import PW
   import PR
@@ -34,7 +35,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.3 2004/02/03 23:58:04 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.4 2004/02/03 23:59:09 dave Exp $"
 
 
 # --- The following routines deal with multiple packages. The ones setting
