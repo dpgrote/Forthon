@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.15 2004/07/15 17:38:01 dave Exp $
+# $Id: wrappergenerator.py,v 1.16 2004/08/06 23:31:23 dave Exp $
 
 import sys
 import os.path
@@ -659,6 +659,7 @@ Usage:
     self.cw('  PyObject *m;')
 #   self.cw('  ForthonType.tp_getset = '+self.pname+'_getseters;')
 #   self.cw('  ForthonType.tp_methods = '+self.pname+'_methods;')
+    self.cw('  ForthonType.tp_name = "Forthon_'+self.pname+'";')
     self.cw('  if (PyType_Ready(&ForthonType) < 0)')
     self.cw('    return;')
     self.cw('  m = Py_InitModule("'+self.pname+'py",'+self.pname+'_methods);')
