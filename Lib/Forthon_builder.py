@@ -324,13 +324,9 @@ makefile.write(makefiletext)
 makefile.close()
 
 # --- Now, execuate the make command.
-if machine <> 'win32': 
-  os.system('(cd %(builddir)s;make -f Makefile.%(pkg)s)'%locals())
-else:
-  os.chdir(builddir)
-  os.system('make -f Makefile.%(pkg)s'%locals())
-  os.chdir('../../')
-  os.system('pwd')
+os.chdir(builddir)
+os.system('make -f Makefile.%(pkg)s'%locals())
+os.chdir(upbuilddir)
 
 # --- Make sure that the shared object is deleted. This is needed since
 # --- distutils doesn't seem to check if objects passed in are newer
