@@ -97,7 +97,7 @@ appropriate block for the machine.
       if re.search('Pentium III',cpuinfo):
         self.fopt = '-O3 -xK -tpp6 -ip -unroll -prefetch'
       else:
-        self.fopt = '-O3 -xW -tpp7 -ip -unroll -prefetch'
+        self.fopt = '-O3 -xN -tpp7 -ip -unroll -prefetch'
       return 1
 
   def linux_intel(self):

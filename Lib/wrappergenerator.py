@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.10 2004/04/20 21:27:48 dave Exp $
+# $Id: wrappergenerator.py,v 1.11 2004/04/21 18:01:25 dave Exp $
 
 import sys
 import os.path
@@ -282,7 +282,7 @@ Usage:
                   '%d,'%len(a.dims) +
                   'NULL,' +
                   '"%s",'%a.name +
-                  'NULL,' +
+                  '{NULL},' +
                   '%s,'%setpointer +
                   '%s,'%getpointer +
                   '%s,'%initvalue +
@@ -558,75 +558,6 @@ Usage:
     self.cw('')
 
     ###########################################################################
-    # --- And finally, the initialization function
-    self.cw('void init'+self.pname+'py()')
-    self.cw('{')
-    self.cw('  PyObject *m;')
-#   self.cw('  ForthonType.tp_getset = '+self.pname+'_getseters;')
-#   self.cw('  ForthonType.tp_methods = '+self.pname+'_methods;')
-    self.cw('  if (PyType_Ready(&ForthonType) < 0)')
-    self.cw('    return;')
-    self.cw('  m = Py_InitModule("'+self.pname+'py",'+self.pname+'_methods);')
-   #self.cw('  PyModule_AddObject(m,"'+self.pname+'Type",'+
-   #               '(PyObject *)&ForthonType);')
-    self.cw('  '+self.pname+'Object=(ForthonObject *)'+
-               'ForthonObject_New(NULL,NULL);')
-    self.cw('  '+self.pname+'Object->name = "'+self.pname+'";')
-    self.cw('  '+self.pname+'Object->typename = "'+self.pname+'";')
-    self.cw('  '+self.pname+'Object->nscalars = '+self.pname+'nscalars;')
-    self.cw('  '+self.pname+'Object->fscalars = '+self.pname+'_fscalars;')
-    self.cw('  '+self.pname+'Object->narrays = '+self.pname+'narrays;')
-    self.cw('  '+self.pname+'Object->farrays = '+self.pname+'_farrays;')
-    self.cw('  '+self.pname+'Object->setdims = *'+self.pname+'setdims;')
-    self.cw('  '+self.pname+'Object->setstaticdims = *'+
-                self.pname+'setstaticdims;')
-    self.cw('  '+self.pname+'Object->fmethods = '+self.pname+'_methods;')
-    self.cw('  '+self.pname+'Object->fobj = NULL;')
-    self.cw('  PyModule_AddObject(m,"'+self.pname+'",(PyObject *)'+
-                self.pname+'Object);')
-    self.cw('  ErrorObject = PyString_FromString("'+self.pname+'py.error");')
-    self.cw('  PyModule_AddObject(m,"'+self.pname+'error", ErrorObject);')
-    self.cw('  if (PyErr_Occurred())')
-    self.cw('    Py_FatalError("can not initialize module '+self.pname+'");')
-    self.cw('  import_array();')
-    self.cw('  Forthon_BuildDicts('+self.pname+'Object);')
-    self.cw('  ForthonPackage_allotdims('+self.pname+'Object);')
-    self.cw('  '+fname(self.pname+'passpointers')+'();')
-    self.cw('  ForthonPackage_staticarrays('+self.pname+'Object);')
-    if not self.f90 and not self.f90f:
-      self.cw('  '+fname(self.pname+'data')+'();')
-    if self.initialgallot:
-      self.cw('  {')
-      self.cw('  PyObject *s;')
-      self.cw('  s = Py_BuildValue("(s)","*");')
-      self.cw('  ForthonPackage_gallot((PyObject *)'+self.pname+'Object,s);')
-      self.cw('  Py_XDECREF(s);')
-      self.cw('  }')
-
-    self.cw('  {')
-    self.cw('  PyObject *m, *d, *f, *r;')
-    self.cw('  r = NULL;')
-    self.cw('  m = PyImport_ImportModule("Forthon");')
-    self.cw('  if (m != NULL) {')
-    self.cw('    d = PyModule_GetDict(m);')
-    self.cw('    if (d != NULL) {')
-    self.cw('      f = PyDict_GetItemString(d,"registerpackage");')
-    self.cw('      if (f != NULL) {')
-    self.cw('        r = PyObject_CallFunction(f,"Os",(PyObject *)'+
-                self.pname+'Object,"'+self.pname+'");')
-    self.cw('  }}}')
-    self.cw('  Py_XDECREF(m);')
-    self.cw('  Py_XDECREF(r);')
-    self.cw('  }')
-
-    if machine=='win32':
-      self.cw('  /* Initialize FORTRAN on CYGWIN */')
-      self.cw(' initPGfortran();')
-
-    self.cw('}')
-    self.cw('')
-
-    ###########################################################################
     # --- Write set pointers routine which gets all of the fortran pointers
     self.cw('void '+fname(self.pname+'setscalarpointers')+
             '(int *i,char *p',noreturn=1)
@@ -692,6 +623,79 @@ Usage:
       self.cw('  for (id=0;id<farray->nd;id++)')
       self.cw('    farray->dimensions[id] = dims[id];')
     self.cw('}')
+
+    ###########################################################################
+    # --- And finally, the initialization function
+    self.cw('#ifndef PyMODINIT_FUNC')
+    self.cw('#define PyMODINIT_FUNC void')
+    self.cw('#endif')
+    self.cw('PyMODINIT_FUNC')
+    self.cw('init'+self.pname+'py(void)')
+    self.cw('{')
+    self.cw('  PyObject *m;')
+#   self.cw('  ForthonType.tp_getset = '+self.pname+'_getseters;')
+#   self.cw('  ForthonType.tp_methods = '+self.pname+'_methods;')
+    self.cw('  if (PyType_Ready(&ForthonType) < 0)')
+    self.cw('    return;')
+    self.cw('  m = Py_InitModule("'+self.pname+'py",'+self.pname+'_methods);')
+   #self.cw('  PyModule_AddObject(m,"'+self.pname+'Type",'+
+   #               '(PyObject *)&ForthonType);')
+    self.cw('  '+self.pname+'Object=(ForthonObject *)'+
+               'ForthonObject_New(NULL,NULL);')
+    self.cw('  '+self.pname+'Object->name = "'+self.pname+'";')
+    self.cw('  '+self.pname+'Object->typename = "'+self.pname+'";')
+    self.cw('  '+self.pname+'Object->nscalars = '+self.pname+'nscalars;')
+    self.cw('  '+self.pname+'Object->fscalars = '+self.pname+'_fscalars;')
+    self.cw('  '+self.pname+'Object->narrays = '+self.pname+'narrays;')
+    self.cw('  '+self.pname+'Object->farrays = '+self.pname+'_farrays;')
+    self.cw('  '+self.pname+'Object->setdims = *'+self.pname+'setdims;')
+    self.cw('  '+self.pname+'Object->setstaticdims = *'+
+                self.pname+'setstaticdims;')
+    self.cw('  '+self.pname+'Object->fmethods = '+self.pname+'_methods;')
+    self.cw('  '+self.pname+'Object->fobj = NULL;')
+    self.cw('  PyModule_AddObject(m,"'+self.pname+'",(PyObject *)'+
+                self.pname+'Object);')
+    self.cw('  ErrorObject = PyString_FromString("'+self.pname+'py.error");')
+    self.cw('  PyModule_AddObject(m,"'+self.pname+'error", ErrorObject);')
+    self.cw('  if (PyErr_Occurred())')
+    self.cw('    Py_FatalError("can not initialize module '+self.pname+'");')
+    self.cw('  import_array();')
+    self.cw('  Forthon_BuildDicts('+self.pname+'Object);')
+    self.cw('  ForthonPackage_allotdims('+self.pname+'Object);')
+    self.cw('  '+fname(self.pname+'passpointers')+'();')
+    self.cw('  ForthonPackage_staticarrays('+self.pname+'Object);')
+    if not self.f90 and not self.f90f:
+      self.cw('  '+fname(self.pname+'data')+'();')
+    if self.initialgallot:
+      self.cw('  {')
+      self.cw('  PyObject *s;')
+      self.cw('  s = Py_BuildValue("(s)","*");')
+      self.cw('  ForthonPackage_gallot((PyObject *)'+self.pname+'Object,s);')
+      self.cw('  Py_XDECREF(s);')
+      self.cw('  }')
+
+    self.cw('  {')
+    self.cw('  PyObject *m, *d, *f, *r;')
+    self.cw('  r = NULL;')
+    self.cw('  m = PyImport_ImportModule("Forthon");')
+    self.cw('  if (m != NULL) {')
+    self.cw('    d = PyModule_GetDict(m);')
+    self.cw('    if (d != NULL) {')
+    self.cw('      f = PyDict_GetItemString(d,"registerpackage");')
+    self.cw('      if (f != NULL) {')
+    self.cw('        r = PyObject_CallFunction(f,"Os",(PyObject *)'+
+                self.pname+'Object,"'+self.pname+'");')
+    self.cw('  }}}')
+    self.cw('  Py_XDECREF(m);')
+    self.cw('  Py_XDECREF(r);')
+    self.cw('  }')
+
+    if machine=='win32':
+      self.cw('  /* Initialize FORTRAN on CYGWIN */')
+      self.cw(' initPGfortran();')
+
+    self.cw('}')
+    self.cw('')
 
     ###########################################################################
     # --- --- Close the c package module file

@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.10 2004/04/20 21:27:48 dave Exp $ */
+/* $Id: Forthon.h,v 1.11 2004/04/21 18:01:25 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -118,7 +118,7 @@ staticforward PyTypeObject ForthonType;
 /* This is needed to settle circular dependencies */
 static PyObject *Forthon_getattr(ForthonObject *self,char *name);
 static int Forthon_setattr(ForthonObject *self,char *name,PyObject *v);
-static PyMethodDef *getForthonPackage_methods();
+static PyMethodDef *getForthonPackage_methods(void);
 
 /* ######################################################################### */
 /* ######################################################################### */
@@ -143,7 +143,7 @@ static int strfind(char *v,char *s)
   return 0;
 }
   
-static double cputime()
+static double cputime(void)
 {
   struct tms usage;
   long hardware_ticks_per_second;
@@ -1197,7 +1197,7 @@ static struct PyMethodDef ForthonPackage_methods[] = {
   {"varlist"     ,(PyCFunction)ForthonPackage_varlist,1,varlist_doc},
   {NULL,NULL}};
 
-static PyMethodDef *getForthonPackage_methods()
+static PyMethodDef *getForthonPackage_methods(void)
 {
   return ForthonPackage_methods;
 }
@@ -1399,7 +1399,7 @@ static int Forthon_setarray(ForthonObject *self,PyObject *value,
                             void *closure)
 {
   Fortranarray *farray = &(self->farrays[(int)closure]);
-  int i,j,k,r,d,e,setit;
+  int j,k,r,d,setit;
   PyObject *pyobj;
   PyArrayObject *ax;
 
@@ -1493,7 +1493,6 @@ static PyObject *Forthon_getattr(ForthonObject *self,char *name)
   int i;
   PyObject *pyi;
   PyObject *meth;
-  ForthonObject *objid;
 
   /* Get index for variable from scalar dictionary */
   /* If it is not found, the pyi is returned as NULL */
@@ -1535,10 +1534,8 @@ static PyObject *Forthon_getattr(ForthonObject *self,char *name)
 /* # Set attribute handler                                                   */
 static int Forthon_setattr(ForthonObject *self,char *name,PyObject *v)
 {
-  int i,j,k,r,d,e,setit;
-  PyObject *pyobj;
+  int i;
   PyObject *pyi;
-  PyArrayObject *ax;
 
   /* Get index for variable from scalar dictionary */
   /* If it is not found, the pyi is returned as NULL */
