@@ -519,9 +519,10 @@ class ForthonDerivedType:
 
       for a in alist:
         if a.dynamic:
-          self.fw('SUBROUTINE '+t.name+'setpointer'+a.name+'(p__,obj__)')
+          self.fw('SUBROUTINE '+t.name+'setpointer'+a.name+'(p__,obj__,dims__)')
           self.fw('  USE '+t.name+'module')
           self.fw('  TYPE('+t.name+'):: obj__')
+          self.fw('  integer('+isz+'):: dims__('+repr(len(a.dims))+')')
           self.fw('  '+fvars.ftof(a.type)+',target:: '+
                   'p__'+self.prefixdimsf(a.dimstring,sdict)+'')
           self.fw('  obj__%'+a.name+' => p__')
