@@ -157,10 +157,14 @@ def fixpath(path):
   else:
     return path
 
+# --- Define the seperator to use in paths.
+pathsep = os.sep
+if machine == 'win32': pathsep = r'\\'
+
 # --- Find place where packages are placed. Use the facility
 # --- from distutils to be robust.
-pywrapperhome = os.path.join(distutils.sysconfig.get_python_lib(),'Forthon')
-pywrapperhome = fixpath(pywrapperhome)
+forthonhome = os.path.join(distutils.sysconfig.get_python_lib(),'Forthon')
+forthonhome = fixpath(forthonhome)
 
 # --- Pick the fortran compiler
 fcompiler = FCompiler(machine=machine,
@@ -172,7 +176,7 @@ fcompiler = FCompiler(machine=machine,
 f90free = fcompiler.f90free
 f90fixed = fcompiler.f90fixed
 popts = fcompiler.popts
-pywrapperargs = fcompiler.pywrapperargs
+forthonargs = fcompiler.forthonargs
 if fopt is None: fopt = fcompiler.fopt
 
 # --- Find location of the python libraries and executable.
@@ -223,7 +227,7 @@ makefiletext = """
 %(definesstr)s
 PYTHON = %(prefix)s
 PYVERS = %(pyvers)s
-PYPREPROC = %(python)s -c "from Forthon.preprocess import main;main()" %(f90)s -t%(machine)s %(pywrapperargs)s
+PYPREPROC = %(python)s -c "from Forthon.preprocess import main;main()" %(f90)s -t%(machine)s %(forthonargs)s
 
 %(defaultrule)s
 
@@ -231,16 +235,16 @@ PYPREPROC = %(python)s -c "from Forthon.preprocess import main;main()" %(f90)s -
 	%(f90fixed)s %(fopt)s %(fargs)s -c $<
 %%.o: %%.%(free_suffix)s %(pkg)s_p.o
 	%(f90free)s %(fopt)s %(fargs)s -c $<
-Forthon.h:%(pywrapperhome)s/Forthon.h
-	$(PYPREPROC) %(pywrapperhome)s/Forthon.h Forthon.h
-Forthon.c:%(pywrapperhome)s/Forthon.c
-	$(PYPREPROC) %(pywrapperhome)s/Forthon.c Forthon.c
+Forthon.h:%(forthonhome)s%(pathsep)sForthon.h
+	$(PYPREPROC) %(forthonhome)s%(pathsep)sForthon.h Forthon.h
+Forthon.c:%(forthonhome)s%(pathsep)sForthon.c
+	$(PYPREPROC) %(forthonhome)s%(pathsep)sForthon.c Forthon.c
 
 %(pkg)s_p.o:%(pkg)s_p.%(free_suffix)s
 	%(f90free)s %(popts)s -c %(pkg)s_p.%(free_suffix)s
 %(pkg)spymodule.c %(pkg)s_p.%(free_suffix)s:%(interfacefile)s
 	%(python)s -c "from Forthon.wrappergenerator import wrappergenerator_main;wrappergenerator_main()" \\
-	%(f90)s -t %(machine)s %(pywrapperargs)s %(initialgallot)s \\
+	%(f90)s -t %(machine)s %(forthonargs)s %(initialgallot)s \\
         %(othermacstr)s %(interfacefile)s %(dep)s
 clean:
 	rm -rf *.o *_p.%(free_suffix)s *.mod *module.c *.scalars *.so Forthon.c Forthon.h forthonf2c.h build
@@ -265,7 +269,7 @@ sys.argv = ['Forthon','build','--build-platlib','.']
 setup(name = pkg,
       ext_modules = [Extension(pkg+'py',
                         [pkg+'pymodule.c','Forthon.c']+extracfiles,
-                        include_dirs=[pywrapperhome,'.'],
+                        include_dirs=[forthonhome,'.'],
                         extra_objects=[pkg+'.o',pkg+'_p.o']+extraobjectslist,
                         library_dirs=fcompiler.libdirs+libdirs,
                         libraries=fcompiler.libs+libs)]
