@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.4 2004/02/17 18:36:22 dave Exp $ */
+/* $Id: Forthon.h,v 1.5 2004/03/03 17:26:14 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -890,9 +890,8 @@ static PyObject *ForthonPackage_listvar(PyObject *_self_,PyObject *args)
       PyString_ConcatAndDel(&doc,PyString_FromString("double complex"));}
     PyString_ConcatAndDel(&doc,PyString_FromString("\nAddress:    "));
     PyString_ConcatAndDel(&doc,PyObject_Str(PyInt_FromLong((long)(self->fscalars[i].data))));
-    PyString_ConcatAndDel(&doc,PyString_FromString("\nComment:   "));
+    PyString_ConcatAndDel(&doc,PyString_FromString("\nComment:\n"));
     PyString_ConcatAndDel(&doc,PyString_FromString(self->fscalars[i].comment));
-    PyString_ConcatAndDel(&doc,PyString_FromString("\n"));
     return doc;
     }
 
@@ -932,9 +931,8 @@ static PyObject *ForthonPackage_listvar(PyObject *_self_,PyObject *args)
     else
       PyString_ConcatAndDel(&doc,PyObject_Str(PyInt_FromLong((long)(self->farrays[i].pya))));
 
-    PyString_ConcatAndDel(&doc,PyString_FromString("\nComment:   "));
+    PyString_ConcatAndDel(&doc,PyString_FromString("\nComment:\n"));
     PyString_ConcatAndDel(&doc,PyString_FromString(self->farrays[i].comment));
-    PyString_ConcatAndDel(&doc,PyString_FromString("\n"));
     return doc;
     }
 
