@@ -45,6 +45,7 @@ appropriate block for the machine.
       if self.machine == 'linux2':
         if self.linux_intel8() is not None: break
         if self.linux_intel() is not None: break
+        if self.linux_g95() is not None: break
         if self.linux_pg() is not None: break
         if self.linux_absoft() is not None: break
       elif self.machine == 'darwin':
@@ -123,6 +124,25 @@ appropriate block for the machine.
         self.fopt = '-O3 -ip -unroll -prefetch'
       else:
         self.fopt = '-O3 -xW -tpp7 -ip -unroll -prefetch'
+      return 1
+
+  def linux_g95(self):
+    if (self.findfile('g95') and
+        (self.fcompiler=='g95' or self.fcompiler is None)):
+      # --- Intel
+      self.f90free  = 'g95 -r8'
+      self.f90fixed = 'g95 -ffixed-line-length-132 -r8'
+      self.popt = '-O'
+      flibroot,b = os.path.split(self.findfile('g95'))
+      self.libdirs = [flibroot+'/lib']
+      self.libs = ['f95']
+      cpuinfo = open('/proc/cpuinfo','r').read()
+      if re.search('Pentium III',cpuinfo):
+        self.fopt = '-O3'
+      elif re.search('AMD Athlon',cpuinfo):
+        self.fopt = '-O3'
+      else:
+        self.fopt = '-O3'
       return 1
 
   def linux_pg(self):
