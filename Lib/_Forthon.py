@@ -36,7 +36,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.10 2004/09/03 21:06:24 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.11 2004/09/14 17:35:49 dave Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling
@@ -153,7 +153,7 @@ same value. For arrays, the new objects points to the same memory location.
   pkglist = package()
   pkglist.reverse()
   for pname in pkglist:
-    packageobject(pkg).deprefix()
+    packageobject(pname).deprefix()
 
 def reprefix():
   """For each variable in the main dictionary, if there is a package variable with the same name
