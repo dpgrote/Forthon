@@ -1,0 +1,16 @@
+This contains an example which shows the use of Forthon in cases where the
+fortran90 modules already exist and fortran derived types are being used. If
+no derived types are being used, the original fortran should be able to be
+used without change.
+
+List of files:
+  example2.F:      Main fortran file which includes changes that are needed to
+                   work with derived types.
+  example2_orig.F: Original version of the main fortran file before any
+                   changes were made.
+  example2.py:     Test python script
+  example2.v:      Interface description file
+  Makefile:        Builds and test this example
+  README:          This file
+
+Dave Grote
