@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.8 2004/04/01 16:33:09 dave Exp $ */
+/* $Id: Forthon.h,v 1.9 2004/04/08 19:23:54 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -428,7 +428,6 @@ static char getfunctions_doc[] = "Builds a dictionary containing all of the func
 static PyObject *ForthonPackage_getfunctions(PyObject *_self_,PyObject *args)
 {
   ForthonObject *self = (ForthonObject *)_self_;
-  int j;
   PyObject *dict,*name;
   PyMethodDef *ml;
   if (!PyArg_ParseTuple(args,"")) return NULL;
