@@ -3,6 +3,10 @@ fortran90 modules already exist and fortran derived types are being used. If
 no derived types are being used, the original fortran should be able to be
 used without change.
 
+Note that currently, the definition of the derived type must be in its own
+module with the name of the form TTTmodule, where TTT is the name of the
+derived type. This is the module name assumed by Forthon.
+
 List of files:
   example2.F:      Main fortran file which includes changes that are needed to
                    work with derived types.
