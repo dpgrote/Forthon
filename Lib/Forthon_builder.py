@@ -230,7 +230,7 @@ for f in extrafiles:
 # --- Make string containing other macros files
 othermacstr = ''
 for f in othermacros:
-  othermacstr = othermacstr + ' --macros ' + f
+  othermacstr = othermacstr + ' --macros ' + os.path.join(upbuilddir,f)
 
 # --- Put any defines in a string that will appear at the beginning of the
 # --- makefile.
@@ -315,10 +315,10 @@ ofiles = map(addbuilddir,[pkg+'.o',pkg+'_p.o']+extraobjectslist)
 sys.argv = ['Forthon','build','--build-platlib','.']
 setup(name = pkg,
       ext_modules = [Extension(pkg+'py',
-                     cfiles+extracfiles,
-                     include_dirs=[forthonhome],
-                     extra_objects=ofiles,
-                     library_dirs=fcompiler.libdirs+libdirs,
-                     libraries=fcompiler.libs+libs)]
+                               cfiles+extracfiles,
+                               include_dirs=[forthonhome],
+                               extra_objects=ofiles,
+                               library_dirs=fcompiler.libdirs+libdirs,
+                               libraries=fcompiler.libs+libs)]
      )
 
