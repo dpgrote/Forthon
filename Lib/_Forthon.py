@@ -36,7 +36,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.13 2004/10/01 22:35:00 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.14 2004/10/04 21:33:09 dave Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling
@@ -233,8 +233,10 @@ def fzeros(shape,typecode=Int):
   s.reverse()
   return transpose(zeros(s,typecode))
 
-# --- Prints out the documentation of the subroutine or variable.
 def doc(f,printit=1):
+  """
+Prints out the documentation of the subroutine or variable.
+  """
   fname = None
   # --- The for loop only gives the code something to break out of. There's
   # --- probably a better way of doing this.
@@ -276,7 +278,8 @@ def doc(f,printit=1):
       try:
         d = f.__doc__
       except AttributeError:
-        d = "No documentation found"
+        d = None
+      if d is None: d = "No documentation found"
   if fname is not None: result = 'From file ' + fname + '\n'
   else:                 result = ''
   result += d
