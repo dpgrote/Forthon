@@ -185,11 +185,12 @@ appropriate block for the machine.
     if (self.findfile('f95') and
         (self.fcompiler=='nag' or self.fcompiler is None)):
       # --- NAG
-      self.f90free  = 'f95 -132 -fpp -Wp,-macro=no_com -free -PIC -w -mismatch_all -kind=byte -r8'
-      self.f90fixed = 'f95 -132 -fpp -Wp,-macro=no_com -Wp,-fixed -fixed -PIC -w -mismatch_all -kind=byte -r8'
+      self.f90free  = 'f95 -132 -fpp -Wp,-macro=no_com -Wc,-O3 -Wc,-funroll-loops -free -PIC -u -w -mismatch_all -kind=byte -r8'
+      self.f90fixed = 'f95 -132 -fpp -u -Wp,-macro=no_com -Wp,-fixed -fixed -Wc,-O3 -Wc,-funroll-loops -PIC -w -mismatch_all -kind=byte -r8'
       flibroot,b = os.path.split(self.findfile('f95'))
-      self.libdirs = [flibroot+'/lib']
-      self.libs = ['???']
+      self.libdirs = ['/usr/local/lib/NAGWare']
+      self.extra_link_args = ['-flat_namespace','-Wl,-undefined,suppress','-framework vecLib','/usr/local/lib/NAGWare/quickfit.o','/usr/local/lib/NAGWare/libf96.dylib','/usr/local/lib/NAGWare/libf97.dylib']
+      self.libs = ['f96','m']
       self.fopt = '-Wc,-O3 -Wc,-funroll-loops -O3 -Ounroll=2'
       return 1
 
