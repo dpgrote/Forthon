@@ -55,9 +55,8 @@ appropriate block for the machine.
         if self.win32_pg() is not None: break
         if self.win32_intel() is not None: break
       elif self.machine == 'aix4':
-        #self.static = 1
-        if self.aix_mpxlf() is not None: break
         if self.aix_xlf() is not None: break
+        if self.aix_mpxlf() is not None: break
         if self.aix_xlf_r() is not None: break
       else:
         raise SystemExit,'Machine type %s is unknown'%self.machine
@@ -223,6 +222,19 @@ appropriate block for the machine.
 
   #-----------------------------------------------------------------------------
   # --- AIX
+  def aix_xlf(self):
+    if (self.fcompiler=='xlf' or
+        (self.fcompiler is None and self.findfile('xlf95'))):
+      # --- IBM SP, serial
+      self.f90free  = 'xlf95 -c -qmaxmem=8192 -u -qdpc=e -qintsize=4 -qsave=defaultinit -qsuffix=f=f90:cpp=F90 -qfree=f90 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
+      self.f90fixed = 'xlf95 -c -qmaxmem=8192 -u -qdpc=e -qintsize=4 -qsave=defaultinit -qfixed=132 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
+      self.popts = '-O'
+      self.extra_link_args = ['-bmaxdata:0x70000000','-bmaxstack:0x10000000']
+      self.ld = 'xlf -bmaxdata:0x70000000 -bmaxstack:0x10000000 -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp'
+      self.libs = ['xlf90','xlopt','xlf','xlomp_ser','pthread','essl']
+      self.fopt = '-O3 -qstrict -qarch=pwr3 -qtune=pwr3'
+      return 1
+
   def aix_mpxlf(self):
     if (self.fcompiler=='mpxlf' or
         (self.fcompiler is None and self.findfile('mpxlf95'))):
@@ -234,19 +246,6 @@ appropriate block for the machine.
       self.ld = 'mpxlf_r -bmaxdata:0x70000000 -bmaxstack:0x10000000 -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp'
       self.libs = ' $(PYMPI)/driver.o $(PYMPI)/patchedmain.o -L$(PYMPI) -lpympi -lpthread'
       self.defines = ['PYMPI=/usr/common/homes/g/grote/pyMPI']
-      self.fopt = '-O3 -qstrict -qarch=pwr3 -qtune=pwr3'
-      return 1
-
-  def aix_xlf(self):
-    if (self.fcompiler=='xlf' or
-        (self.fcompiler is None and self.findfile('xlf95'))):
-      # --- IBM SP, serial
-      self.f90free  = 'xlf95 -c -qmaxmem=8192 -u -qdpc=e -qintsize=4 -qsave=defaultinit -qsuffix=f=f90:cpp=F90 -qfree=f90 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
-      self.f90fixed = 'xlf95 -c -qmaxmem=8192 -u -qdpc=e -qintsize=4 -qsave=defaultinit -qfixed=132 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
-      self.popts = '-O'
-      self.extra_link_args = ['-bmaxdata:0x70000000','-bmaxstack:0x10000000']
-      self.ld = 'xlf -bmaxdata:0x70000000 -bmaxstack:0x10000000 -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp'
-      self.libs = ['xlf90','xlopt','xlf','xlomp_ser','pthread','essl']
       self.fopt = '-O3 -qstrict -qarch=pwr3 -qtune=pwr3'
       return 1
 
