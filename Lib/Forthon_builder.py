@@ -267,7 +267,7 @@ setup(name = pkg,
                         [pkg+'pymodule.c','Forthon.c']+extracfiles,
                         include_dirs=[pywrapperhome,'.'],
                         extra_objects=[pkg+'.o',pkg+'_p.o']+extraobjectslist,
-                        library_dirs=fcompiler.libdirs,
-                        libraries=fcompiler.libs)]
+                        library_dirs=fcompiler.libdirs+libdirs,
+                        libraries=fcompiler.libs+libs)]
      )
 
