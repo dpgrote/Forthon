@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.9 2004/04/08 19:30:44 dave Exp $
+# $Id: wrappergenerator.py,v 1.10 2004/04/20 21:27:48 dave Exp $
 
 import sys
 import os.path
@@ -229,13 +229,13 @@ Usage:
 
     # --- Declare scalars from other modules
     for other_dict in self.other_scalar_dicts:
-        self.cw('extern Fortranscalars '+other_dict['_module_name_']+
+        self.cw('extern Fortranscalar '+other_dict['_module_name_']+
                 '_fscalars[];')
 
     # --- Scalars
     self.cw('int '+self.pname+'nscalars = '+repr(len(slist))+';')
     if len(slist) > 0:
-      self.cw('Fortranscalars '+self.pname+'_fscalars['+repr(len(slist))+']={')
+      self.cw('Fortranscalar '+self.pname+'_fscalars['+repr(len(slist))+']={')
       for i in range(len(slist)):
         s = slist[i]
         if (self.f90 or self.f90f) and s.dynamic:
@@ -256,12 +256,12 @@ Usage:
         if i < len(slist)-1: self.cw(',')
       self.cw('};')
     else:
-      self.cw('Fortranscalars *'+self.pname+'_fscalars=NULL;')
+      self.cw('Fortranscalar *'+self.pname+'_fscalars=NULL;')
 
     # --- Arrays
     self.cw('int '+self.pname+'narrays = '+repr(len(alist))+';')
     if len(alist) > 0:
-      self.cw('static Fortranarrays '+
+      self.cw('static Fortranarray '+
               self.pname+'_farrays['+repr(len(alist))+']={')
       for i in range(len(alist)):
         a = alist[i]
@@ -294,7 +294,35 @@ Usage:
         if i < len(alist)-1: self.cw(',')
       self.cw('};')
     else:
-      self.cw('static Fortranarrays *'+self.pname+'_farrays=NULL;')
+      self.cw('static Fortranarray *'+self.pname+'_farrays=NULL;')
+
+# Some extra work is needed to get the getset attribute access scheme working.
+#   # --- Write out the table of getset routines
+#   self.cw('')
+#   self.cw('static PyGetSetDef '+self.pname+'_getseters[] = {')
+#   for i in range(len(slist)):
+#     s = slist[i]
+#     if s.type == 'real': gstype = 'double'
+#     elif s.type == 'integer': gstype = 'integer'
+#     elif s.type == 'complex': gstype = 'cdouble'
+#     else:                    gstype = 'derivedtype'
+#     self.cw('{"'+s.name+'",(getter)Forthon_getscalar'+gstype+
+#                          ',(setter)Forthon_setscalar'+gstype+
+#                    ',"%s"'%string.replace(repr(s.comment)[1:-1],'"','\\"') +
+#                         ',(void *)'+repr(i)+'},')
+#   for i in range(len(alist)):
+#     a = alist[i]
+#     self.cw('{"'+a.name+'",(getter)Forthon_getarray'+
+#                          ',(setter)Forthon_setarray'+
+#                    ',"%s"'%string.replace(repr(a.comment)[1:-1],'"','\\"') +
+#                         ',(void *)'+repr(i)+'},')
+#   self.cw('{"scalardict",(getter)Forthon_getscalardict,'+
+#                         '(setter)Forthon_setscalardict,'+
+#           '"internal scalar dictionary",NULL},')
+#   self.cw('{"arraydict",(getter)Forthon_getarraydict,'+
+#                        '(setter)Forthon_setarraydict,'+
+#           '"internal array dictionary",NULL},')
+#   self.cw('{NULL}};')
 
     ###########################################################################
     ###########################################################################
@@ -534,6 +562,8 @@ Usage:
     self.cw('void init'+self.pname+'py()')
     self.cw('{')
     self.cw('  PyObject *m;')
+#   self.cw('  ForthonType.tp_getset = '+self.pname+'_getseters;')
+#   self.cw('  ForthonType.tp_methods = '+self.pname+'_methods;')
     self.cw('  if (PyType_Ready(&ForthonType) < 0)')
     self.cw('    return;')
     self.cw('  m = Py_InitModule("'+self.pname+'py",'+self.pname+'_methods);')
@@ -621,6 +651,7 @@ Usage:
     self.cw('  '+self.pname+'_fscalars[*i].data = (char *)(*p);')
     self.cw('}')
 
+    # --- Get pointer to an array. This takes an integer to specify which array
     self.cw('void '+fname(self.pname+'setarraypointers')+
             '(int *i,char *p',noreturn=1)
     if machine=='J90':
@@ -635,15 +666,31 @@ Usage:
       self.cw('      '+self.pname+'_farrays[*i].data.s=_fcdtocp((_fcd)p);}')
     self.cw('}')
 
+    # --- This takes a Fortranarray object directly.
+    self.cw('void '+fname(self.pname+'setarraypointersobj')+
+            '(Fortranarray *farray,char *p',noreturn=1)
+    if machine=='J90':
+      self.cw(',int *iflag)')
+    else:
+      self.cw(')')
+    self.cw('{')
+    self.cw('  /* Get pointers for the arrays */')
+    self.cw('  farray->data.s = (char *)p;')
+    if machine=='J90':
+      self.cw('    if (iflag) {')
+      self.cw('      farray->data.s=_fcdtocp((_fcd)p);}')
+    self.cw('}')
+
     # --- This routine gets the dimensions from an array. It is called from
     # --- fortran and the last argument should be shape(array).
     # --- This is only used for routines with the fassign attribute.
-    self.cw('void '+fname(self.pname+'setarraydims')+'(int *i,int *nd,int *dims)')
+    self.cw('void '+fname(self.pname+'setarraydims')+
+            '(Fortranarray *farray,int *dims)')
     self.cw('{')
     if self.f90:
       self.cw('  int id;')
-      self.cw('  for (id=0;id<*nd;id++)')
-      self.cw('    '+self.pname+'_farrays[*i].dimensions[id] = dims[id];')
+      self.cw('  for (id=0;id<farray->nd;id++)')
+      self.cw('    farray->dimensions[id] = dims[id];')
     self.cw('}')
 
     ###########################################################################
@@ -823,9 +870,8 @@ Usage:
             self.fw('SUBROUTINE '+self.pname+'getpointer'+a.name+'(i__,obj__)')
             self.fw('  USE '+a.group)
             self.fw('  integer('+self.isz+'):: i__,obj__')
-            self.fw('  call '+self.pname+'setarraypointers(i__,'+a.name+')')
-            self.fw('  call '+self.pname+'setarraydims(i__,'+
-                       repr(len(a.dims))+',shape('+a.name+'))')
+            self.fw('  call '+self.pname+'setarraypointersobj(i__,'+a.name+')')
+            self.fw('  call '+self.pname+'setarraydims(i__,shape('+a.name+'))')
             self.fw('  return')
             self.fw('end')
 

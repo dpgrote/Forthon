@@ -122,7 +122,7 @@ class ForthonDerivedType:
       # --- Scalars
       self.cw('obj->nscalars = '+repr(len(slist))+';')
       if len(slist) > 0:
-        self.cw('obj->fscalars = malloc(obj->nscalars*sizeof(Fortranscalars));')
+        self.cw('obj->fscalars = malloc(obj->nscalars*sizeof(Fortranscalar));')
       else:
         self.cw('obj->fscalars = NULL;')
       for i in range(len(slist)):
@@ -147,7 +147,7 @@ class ForthonDerivedType:
       # --- Arrays
       self.cw('obj->narrays = '+repr(len(alist))+';')
       if len(alist) > 0:
-        self.cw('obj->farrays = malloc(obj->narrays*sizeof(Fortranarrays));')
+        self.cw('obj->farrays = malloc(obj->narrays*sizeof(Fortranarray));')
       else:
         self.cw('obj->farrays = NULL;')
       for i in range(len(alist)):
@@ -176,6 +176,33 @@ class ForthonDerivedType:
                             string.replace(repr(a.comment)[1:-1],'"','\\"')))
         self.cw('obj->farrays[%d].dimstring = "%s";'%(i,a.dimstring))
       self.cw('}')
+
+#     # --- Write out the table of getset routines
+#     self.cw('')
+#     self.cw('static PyGetSetDef '+t.name+'_getseters[] = {')
+#     for i in range(len(slist)):
+#       s = slist[i]
+#       if s.type == 'real': gstype = 'double'
+#       elif s.type == 'integer': gstype = 'integer'
+#       elif s.type == 'complex': gstype = 'cdouble'
+#       else:                    gstype = 'derivedtype'
+#       self.cw('{"'+s.name+'",(getter)Forthon_getscalar'+gstype+
+#                            ',(setter)Forthon_setscalar'+gstype+
+#                      ',"%s"'%string.replace(repr(s.comment)[1:-1],'"','\\"') +
+#                           ',(void *)'+repr(i)+'},')
+#     for i in range(len(alist)):
+#       a = alist[i]
+#       self.cw('{"'+a.name+'",(getter)Forthon_getarray'+
+#                            ',(setter)Forthon_setarray'+
+#                      ',"%s"'%string.replace(repr(a.comment)[1:-1],'"','\\"') +
+#                           ',(void *)'+repr(i)+'},')
+#     self.cw('{"scalardict",(getter)Forthon_getscalardict,'+
+#                           '(setter)Forthon_setscalardict,'+
+#             '"internal scalar dictionary",NULL},')
+#     self.cw('{"arraydict",(getter)Forthon_getarraydict,'+
+#                          '(setter)Forthon_setarraydict,'+
+#             '"internal array dictionary",NULL},')
+#     self.cw('{NULL}};')
 
       #########################################################################
       # --- Write static array initialization routines
@@ -319,16 +346,30 @@ class ForthonDerivedType:
         self.cw('      (*obj)->farrays[*i].data.s=_fcdtocp((_fcd)p);}')
       self.cw('}')
 
+      self.cw('void '+fname(t.name+'setarraypointersobj')+
+              '(Fortranarray *farray,char *p',noreturn=1)
+      if machine=='J90':
+        self.cw(',int *iflag)')
+      else:
+        self.cw(')')
+      self.cw('{')
+      self.cw('  /* Get pointers for the arrays */')
+      self.cw('  farray->data.s = (char *)p;')
+      if machine=='J90':
+        self.cw('    if (iflag) {')
+        self.cw('      farray->data.s=_fcdtocp((_fcd)p);}')
+      self.cw('}')
+
       # --- This routine gets the dimensions from an array. It is called from
       # --- fortran and the last argument should be shape(array).
       # --- This is only used for routines with the fassign attribute.
       self.cw('void '+fname(t.name+'setarraydims')+
-              '(int *i,ForthonObject **obj,int *nd,int *dims)')
+              '(Fortranarray *farray,int *dims)')
       self.cw('{')
       if f90:
         self.cw('  int id;')
-        self.cw('  for (id=0;id<*nd;id++)')
-        self.cw('    (*obj)->farrays[*i].dimensions[id] = dims[id];')
+        self.cw('  for (id=0;id<farray->nd;id++)')
+        self.cw('    farray->dimensions[id] = dims[id];')
       self.cw('}')
 
       #########################################################################
@@ -586,10 +627,9 @@ class ForthonDerivedType:
             self.fw('  USE '+t.name+'module')
             self.fw('  integer('+isz+'):: i__')
             self.fw('  TYPE('+t.name+'):: obj__')
-            self.fw('  call '+t.name+'setarraypointers(i__,obj__%'+a.name+
-                ',obj__%cobj__)')
+            self.fw('  call '+t.name+'setarraypointersobj(i__,obj__%'+a.name+')')
             self.fw('  call '+t.name+'setarraydims(i__'+
-                ',obj__%cobj__,'+repr(len(a.dims))+',shape(obj__%'+a.name+'))')
+                                                   ',shape(obj__%'+a.name+'))')
             self.fw('  return')
             self.fw('end')
 

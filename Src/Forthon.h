@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.9 2004/04/08 19:23:54 dave Exp $ */
+/* $Id: Forthon.h,v 1.10 2004/04/20 21:27:48 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -77,7 +77,7 @@ typedef struct {
   int dynamic;
   void (*setpointer)();
   void (*getpointer)();
-  } Fortranscalars;
+  } Fortranscalar;
 
 typedef struct {
   int type;
@@ -94,7 +94,7 @@ typedef struct {
   char* attributes;
   char* comment;
   char* dimstring;
-  } Fortranarrays;
+  } Fortranarray;
   
 /* ######################################################################### */
 /* # Write definition of fortran package type */
@@ -103,9 +103,9 @@ typedef struct {
   char *name;
   char *typename;
   int nscalars;
-  Fortranscalars *fscalars;
+  Fortranscalar *fscalars;
   int narrays;
-  Fortranarrays  *farrays;
+  Fortranarray  *farrays;
   void (*setdims)();
   void (*setstaticdims)();
   PyMethodDef *fmethods;
@@ -339,8 +339,8 @@ static PyObject *ForthonPackage_deprefix(PyObject *_self_,PyObject *args)
   int j;
   PyObject *m,*d;
   PyObject *v,*n;
-  Fortranscalars *s;
-  Fortranarrays *a;
+  Fortranscalar *s;
+  Fortranarray *a;
   if (!PyArg_ParseTuple(args,"")) return NULL;
   /* printf("deprefixing %s, please wait\n",self->name); */
   m = PyImport_AddModule("__main__");
@@ -383,8 +383,8 @@ static PyObject *ForthonPackage_getdict(PyObject *_self_,PyObject *args)
   int j;
   PyObject *dict;
   PyObject *v,*n;
-  Fortranscalars *s;
-  Fortranarrays *a;
+  Fortranscalar *s;
+  Fortranarray *a;
   if (!PyArg_ParseTuple(args,"")) return NULL;
   dict = PyDict_New();
   for (j=0;j<self->nscalars;j++) {
@@ -1218,38 +1218,41 @@ static void Forthon_dealloc(ForthonObject *self)
 }
 
 /* ######################################################################### */
-/* # Get attribute handler                                                   */
+/* # Get attribute handlers                                                  */
 static PyObject *Forthon_getscalardouble(ForthonObject *self,void *closure)
 {
-  int i = (int) closure;
-  return Py_BuildValue("d",*((double *)(self->fscalars[i].data)));
+  Fortranscalar *fscalar = &(self->fscalars[(int)closure]);
+  return Py_BuildValue("d",*((double *)(fscalar->data)));
 }
+/* ------------------------------------------------------------------------- */
 static PyObject *Forthon_getscalarcdouble(ForthonObject *self,void *closure)
 {
-  int i = (int) closure;
-  return PyComplex_FromDoubles(((double *)self->fscalars[i].data)[0],
-                               ((double *)self->fscalars[i].data)[1]);
+  Fortranscalar *fscalar = &(self->fscalars[(int)closure]);
+  return PyComplex_FromDoubles(((double *)fscalar->data)[0],
+                               ((double *)fscalar->data)[1]);
 }
+/* ------------------------------------------------------------------------- */
 static PyObject *Forthon_getscalarinteger(ForthonObject *self,void *closure)
 {
-  int i = (int) closure;
-  return Py_BuildValue("i",*((int *)(self->fscalars[i].data)));
+  Fortranscalar *fscalar = &(self->fscalars[(int)closure]);
+  return Py_BuildValue("i",*((int *)(fscalar->data)));
 }
+/* ------------------------------------------------------------------------- */
 static PyObject *Forthon_getscalarderivedtype(ForthonObject *self,void *closure)
 {
-  int i = (int) closure;
+  Fortranscalar *fscalar = &(self->fscalars[(int)closure]);
   ForthonObject *objid;
   /* These are attached to variables of fortran derived type */
-  if (self->fscalars[i].dynamic) {
+  if (fscalar->dynamic) {
     /* If dynamic, use getpointer to get the current address of the */
     /* python object from the fortran variable. */
     /* This is needed since the association may have changed in fortran. */
-    (self->fscalars[i].getpointer)(&objid,self->fobj);
+    (fscalar->getpointer)(&objid,self->fobj);
     /* Make sure that the correct python object is pointed to. */
-    self->fscalars[i].data = (char *)objid;}
+    fscalar->data = (char *)objid;}
   else {
     /* If not dynamic, the data element will not have changed. */
-    objid = (ForthonObject *)self->fscalars[i].data;}
+    objid = (ForthonObject *)fscalar->data;}
   if (objid != NULL) {
     Py_XINCREF(objid);
     return (PyObject *)objid;}
@@ -1257,63 +1260,229 @@ static PyObject *Forthon_getscalarderivedtype(ForthonObject *self,void *closure)
     PyErr_SetString(ErrorObject,"variable unassociated");
     return NULL;}
 }
-
-static PyObject *Forthon_getarrray(ForthonObject *self,void *closure)
+/* ------------------------------------------------------------------------- */
+static PyObject *Forthon_getarray(ForthonObject *self,void *closure)
 {
-  int i = (int) closure;
+  Fortranarray *farray = &(self->farrays[(int)closure]);
   /* If the getpointer routine exists, call it to assign a value to data.s */
-  if (self->farrays[i].getpointer != NULL) {
-    (self->farrays[i].getpointer)(&i,self->fobj);
+  if (farray->getpointer != NULL) {
+    (farray->getpointer)(farray,self->fobj);
     /* If the data.s is NULL, then the fortran array is not associated */
     /* Decrement the python object counter if there is one. */
     /* Set the pointer to the python object to NULL. */
-    if (self->farrays[i].data.s == NULL) {
-      if (self->farrays[i].pya != NULL) {Py_XDECREF(self->farrays[i].pya);}
-      self->farrays[i].pya = NULL;}
-    else if (self->farrays[i].pya == NULL ||
-             self->farrays[i].data.s != self->farrays[i].pya->data) {
+    if (farray->data.s == NULL) {
+      if (farray->pya != NULL) {Py_XDECREF(farray->pya);}
+      farray->pya = NULL;}
+    else if (farray->pya == NULL ||
+             farray->data.s != farray->pya->data) {
       /* If data.s is not NULL and there is no python object or its */
       /* data is different, then create a new one. */
-      if (self->farrays[i].pya != NULL) {Py_XDECREF(self->farrays[i].pya);}
+      if (farray->pya != NULL) {Py_XDECREF(farray->pya);}
       /* Call the routine which sets the dimensions */
-      /* (*self->setdims)(self->farrays[i].group,self); */
-      self->farrays[i].pya = (PyArrayObject *)PyArray_FromDimsAndData(
-                       self->farrays[i].nd,self->farrays[i].dimensions,
-                       self->farrays[i].type,self->farrays[i].data.s);
+      /* (*self->setdims)(farray->group,self); */
+      farray->pya = (PyArrayObject *)PyArray_FromDimsAndData(
+                       farray->nd,farray->dimensions,
+                       farray->type,farray->data.s);
       /* Reverse the order of the dims and strides so       */
       /* indices can be refered to in the correct (fortran) */
       /* order in python                                    */
-      ARRAY_REVERSE_STRIDE(self->farrays[i].pya);
-      ARRAY_REVERSE_DIM(self->farrays[i].pya);
-      Py_XINCREF(self->farrays[i].pya);
+      ARRAY_REVERSE_STRIDE(farray->pya);
+      ARRAY_REVERSE_DIM(farray->pya);
+      Py_XINCREF(farray->pya);
       }
     else {
       /* If the data is the same data, then increment the python */
       /* object counter to prepare handing it to the interpreter. */
-      Py_XINCREF(self->farrays[i].pya);}
+      Py_XINCREF(farray->pya);}
     }
   else {
     /* If there is not getpointer routine, then increment the python */
     /* object counter to prepare handing it to the interpreter. */
-    Py_XINCREF(self->farrays[i].pya);}
-  if (self->farrays[i].pya == NULL) {
+    Py_XINCREF(farray->pya);}
+  if (farray->pya == NULL) {
     PyErr_SetString(ErrorObject,"Array is unallocated");
     return NULL;}
-  if (self->farrays[i].pya->nd==1 &&
-      self->farrays[i].pya->strides[0]==self->farrays[i].pya->descr->elsize)
-    self->farrays[i].pya->flags |= CONTIGUOUS;
-  return (PyObject *)self->farrays[i].pya;
+  if (farray->pya->nd==1 &&
+      farray->pya->strides[0]==farray->pya->descr->elsize)
+    farray->pya->flags |= CONTIGUOUS;
+  return (PyObject *)farray->pya;
 }
-
+/* ------------------------------------------------------------------------- */
 static PyObject *Forthon_getscalardict(ForthonObject *self,void *closure)
 {
   Py_INCREF(self->scalardict);
   return self->scalardict;
 }
-static PyObject *Forthon_getarrraydict(ForthonObject *self,void *closure)
+/* ------------------------------------------------------------------------- */
+static PyObject *Forthon_getarraydict(ForthonObject *self,void *closure)
 {
   Py_INCREF(self->arraydict);
   return self->arraydict;
+}
+
+/* ######################################################################### */
+/* # Set attribute handlers                                                  */
+static int Forthon_setscalardouble(ForthonObject *self,PyObject *value,
+                                   void *closure)
+{
+  Fortranscalar *fscalar = &(self->fscalars[(int)closure]);
+  double lv;
+  int e;
+  if (value == NULL) {
+    PyErr_SetString(PyExc_TypeError, "Cannot delete the attribute");
+    return -1;}
+  e = PyArg_Parse(value,"d",&lv);
+  if (e) {
+    memcpy((fscalar->data),&lv,sizeof(double));}
+  else {
+    PyErr_SetString(ErrorObject,"Right hand side has incorrect type");
+    return -1;}
+  return 0;
+}
+/* ------------------------------------------------------------------------- */
+static int Forthon_setscalarcdouble(ForthonObject *self,PyObject *value,
+                                    void *closure)
+{
+  Fortranscalar *fscalar = &(self->fscalars[(int)closure]);
+  Py_complex lv;
+  int e;
+  if (value == NULL) {
+    PyErr_SetString(PyExc_TypeError, "Cannot delete the attribute");
+    return -1;}
+  e = PyArg_Parse(value,"D",&lv);
+  if (e) {
+    memcpy((fscalar->data),&lv,2*sizeof(double));}
+  else {
+    PyErr_SetString(ErrorObject,"Right hand side has incorrect type");
+    return -1;}
+  return 0;
+}
+/* ------------------------------------------------------------------------- */
+static int Forthon_setscalarinteger(ForthonObject *self,PyObject *value,
+                                    void *closure)
+{
+  Fortranscalar *fscalar = &(self->fscalars[(int)closure]);
+  int lv;
+  int e;
+  if (value == NULL) {
+    PyErr_SetString(PyExc_TypeError, "Cannot delete the attribute");
+    return -1;}
+  e = PyArg_Parse(value,"i",&lv);
+  if (e) {
+    memcpy((fscalar->data),&lv,sizeof(int));}
+  else {
+    PyErr_SetString(ErrorObject,"Right hand side has incorrect type");
+    return -1;}
+  return 0;
+}
+/* ------------------------------------------------------------------------- */
+static int Forthon_setscalarderivedtype(ForthonObject *self,PyObject *value,
+                                        void *closure)
+{
+  Fortranscalar *fscalar = &(self->fscalars[(int)closure]);
+  if (value == NULL) {
+    PyErr_SetString(PyExc_TypeError, "Cannot delete the attribute");
+    return -1;}
+  if (strcmp("Forthon",value->ob_type->tp_name) != 0 ||
+      strcmp(((ForthonObject *)value)->typename,
+             ((ForthonObject *)(fscalar->data))->typename) != 0) {
+    PyErr_SetString(ErrorObject,"Right hand side has incorrect type");
+    return -1;}
+  Py_INCREF(value);
+  /* shouldn't fscalar->data be DECREF'd? */
+  fscalar->data = (char *)value;
+  (fscalar->setpointer)(((ForthonObject *)value)->fobj,(self->fobj));
+  return 0;
+}
+/* ------------------------------------------------------------------------- */
+static int Forthon_setarray(ForthonObject *self,PyObject *value,
+                            void *closure)
+{
+  Fortranarray *farray = &(self->farrays[(int)closure]);
+  int i,j,k,r,d,e,setit;
+  PyObject *pyobj;
+  PyArrayObject *ax;
+
+  if (value == NULL) {
+    PyErr_SetString(PyExc_TypeError, "Cannot delete the attribute");
+    return -1;}
+
+  PyArg_Parse(value, "O", &pyobj);
+  FARRAY_FROMOBJECT(ax,pyobj,farray->type);
+  if (farray->dynamic && ax->nd == farray->nd) {
+    setit = 1;
+    if (farray->dynamic == 3) {
+      /* This type of dynamic array does not have the dimensions */
+      /* specified so they can take on whatever is input. */
+      for (j=0;j<ax->nd;j++) {
+        k = ax->nd - j - 1;
+        farray->dimensions[j] = ax->dimensions[k];
+        }
+      }
+    else {
+      /* Call the routine which sets the dimensions */
+      /* Note that this sets the dimensions for everything in the group. */
+      /* This may cause some slow down, but is hard to get around. */
+      (*self->setdims)(farray->group,self);
+      }
+    for (j=0;j<ax->nd;j++) {
+      k = ax->nd - j - 1;
+      if (ax->dimensions[j] != farray->dimensions[k])
+        setit=0;
+      }
+    if (setit) {
+      if (farray->pya != NULL) {Py_XDECREF(farray->pya);}
+      farray->pya = ax;
+%py_ifelse(f90 and not f90f,1,'(farray->setpointer)((farray->pya)->data,(self->fobj),farray->dimensions);','')
+%py_ifelse(f90 and not f90f,0,'*(farray->data.d)=(farray->pya)->data;','')
+      r = 0;}
+    else {
+      r = -1;
+      Py_XDECREF(ax);
+      PyErr_SetString(ErrorObject,
+                      "Right hand side has incorrect dimensions");}}
+  else {
+    /* At this point, the array must already have been allocated */
+    if (farray->pya == NULL) {
+      Py_XDECREF(ax);
+      PyErr_SetString(ErrorObject,"Array is unallocated");
+      return -1;}
+    /* For strings, allow the length of the input to be   */
+    /* different than the array. Before the copy, force   */
+    /* first dimensions to be the same so the copy works. */
+    /* If the input is shorter than the variable, then    */
+    /* overwrite the rest of the array with spaces.       */
+    d = -1;
+    if (farray->type == PyArray_CHAR && ax->nd > 0) {
+      if (ax->dimensions[0] < farray->pya->dimensions[0]){
+        memset(farray->pya->data+ax->dimensions[0],(int)' ',
+               PyArray_SIZE(farray->pya)-ax->dimensions[0]);
+        d = farray->pya->dimensions[0];
+        farray->pya->dimensions[0] = ax->dimensions[0];}
+      else
+        {ax->dimensions[0] = farray->pya->dimensions[0];}}
+    /* Copy input data into the array. This does the copy */
+    /* for static arrays and also does any broadcasting   */
+    /* when the dimensionality of the input is different  */
+    /* than the array.                                    */
+    r = PyArray_CopyArray(farray->pya,ax);
+    /* Reset the value of the first dimension if it was   */
+    /* changed to accomodate a string.                    */
+    if (d > -1) farray->pya->dimensions[0] = d;
+    Py_XDECREF(ax);}
+  return r;
+}
+/* ------------------------------------------------------------------------- */
+static int Forthon_setscalardict(ForthonObject *self,void *closure)
+{
+  PyErr_SetString(PyExc_TypeError, "Cannot set the scalardict attribute");
+  return -1;
+}
+/* ------------------------------------------------------------------------- */
+static int Forthon_setarraydict(ForthonObject *self,void *closure)
+{
+  PyErr_SetString(PyExc_TypeError, "Cannot set the arraydict attribute");
+  return -1;
 }
 
 
@@ -1331,79 +1500,22 @@ static PyObject *Forthon_getattr(ForthonObject *self,char *name)
   pyi = PyDict_GetItemString(self->scalardict,name);
   if (pyi != NULL) {
     PyArg_Parse(pyi,"i",&i);
-    if (self->fscalars[i].type == PyArray_DOUBLE)
-      return Py_BuildValue("d",*((double *)(self->fscalars[i].data)));
-    else if (self->fscalars[i].type == PyArray_CDOUBLE)
-      return PyComplex_FromDoubles(((double *)self->fscalars[i].data)[0],
-                                   ((double *)self->fscalars[i].data)[1]);
+    if (self->fscalars[i].type == PyArray_DOUBLE) {
+      return Forthon_getscalardouble(self,(void *)i);}
+    else if (self->fscalars[i].type == PyArray_CDOUBLE) {
+      return Forthon_getscalarcdouble(self,(void *)i);}
     else if (self->fscalars[i].type == PyArray_OBJECT) {
-      /* These are attached to variables of fortran derived type */
-      if (self->fscalars[i].dynamic) {
-        /* If dynamic, use getpointer to get the current address of the */
-        /* python object from the fortran variable. */
-        /* This is needed since the association may have changed in fortran. */
-        (self->fscalars[i].getpointer)(&objid,self->fobj);
-        /* Make sure that the correct python object is pointed to. */
-        self->fscalars[i].data = (char *)objid;}
-      else {
-        /* If not dynamic, the data element will not have changed. */
-        objid = (ForthonObject *)self->fscalars[i].data;}
-      if (objid != NULL) {
-        Py_XINCREF(objid);
-        return (PyObject *)objid;}
-      else {
-        PyErr_SetString(ErrorObject,"variable unassociated");
-        return NULL;}}
-    else
-      return Py_BuildValue("i",*((int *)(self->fscalars[i].data)));}
+      return Forthon_getscalarderivedtype(self,(void *)i);}
+    else {
+      return Forthon_getscalarinteger(self,(void *)i);}
+    }
 
   /* Get index for variable from array dictionary */
   /* If it is not found, the pyi is returned as NULL */
   pyi = PyDict_GetItemString(self->arraydict,name);
   if (pyi != NULL) {
     PyArg_Parse(pyi,"i",&i);
-    /* If the getpointer routine exists, call it to assign a value to data.s */
-    if (self->farrays[i].getpointer != NULL) {
-      (self->farrays[i].getpointer)(&i,self->fobj);
-      /* If the data.s is NULL, then the fortran array is not associated */
-      /* Decrement the python object counter if there is one. */
-      /* Set the pointer to the python object to NULL. */
-      if (self->farrays[i].data.s == NULL) {
-        if (self->farrays[i].pya != NULL) {Py_XDECREF(self->farrays[i].pya);}
-        self->farrays[i].pya = NULL;}
-      else if (self->farrays[i].pya == NULL ||
-               self->farrays[i].data.s != self->farrays[i].pya->data) {
-        /* If data.s is not NULL and there is no python object or its */
-        /* data is different, then create a new one. */
-        if (self->farrays[i].pya != NULL) {Py_XDECREF(self->farrays[i].pya);}
-        /* Call the routine which sets the dimensions */
-        /* (*self->setdims)(self->farrays[i].group,self); */
-        self->farrays[i].pya = (PyArrayObject *)PyArray_FromDimsAndData(
-                         self->farrays[i].nd,self->farrays[i].dimensions,
-                         self->farrays[i].type,self->farrays[i].data.s);
-        /* Reverse the order of the dims and strides so       */
-        /* indices can be refered to in the correct (fortran) */
-        /* order in python                                    */
-        ARRAY_REVERSE_STRIDE(self->farrays[i].pya);
-        ARRAY_REVERSE_DIM(self->farrays[i].pya);
-        Py_XINCREF(self->farrays[i].pya);
-        }
-      else {
-        /* If the data is the same data, then increment the python */
-        /* object counter to prepare handing it to the interpreter. */
-        Py_XINCREF(self->farrays[i].pya);}
-      }
-    else {
-      /* If there is not getpointer routine, then increment the python */
-      /* object counter to prepare handing it to the interpreter. */
-      Py_XINCREF(self->farrays[i].pya);}
-    if (self->farrays[i].pya == NULL) {
-      PyErr_SetString(ErrorObject,"Array is unallocated");
-      return NULL;}
-    if (self->farrays[i].pya->nd==1 &&
-        self->farrays[i].pya->strides[0]==self->farrays[i].pya->descr->elsize)
-      self->farrays[i].pya->flags |= CONTIGUOUS;
-    return (PyObject *)self->farrays[i].pya;}
+    return Forthon_getarray(self,(void *)i);}
 
   /* Check if asking for one of the dictionaries */
   /* Note that these should probably not be accessable */
@@ -1434,97 +1546,21 @@ static int Forthon_setattr(ForthonObject *self,char *name,PyObject *v)
   if (pyi != NULL) {
     PyArg_Parse(pyi,"i",&i);
     if (self->fscalars[i].type == PyArray_DOUBLE) {
-      double lv;
-      e = PyArg_Parse(v,"d",&lv);
-      if (e) memcpy((self->fscalars[i].data),&lv,sizeof(double));}
+      return Forthon_setscalardouble(self,v,(void *)i);}
     else if (self->fscalars[i].type == PyArray_CDOUBLE) {
-      Py_complex lv;
-      e = PyArg_Parse(v,"D",&lv);
-      if (e) memcpy((self->fscalars[i].data),&lv,2*sizeof(double));}
+      return Forthon_setscalarcdouble(self,v,(void *)i);}
     else if (self->fscalars[i].type == PyArray_OBJECT) {
-      Py_XINCREF(v);
-      self->fscalars[i].data = (char *)v;
-      (self->fscalars[i].setpointer)(((ForthonObject *)v)->fobj,(self->fobj));
-      e = 1;
-      }
+      return Forthon_setscalarderivedtype(self,v,(void *)i);}
     else {
-      int lv;
-      e = PyArg_Parse(v,"i",&lv);
-      if (e) memcpy((self->fscalars[i].data),&lv,sizeof(int));}
-    if (!e) {
-      PyErr_SetString(ErrorObject,"Right hand side has incorrect type");
-      return -1;}
-    return 0;}
+      return Forthon_setscalarinteger(self,v,(void *)i);}
+    }
 
   /* Get index for variable from array dictionary */
   /* If it is not found, the pyi is returned as NULL */
   pyi = PyDict_GetItemString(self->arraydict,name);
   if (pyi != NULL) {
     PyArg_Parse(pyi,"i",&i);
-    PyArg_Parse(v, "O", &pyobj);
-    FARRAY_FROMOBJECT(ax,pyobj,self->farrays[i].type);
-    if (self->farrays[i].dynamic && ax->nd == self->farrays[i].nd) {
-      setit = 1;
-      if (self->farrays[i].dynamic == 3) {
-        /* This type of dynamic array does not have the dimensions */
-        /* specified so they can take on whatever is input. */
-        for (j=0;j<ax->nd;j++) {
-          k = ax->nd - j - 1;
-          self->farrays[i].dimensions[j] = ax->dimensions[k];
-          }
-        }
-      else {
-        /* Call the routine which sets the dimensions */
-        /* Note that this sets the dimensions for everything in the group. */
-        /* This may cause some slow down, but is hard to get around. */
-        (*self->setdims)(self->farrays[i].group,self);
-        }
-      for (j=0;j<ax->nd;j++) {
-        k = ax->nd - j - 1;
-        if (ax->dimensions[j] != self->farrays[i].dimensions[k])
-          setit=0;
-        }
-      if (setit) {
-        if (self->farrays[i].pya != NULL) {Py_XDECREF(self->farrays[i].pya);}
-        self->farrays[i].pya = ax;
-%py_ifelse(f90 and not f90f,1,'(self->farrays[i].setpointer)((self->farrays[i].pya)->data,(self->fobj),self->farrays[i].dimensions);','')
-%py_ifelse(f90 and not f90f,0,'*(self->farrays[i].data.d)=(self->farrays[i].pya)->data;','')
-        r = 0;}
-      else {
-        r = -1;
-        Py_XDECREF(ax);
-        PyErr_SetString(ErrorObject,
-                        "Right hand side has incorrect dimensions");}}
-    else {
-      /* At this point, the array must already have been allocated */
-      if (self->farrays[i].pya == NULL) {
-        Py_XDECREF(ax);
-        PyErr_SetString(ErrorObject,"Array is unallocated");
-        return -1;}
-      /* For strings, allow the length of the input to be   */
-      /* different than the array. Before the copy, force   */
-      /* first dimensions to be the same so the copy works. */
-      /* If the input is shorter than the variable, then    */
-      /* overwrite the rest of the array with spaces.       */
-      d = -1;
-      if (self->farrays[i].type == PyArray_CHAR && ax->nd > 0) {
-        if (ax->dimensions[0] < self->farrays[i].pya->dimensions[0]){
-          memset(self->farrays[i].pya->data+ax->dimensions[0],(int)' ',
-                 PyArray_SIZE(self->farrays[i].pya)-ax->dimensions[0]);
-          d = self->farrays[i].pya->dimensions[0];
-          self->farrays[i].pya->dimensions[0] = ax->dimensions[0];}
-        else
-          {ax->dimensions[0] = self->farrays[i].pya->dimensions[0];}}
-      /* Copy input data into the array. This does the copy */
-      /* for static arrays and also does any broadcasting   */
-      /* when the dimensionality of the input is different  */
-      /* than the array.                                    */
-      r = PyArray_CopyArray(self->farrays[i].pya,ax);
-      /* Reset the value of the first dimension if it was   */
-      /* changed to accomodate a string.                    */
-      if (d > -1) self->farrays[i].pya->dimensions[0] = d;
-      Py_XDECREF(ax);}
-    return r;}
+    return Forthon_setarray(self,v,(void *)i);}
 
   PyErr_SetString(ErrorObject,"no such attribute");
   return -1;
