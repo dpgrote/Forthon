@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.12 2004/04/26 23:43:21 dave Exp $ */
+/* $Id: Forthon.h,v 1.13 2004/04/27 17:41:42 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -632,8 +632,7 @@ static PyObject *ForthonPackage_getdict(PyObject *_self_,PyObject *args)
     else if (s->type == PyArray_CDOUBLE) {
       v = Forthon_getscalarcdouble(self,(void *)j);}
     else if (s->type == PyArray_OBJECT) {
-      v = Forthon_getscalarderivedtype(self,(void *)j);
-      if (v == NULL) PyErr_Clear();}
+      v = Forthon_getscalarderivedtype(self,(void *)j);}
     else {
       v = Forthon_getscalarinteger(self,(void *)j);}
     if (v != NULL) {
@@ -641,6 +640,8 @@ static PyObject *ForthonPackage_getdict(PyObject *_self_,PyObject *args)
       PyDict_SetItem(dict,n,v);
       Py_DECREF(n);
       Py_DECREF(v);}
+    else {
+      PyErr_Clear();}
     }
   for (j=0;j<self->narrays;j++) {
     v = Forthon_getarray(self,(void *)j);
@@ -670,6 +671,9 @@ static PyObject *ForthonPackage_deprefix(PyObject *_self_,PyObject *args)
   a = PyTuple_New(1);
   PyTuple_SET_ITEM(a,0,d);
   ForthonPackage_getdict(_self_,a);
+  /* The reference count on d must be incremented since the Tuple steals */
+  /* a reference, but on deletion decrements the reference count. */
+  Py_INCREF(d);
   Py_DECREF(a);
   /* printf("done deprefixing %s\n",self->name); */
   returnnone;
