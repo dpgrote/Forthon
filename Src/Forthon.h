@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.24 2004/10/05 19:55:39 dave Exp $ */
+/* $Id: Forthon.h,v 1.25 2004/10/06 21:05:13 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -442,6 +442,7 @@ static int Forthon_setscalarderivedtype(ForthonObject *self,PyObject *value,
                                         void *closure)
 {
   Fortranscalar *fscalar = &(self->fscalars[(int)closure]);
+  void *d;
   /* ForthonObject *objid; */
 
   if (value == NULL) {
@@ -454,8 +455,9 @@ static int Forthon_setscalarderivedtype(ForthonObject *self,PyObject *value,
         /* fscalar->data = (char *)objid;} */
       if (fscalar->data != NULL) {
         /* Decrement the reference counter and nullify the fortran pointer. */
+        d = (void *)((ForthonObject *)fscalar->data)->fobjdeallocate;
         Py_DECREF((PyObject *)fscalar->data);
-        if (((ForthonObject *)fscalar->data)->fobjdeallocate != NULL)
+        if (d != NULL)
           (fscalar->setpointer)(0,(self->fobj));
         fscalar->data = (char *)0;
         }
@@ -1593,7 +1595,7 @@ static void Forthon_dealloc(ForthonObject *self)
           /* Py_XINCREF((PyObject *)self->fscalars[i].data); */
         /* } */
       if (self->fscalars[i].data != NULL) {
-        d = ((ForthonObject *)self->fscalars[i].data)->fobjdeallocate;
+        d = (void *)((ForthonObject *)self->fscalars[i].data)->fobjdeallocate;
         Py_DECREF((PyObject *)self->fscalars[i].data);
         if (d != NULL)
           (self->fscalars[i].setpointer)(0,(self->fobj));
