@@ -379,8 +379,10 @@ class ForthonDerivedType:
 
         self.fw('  END TYPE '+t.name+'')
 
-        # --- This function must be in the module so that its return type
+        # --- These functions must be in the module so that its return type
         # --- is defined.
+        # --- Note that the body of the New function is replicated below in
+        # --- the NewF function. Any changes here should be made there.
         self.fw('CONTAINS')
         self.fw('  FUNCTION New'+t.name+'() RESULT(newobj__)')
         self.fw('    TYPE('+t.name+'),pointer:: newobj__')
@@ -412,6 +414,10 @@ class ForthonDerivedType:
       # --- These subroutines are written outside of the module in case
       # --- write module is false. This way, they are always written
       # --- out.
+      # --- The InitPyRef and DelPyRef are called by the New and Del routines
+      # --- if the modules are written. They are also meant to be explicitly
+      # --- called from the users Fortran code if the create and deletion
+      # --- of derived type instances is down there.
       self.fw('SUBROUTINE InitPyRef'+t.name+'(newobj__)')
       self.fw('  USE '+t.name+'module')
       self.fw('  TYPE('+t.name+'):: newobj__')
@@ -536,12 +542,25 @@ class ForthonDerivedType:
 
       #########################################################################
       # --- Write the routine which creates a new instance of the derived type
+      # --- Note that part of the body of this routine is taken from the New
+      # --- routine above. Any change in one should be copied to the other.
+      # --- The body is copied from New since in cases where the modules
+      # --- are not written out, the New routine will not exist.
       self.fw('FUNCTION '+pname+'_'+t.name+'NewF() RESULT(cobj__)')
       self.fw('  USE '+t.name+'module')
       self.fw('  integer('+isz+'):: cobj__')
-      self.fw('  TYPE('+t.name+'),pointer:: newobj')
-      self.fw('  newobj => New'+t.name+'()')
-      self.fw('  cobj__ = newobj%cobj__')
+      self.fw('  integer:: error')
+      self.fw('  TYPE('+t.name+'),pointer:: newobj__')
+      self.fw('  ALLOCATE(newobj__,STAT=error)')
+      self.fw('  if (error /= 0) then')
+      self.fw('    print*,"ERROR during allocation of '+t.name+'"')
+      self.fw('    stop')
+      self.fw('  endif')
+      for s in slist:
+        if s.dynamic:
+          self.fw('  NULLIFY(newobj__%'+s.name+')')
+      self.fw('  call InitPyRef'+t.name+'(newobj__)')
+      self.fw('  cobj__ = newobj__%cobj__')
       self.fw('  RETURN')
       self.fw('END')
 
