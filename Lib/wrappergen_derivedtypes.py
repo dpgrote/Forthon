@@ -458,7 +458,11 @@ class ForthonDerivedType:
         for s in slist:
           if s.dynamic:
             self.fw('    NULLIFY(newobj__%'+s.name+')')
-        self.fw('    call InitPyRef'+t.name+'(newobj__,1,1)')
+       #self.fw('    call InitPyRef'+t.name+'(newobj__,1,1)')
+        # --- The call to the init routine is used here explicitly rather
+        # --- than via InitPyRef since some compilers require an explicit
+        # --- interface for routines with optional parameters.
+        self.fw('    call init'+t.name+'py(-1,newobj__,newobj__%cobj__,1,1)')
         self.fw('    RETURN')
         self.fw('  END FUNCTION New'+t.name+'')
         self.fw('  SUBROUTINE Del'+t.name+'(oldobj__)')
@@ -536,11 +540,10 @@ class ForthonDerivedType:
       self.fw('  TYPE('+t.name+'):: obj__')
       self.fw('  logical:: delcobj__ = .false.')
       self.fw('  if (obj__%cobj__ == 0) then')
-      self.fw('    call InitPyRef'+t.name+'(obj__,0,0)')
-      self.fw('    delcobj__ = .true.')
+      self.fw('    print*,"'+t.name+'allot: cobject not initialized"')
+      self.fw('    stop')
       self.fw('  endif')
       self.fw('  CALL tallot(obj__%cobj__)')
-      self.fw('  if (delcobj__) call DelPyRef'+t.name+'(obj__)')
       self.fw('  RETURN')
       self.fw('END SUBROUTINE '+t.name+'allot')
       self.fw('SUBROUTINE '+t.name+'change(obj__)')
@@ -548,11 +551,10 @@ class ForthonDerivedType:
       self.fw('  TYPE('+t.name+'):: obj__')
       self.fw('  logical:: delcobj__ = .false.')
       self.fw('  if (obj__%cobj__ == 0) then')
-      self.fw('    call InitPyRef'+t.name+'(obj__,0,0)')
-      self.fw('    delcobj__ = .true.')
+      self.fw('    print*,"'+t.name+'change: cobject not initialized"')
+      self.fw('    stop')
       self.fw('  endif')
       self.fw('  CALL tchange(obj__%cobj__)')
-      self.fw('  if (delcobj__) call DelPyRef'+t.name+'(obj__)')
       self.fw('  RETURN')
       self.fw('END SUBROUTINE '+t.name+'change')
       self.fw('SUBROUTINE '+t.name+'free(obj__)')
@@ -560,11 +562,10 @@ class ForthonDerivedType:
       self.fw('  TYPE('+t.name+'):: obj__')
       self.fw('  logical:: delcobj__ = .false.')
       self.fw('  if (obj__%cobj__ == 0) then')
-      self.fw('    call InitPyRef'+t.name+'(obj__,0,0)')
-      self.fw('    delcobj__ = .true.')
+      self.fw('    print*,"'+t.name+'free:cobject not initialized"')
+      self.fw('    stop')
       self.fw('  endif')
       self.fw('  CALL tfree(obj__%cobj__)')
-      self.fw('  if (delcobj__) call DelPyRef'+t.name+'(obj__)')
       self.fw('  RETURN')
       self.fw('END SUBROUTINE '+t.name+'free')
 
@@ -700,7 +701,8 @@ class ForthonDerivedType:
       for s in slist:
         if s.dynamic:
           self.fw('  NULLIFY(newobj__%'+s.name+')')
-      self.fw('  call InitPyRef'+t.name+'(newobj__,1,1)')
+      #self.fw('  call InitPyRef'+t.name+'(newobj__,1,1)')
+      self.fw('  call init'+t.name+'py(-1,newobj__,newobj__%cobj__,1,1)')
       self.fw('  cobj__ = newobj__%cobj__')
       self.fw('  RETURN')
       self.fw('END')
