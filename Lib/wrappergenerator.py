@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.12 2004/04/26 23:46:36 dave Exp $
+# $Id: wrappergenerator.py,v 1.13 2004/05/14 23:45:59 dave Exp $
 
 import sys
 import os.path
@@ -403,8 +403,9 @@ Usage:
           self.cw('  if (strcmp(((PyTypeObject *)t)->tp_name,"Forthon") != 0)'+
                      'goto err;')
           self.cw('  Py_DECREF(t);')
-          self.cw('  if (((ForthonObject *)pyobj['+repr(i)+'])->typename!="'+
-                     f.args[i].type+'") goto err;')
+          typename = '((ForthonObject *)pyobj['+repr(i)+'])->typename'
+          self.cw('  if (strcmp('+typename+',"'+f.args[i].type+'") != 0) '+
+                     'goto err;')
           self.cw('  }')
 
       # --- Write the actual call to the fortran routine.
