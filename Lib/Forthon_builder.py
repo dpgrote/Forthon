@@ -78,6 +78,7 @@ One or more of the following options can be specified.
     Suffix to use for fortran files in free format. Defaults to F90
  --fixed_suffix suffix
     Suffix to use for fortran files in fixed format. Defaults to F
+ --compile_first file
 """
 
 import sys,os,re
@@ -100,7 +101,8 @@ optlist,args = getopt.getopt(sys.argv[1:],'agd:t:F:D:L:l:I:i:f:',
                          ['f90','f77','f90f','nowritemodules',
                           'timeroutines','macros=',
                           'fopt=','fargs=','static',
-                          'free_suffix=','fixed_suffix='])
+                          'free_suffix=','fixed_suffix=',
+                          'compile_first='])
 
 # --- Get the package name and any other extra files
 pkg = args[0]
@@ -129,6 +131,7 @@ includedirs    = []
 static         = 0
 free_suffix    = 'F90'
 fixed_suffix   = 'F'
+compile_first  = ''
 
 for o in optlist:
   if o[0]=='-a': initialgallot = '-a'
@@ -154,6 +157,7 @@ for o in optlist:
   elif o[0] == '--macros': othermacros.append(o[1])
   elif o[0] == '--free_suffix': free_suffix = o[1]
   elif o[0] == '--fixed_suffix': fixed_suffix = o[1]
+  elif o[0] == '--compile_first': compile_first = o[1]
 
 if fortranfile is None: fortranfile = pkg + '.' + fixed_suffix
 
@@ -249,6 +253,9 @@ for f in extrafiles:
   elif suffix[1:] in ['c']:
     extracfiles.append(f)
 
+if compile_first != '':
+  compile_first = compile_first + osuffix
+
 # --- Make string containing other macros files
 othermacstr = ''
 for f in othermacros:
@@ -266,7 +273,7 @@ if fcompiler.static:
   defaultrule = 'static:'
   raise "Static linking not supported at this time"
 else:
-  defaultrule = 'dynamic: %(pkg)s_p%(osuffix)s %(fortranroot)s%(osuffix)s %(pkg)spymodule.c Forthon.h Forthon.c %(extraobjectsstr)s'%locals()
+  defaultrule = 'dynamic: %(compile_first)s %(pkg)s_p%(osuffix)s %(fortranroot)s%(osuffix)s %(pkg)spymodule.c Forthon.h Forthon.c %(extraobjectsstr)s'%locals()
 
 if writemodules:
   # --- Fortran modules are written by the wrapper to the _p file.
