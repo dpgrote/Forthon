@@ -4,7 +4,7 @@ calls and traces.
 """
 import sys,time
 
-ForthonTimer_version = "$Id: ForthonTimer.py,v 1.2 2004/07/21 16:26:50 dave Exp $"
+ForthonTimer_version = "$Id: ForthonTimer.py,v 1.3 2005/03/15 21:42:12 dave Exp $"
 
 def ForthonTimerdoc():
   import ForthonTimer
@@ -79,13 +79,18 @@ the info about their callees.
 Argument:
   - trace=0: when true, a trace of the routines called and returned from will
              be actively printed
+  - tracelevel=None: when specified, trace is only printed in levels less than
+                     the given value. The trace option is automatically
+                     switched on.
   """
   _ninstances = 0
-  def __init__(self,trace=0):
+  def __init__(self,trace=0,tracelevel=None):
     if ForthonProfiler._ninstances > 0:
       raise "Only one instance allowed."
     ForthonProfiler._ninstances = 1
     self.trace = trace
+    self.tracelevel = tracelevel
+    if self.tracelevel is not None: self.trace = 1
     self.restart()
   def restart(self):
     self.root = None
@@ -123,7 +128,8 @@ routine called and starts and stops the timers.
       self.level = self.level - 1
       self.timer = self.timer.stoptimer()
     if self.trace:
-      print "%s %s %s"%(self.level*'  ',event,name)
+      if self.tracelevel is None or self.tracelevel < self.level:
+        print "%s %s %s"%(self.level*'  ',event,name)
     if event == 'call':
       self.level = self.level + 1
       self.timer = self.timer.newtimer(name)
