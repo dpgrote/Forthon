@@ -101,6 +101,7 @@ optlist,args = getopt.getopt(sys.argv[1:],'agd:t:F:D:L:l:I:i:f:',
                          ['f90','f77','f90f','nowritemodules',
                           'timeroutines','macros=',
                           'fopt=','fargs=','static',
+                          '2underscores',
                           'free_suffix=','fixed_suffix=',
                           'compile_first='])
 
