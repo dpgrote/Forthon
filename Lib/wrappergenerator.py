@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.14 2004/06/24 16:17:23 dave Exp $
+# $Id: wrappergenerator.py,v 1.15 2004/07/15 17:38:01 dave Exp $
 
 import sys
 import os.path
@@ -34,7 +34,8 @@ Usage:
   """
 
   def __init__(self,ifile,pname,f90=1,f90f=0,initialgallot=1,writemodules=1,
-               otherfiles=[],other_scalar_dicts=[],timeroutines=0):
+               otherinterfacefiles=[],other_scalar_dicts=[],timeroutines=0,
+               otherfortranfiles=[]):
     self.ifile = ifile
     self.pname = pname
     self.f90 = f90
@@ -42,8 +43,9 @@ Usage:
     self.initialgallot = initialgallot
     self.writemodules = writemodules
     self.timeroutines = timeroutines
-    self.otherfiles = otherfiles
+    self.otherinterfacefiles = otherinterfacefiles
     self.other_scalar_dicts = other_scalar_dicts
+    self.otherfortranfiles = otherfortranfiles
     self.isz = isz # isz defined in cfinterface
 
     self.createmodulefile()
@@ -125,7 +127,7 @@ Usage:
 
     # --- Get the list of variables and subroutine from the var file
     vlist,hidden_vlist,typelist = processfile(self.pname,self.ifile,
-                                              self.otherfiles,self.timeroutines)
+                                              self.otherinterfacefiles,self.timeroutines)
     if not vlist and not hidden_vlist and not typelist:
       return
 
@@ -675,6 +677,7 @@ Usage:
                 self.pname+'setstaticdims;')
     self.cw('  '+self.pname+'Object->fmethods = '+self.pname+'_methods;')
     self.cw('  '+self.pname+'Object->fobj = NULL;')
+    self.cw('  '+self.pname+'Object->fobjdeallocate = NULL;')
     self.cw('  PyModule_AddObject(m,"'+self.pname+'",(PyObject *)'+
                 self.pname+'Object);')
     self.cw('  ErrorObject = PyString_FromString("'+self.pname+'py.error");')
@@ -814,8 +817,10 @@ Usage:
       s = slist[i]
       if s.dynamic: continue
       if s.derivedtype:
+        # --- This is only called for static instances, so deallocatable is
+        # --- set to false (the last argument).
         self.fw('  call init'+s.type+'py('+repr(i)+','+s.name+','+
-                s.name+'%cobj__,1)')
+                s.name+'%cobj__,1,0)')
         self.fw('  call '+self.fsub('setderivedtypepointers')+'('+repr(i)+','+s.name+'%cobj__)')
       else:
         self.fw('  call '+self.fsub('setscalarpointers')+'('+repr(i)+','+s.name,
@@ -978,6 +983,7 @@ def wrappergenerator_main(argv=None):
   # --- Get package name from argument list
   try:
     ifile = args[0]
+    otherfortranfiles = args[1:]
     pname = os.path.splitext(os.path.split(ifile)[1])[0]
     #pname = args[0][:re.search('\.',args[0]).start()]
   except IndexError:
@@ -990,7 +996,7 @@ def wrappergenerator_main(argv=None):
   f90f = 0
   writemodules = 1
   timeroutines = 0
-  othermacros = []
+  otherinterfacefiles = []
 
   # --- a list of scalar dictionaries from other modules.
   other_scalar_dicts = []
@@ -1003,10 +1009,11 @@ def wrappergenerator_main(argv=None):
     elif o[0]=='-d': get_another_scalar_dict (o[1])
     elif o[0]=='--nowritemodules': writemodules = 0
     elif o[0]=='--timeroutines': timeroutines = 1
-    elif o[0]=='--macros': othermacros.append(o[1])
+    elif o[0]=='--macros': otherinterfacefiles.append(o[1])
 
   cc = PyWrap(ifile,pname,f90,f90f,initialgallot,writemodules,
-              othermacros,other_scalar_dicts,timeroutines)
+              otherinterfacefiles,other_scalar_dicts,timeroutines,
+              otherfortranfiles)
 
 if __name__ == '__main__':
   wrappergenerator_main(sys.argv[1:])
