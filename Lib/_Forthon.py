@@ -35,7 +35,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.4 2004/02/03 23:59:09 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.5 2004/02/10 17:14:11 dave Exp $"
 
 
 # --- The following routines deal with multiple packages. The ones setting
@@ -118,7 +118,7 @@ def listvar(name):
   """Lists information about a variable, given the name as a string.
   """
   for pkg in _pkg_dict.values():
-    r = pkg.forceassign(name,v)
+    r = pkg.listvar(name)
     if r is not None: return r
   raise NameError
 
