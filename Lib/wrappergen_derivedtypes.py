@@ -115,6 +115,7 @@ class ForthonDerivedType:
       self.cw('extern void '+fname(self.fsub(t,'passpointers'))+'(char *fobj,'+
                                                        'long *setinitvalues);')
       self.cw('extern PyObject *'+fname(self.fsub(t,'newf'))+'(void);')
+      self.cw('extern void '+fname(self.fsub(t,'deallocatef'))+'(void);')
 
       # --- setpointer and getpointer routine for f90
       # --- Note that setpointers get written out for all derived types -
@@ -287,7 +288,7 @@ class ForthonDerivedType:
       # --- And finally, the initialization function
       self.cw('void '+fname('init'+t.name+'py')+
                    '(long *i,char *fobj,ForthonObject **cobj__,'+
-                    'long *setinitvalues)')
+                    'long *setinitvalues,long *deallocatable)')
       self.cw('{')
       self.cw('  ForthonObject *obj;')
       self.cw('  obj=(ForthonObject *) PyObject_NEW(ForthonObject,'+
@@ -300,11 +301,14 @@ class ForthonDerivedType:
       self.cw('  obj->setstaticdims = *'+t.name+'setstaticdims;')
       self.cw('  obj->fmethods = '+t.name+'_methods;')
       self.cw('  obj->fobj = fobj;')
+      self.cw('  if (*deallocatable)')
+      self.cw('    obj->fobjdeallocate=*'+fname(self.fsub(t,'deallocatef'))+';')
+      self.cw('  else')
+      self.cw('    obj->fobjdeallocate = NULL;')
       self.cw('  obj->allocated = 0;')
       self.cw('  *cobj__ = obj;')
       self.cw('  if (PyErr_Occurred())')
       self.cw('    Py_FatalError("can not initialize type '+t.name+'");')
-      self.cw('  import_array();')
       self.cw('  Forthon_BuildDicts(obj);')
       self.cw('  ForthonPackage_allotdims(obj);')
       self.cw('  '+fname(self.fsub(t,'passpointers'))+'(fobj,setinitvalues);')
@@ -315,14 +319,6 @@ class ForthonDerivedType:
       # --- The destructor
       self.cw('void '+fname('del'+t.name+'py')+'(ForthonObject **cobj__)')
       self.cw('{')
-      self.cw('  int i;')
-      self.cw('  for (i=0;i<(*cobj__)->narrays;i++) {')
-      self.cw('    free((*cobj__)->farrays[i].dimensions);')
-      self.cw('    Py_XDECREF((*cobj__)->farrays[i].pya);')
-      self.cw('    }')
-      self.cw('  free((*cobj__)->fscalars);')
-      self.cw('  free((*cobj__)->farrays);')
-      self.cw('  Forthon_DeleteDicts(*cobj__);')
       self.cw('  Py_XDECREF(*cobj__);')
       self.cw('}')
 
@@ -462,40 +458,70 @@ class ForthonDerivedType:
         for s in slist:
           if s.dynamic:
             self.fw('    NULLIFY(newobj__%'+s.name+')')
-        self.fw('    call InitPyRef'+t.name+'(newobj__,1)')
+        self.fw('    call InitPyRef'+t.name+'(newobj__,1,1)')
         self.fw('    RETURN')
         self.fw('  END FUNCTION New'+t.name+'')
         self.fw('  SUBROUTINE Del'+t.name+'(oldobj__)')
         self.fw('    TYPE('+t.name+'),pointer:: oldobj__')
         self.fw('    integer:: error')
         self.fw('    call DelPyRef'+t.name+'(oldobj__)')
-        self.fw('    DEALLOCATE(oldobj__,STAT=error)')
+        self.fw('    RETURN')
+        self.fw('  END SUBROUTINE Del'+t.name+'')
+        # --- This chain of fortran calls is needed to get around limitations
+        # --- on subroutine arguments. A variable must be a pointer (or
+        # --- allocatable) to be deallocated, but for a pointer to passed into
+        # --- a subroutine, its signature must be defined. This can't be done
+        # --- from C, so it must be inside a module. Furthermore, when a
+        # --- variable is a pointer in a subroutine, the variable passed in
+        # --- must also be a pointer. So dealloc1 is needed to satisfy this
+        # --- requirement,
+        self.fw('  SUBROUTINE '+t.name+'dealloc1(oldobj__)')
+        self.fw('    TYPE('+t.name+'),target:: oldobj__')
+        self.fw('    TYPE('+t.name+'),pointer:: poldobj__')
+        self.fw('    poldobj__ => oldobj__')
+        self.fw('    CALL '+t.name+'dealloc2(poldobj__)')
+        self.fw('    RETURN')
+        self.fw('  END SUBROUTINE '+t.name+'dealloc1')
+        self.fw('  SUBROUTINE '+t.name+'dealloc2(poldobj__)')
+        self.fw('    TYPE('+t.name+'),pointer:: poldobj__')
+        self.fw('    integer:: error')
+        self.fw('    DEALLOCATE(poldobj__,STAT=error)')
         self.fw('    if (error /= 0) then')
         self.fw('      print*,"ERROR during deallocation of '+t.name+'"')
         self.fw('      stop')
         self.fw('    endif')
         self.fw('    RETURN')
-        self.fw('  END SUBROUTINE Del'+t.name+'')
+        self.fw('  END SUBROUTINE '+t.name+'dealloc2')
+
+
         self.fw('END MODULE '+t.name+'module')
 
       # --- These subroutines are written outside of the module in case
-      # --- write module is false. This way, they are always written
-      # --- out.
+      # --- write module is false. This way, they are always created.
       # --- The InitPyRef and DelPyRef are called by the New and Del routines
       # --- if the modules are written. They are also meant to be explicitly
       # --- called from the users Fortran code if the creation and deletion
-      # --- of derived type instances is down there.
-      # --- The memory handling routines check if the cobj__ has been
-      # --- set - if not, then set it. Also delete it afterwards so there
-      # --- is not a memory leak. Note that the check may not always work
-      # --- since some compilers may leave garbage in cobj__ upon object
-      # --- creation.
-      self.fw('SUBROUTINE InitPyRef'+t.name+'(newobj__,setinitvalues)')
+      # --- of derived type instances is done there.
+      # --- The deallocatable should be false whenever the variable is not
+      # --- a pointer or allocatable.  Otherwise the deallocate can result
+      # --- in a memory error.
+      self.fw('SUBROUTINE InitPyRef'+t.name+'(newobj__,setinitvalues,'+
+                                             'deallocatable)')
       self.fw('  USE '+t.name+'module')
       self.fw('  TYPE('+t.name+'):: newobj__')
-      self.fw('  INTEGER('+isz+'):: setinitvalues')
-      self.fw('  call init'+t.name+'py(-1,newobj__,newobj__%cobj__,'+
-                                       'setinitvalues)')
+      self.fw('  INTEGER('+isz+'),OPTIONAL:: setinitvalues,deallocatable')
+      self.fw('  INTEGER('+isz+'):: s,d')
+      self.fw('  If (PRESENT(setinitvalues)) THEN')
+      self.fw('    s = setinitvalues')
+      self.fw('  ELSE')
+      self.fw('    s = 1')
+      self.fw('  ENDIF')
+      self.fw('  If (PRESENT(deallocatable)) THEN')
+      self.fw('    d = deallocatable')
+      self.fw('  ELSE')
+      self.fw('    d = 1')
+      self.fw('  ENDIF')
+      self.fw('  call init'+t.name+'py(-1,newobj__,newobj__%cobj__,s,d)')
       self.fw('  RETURN')
       self.fw('END SUBROUTINE InitPyRef'+t.name)
       self.fw('SUBROUTINE DelPyRef'+t.name+'(oldobj__)')
@@ -505,12 +531,17 @@ class ForthonDerivedType:
       self.fw('  oldobj__%cobj__ = 0')
       self.fw('  RETURN')
       self.fw('END SUBROUTINE DelPyRef'+t.name)
+      # --- The memory handling routines check if the cobj__ has been
+      # --- set - if not, then set it. Also delete it afterwards so there
+      # --- is not a memory leak. Note that the check may not always work
+      # --- since some compilers may leave garbage in cobj__ upon object
+      # --- creation.
       self.fw('SUBROUTINE '+t.name+'allot(obj__)')
       self.fw('  USE '+t.name+'module')
       self.fw('  TYPE('+t.name+'):: obj__')
       self.fw('  logical:: delcobj__ = .false.')
       self.fw('  if (obj__%cobj__ == 0) then')
-      self.fw('    call InitPyRef'+t.name+'(obj__,0)')
+      self.fw('    call InitPyRef'+t.name+'(obj__,0,0)')
       self.fw('    delcobj__ = .true.')
       self.fw('  endif')
       self.fw('  CALL tallot(obj__%cobj__)')
@@ -522,7 +553,7 @@ class ForthonDerivedType:
       self.fw('  TYPE('+t.name+'):: obj__')
       self.fw('  logical:: delcobj__ = .false.')
       self.fw('  if (obj__%cobj__ == 0) then')
-      self.fw('    call InitPyRef'+t.name+'(obj__,0)')
+      self.fw('    call InitPyRef'+t.name+'(obj__,0,0)')
       self.fw('    delcobj__ = .true.')
       self.fw('  endif')
       self.fw('  CALL tchange(obj__%cobj__)')
@@ -534,7 +565,7 @@ class ForthonDerivedType:
       self.fw('  TYPE('+t.name+'):: obj__')
       self.fw('  logical:: delcobj__ = .false.')
       self.fw('  if (obj__%cobj__ == 0) then')
-      self.fw('    call InitPyRef'+t.name+'(obj__,0)')
+      self.fw('    call InitPyRef'+t.name+'(obj__,0,0)')
       self.fw('    delcobj__ = .true.')
       self.fw('  endif')
       self.fw('  CALL tfree(obj__%cobj__)')
@@ -555,8 +586,10 @@ class ForthonDerivedType:
         s = slist[i]
         if s.dynamic: continue
         if s.derivedtype:
+          # --- This is only called for static instances, so deallocatable is
+          # --- set to false (the last argument).
           self.fw('  CALL init'+s.type+'py(-1,obj__%'+s.name+
-                  ',obj__%'+s.name+'%cobj__,setinitvalues)')
+                  ',obj__%'+s.name+'%cobj__,setinitvalues,0)')
           self.fw('  CALL '+self.fsub(t,'setderivedtypepointers')+'('+
                   repr(i)+',obj__%'+s.name+'%cobj__,obj__%cobj__)')
         else:
@@ -586,7 +619,7 @@ class ForthonDerivedType:
           if not a.derivedtype:
             # --- This assumes that a scalar is given which is broadcasted
             # --- to fill the array.
-            if a.data: self.fw('  obj__%'+a.name+' = '+a.data[1:-1])
+            #if a.data: self.fw('  obj__%'+a.name+' = '+a.data[1:-1])
             self.fw('  CALL '+self.fsub(t,'setarraypointers')+'('+repr(i)+
                     ',obj__%'+a.name+',obj__%cobj__'+str)
 
@@ -672,10 +705,17 @@ class ForthonDerivedType:
       for s in slist:
         if s.dynamic:
           self.fw('  NULLIFY(newobj__%'+s.name+')')
-      self.fw('  call InitPyRef'+t.name+'(newobj__,1)')
+      self.fw('  call InitPyRef'+t.name+'(newobj__,1,1)')
       self.fw('  cobj__ = newobj__%cobj__')
       self.fw('  RETURN')
       self.fw('END')
+
+      self.fw('SUBROUTINE '+self.fsub(t,'deallocatef')+'(oldobj__)')
+      self.fw('  USE '+t.name+'module')
+      self.fw('  TYPE('+t.name+'):: oldobj__')
+      self.fw('  CALL '+t.name+'dealloc1(oldobj__)')
+      self.fw('  RETURN')
+      self.fw('END SUBROUTINE '+self.fsub(t,'deallocatef'))
 
 #     self.fw('SUBROUTINE '+self.fsub(t,'DelF')+'(oldobj__)')
 #     self.fw('  USE '+t.name+'module')
@@ -689,4 +729,5 @@ class ForthonDerivedType:
 #     self.fw('  endif')
 #     self.fw('  RETURN')
 #     self.fw('END SUBROUTINE '+self.fsub(t,'DelF'))
+
 
