@@ -48,6 +48,7 @@ appropriate block for the machine.
         if self.linux_pg() is not None: break
         if self.linux_absoft() is not None: break
       elif self.machine == 'darwin':
+        if self.macosx_gnu() is not None: break
         if self.macosx_xlf() is not None: break
         if self.macosx_gfortran() is not None: break
         if self.macosx_absoft() is not None: break
@@ -171,14 +172,16 @@ appropriate block for the machine.
       return 1
 
   def macosx_absoft(self):
+    print 'compiler is ABSOFT!'
     if (self.findfile('f90') and
         (self.fcompiler=='absoft' or self.fcompiler is None)):
       # --- Absoft
       self.f90free  = 'f90 -N11 -N113 -YEXT_NAMES=LCS -YEXT_SFX=_'
       self.f90fixed = 'f90 -f fixed -W 132 -N11 -N113 -YEXT_NAMES=LCS -YEXT_SFX=_'
-      flibroot,b = os.path.split(self.findfile('pgf90'))
+      flibroot,b = os.path.split(self.findfile('f90'))
       self.libdirs = [flibroot+'/lib']
-      self.libs = ['fio','f77math','f90math','f90math_altivec']
+      self.extra_link_args = ['-flat_namespace','-Wl,-undefined,suppress']
+      self.libs = ['fio','f77math','f90math','f90math_altivec','lapack','blas']
       self.fopt = '-O2'
       return 1
 
@@ -194,6 +197,20 @@ appropriate block for the machine.
       self.libs = ['f96','m']
       self.fopt = '-Wc,-O3 -Wc,-funroll-loops -O3 -Ounroll=2'
       self.define_macros.append(('NAG','1'))
+      return 1
+
+  def macosx_gnu(self):
+    if (self.findfile('gfortran') and
+        (self.fcompiler=='gnu' or self.fcompiler is None)):
+      # --- GNU
+      self.f90free  = 'f95 -132 -fpp -Wp,-macro=no_com -free -PIC -w -mismatch_all -kind=byte -r8'
+      self.f90fixed = 'f95 -132 -fpp -Wp,-macro=no_com -Wp,-fixed -fixed -PIC -w -mismatch_all -kind=byte -r8'
+      self.f90free  = 'gfortran -x f95'
+      self.f90fixed = 'gfortran -x f95 -ffixed-form -ffixed-line-length-132'
+      flibroot,b = os.path.split(self.findfile('gfortran'))
+      self.libdirs = [flibroot+'/lib']
+      self.libs = ['???']
+      self.fopts = '-O3'
       return 1
 
   #-----------------------------------------------------------------------------
