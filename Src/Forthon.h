@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.18 2004/07/15 17:41:36 dave Exp $ */
+/* $Id: Forthon.h,v 1.19 2004/07/29 16:51:38 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -482,7 +482,7 @@ static int Forthon_setarray(ForthonObject *self,PyObject *value,
 
   PyArg_Parse(value, "O", &pyobj);
   FARRAY_FROMOBJECT(ax,pyobj,farray->type);
-  if (farray->dynamic && ax->nd == farray->nd ||
+  if ((farray->dynamic && ax->nd == farray->nd) ||
       (farray->dynamic == 3 && farray->nd == 1 && ax->nd == 0 &&
        farray->pya == NULL)) {
     /* The long list of checks above looks for the special case of assigning */
@@ -1523,7 +1523,9 @@ static void Forthon_dealloc(ForthonObject *self)
   int i;
   for (i=0;i<self->nscalars;i++) {
     if (self->fscalars[i].type == PyArray_OBJECT)
+      {
       Py_XDECREF((PyObject *)self->fscalars[i].data);
+      }
     }
   for (i=0;i<self->narrays;i++) {
     free(self->farrays[i].dimensions);
