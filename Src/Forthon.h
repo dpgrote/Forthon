@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.16 2004/07/06 20:58:10 dave Exp $ */
+/* $Id: Forthon.h,v 1.17 2004/07/12 23:34:49 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -1223,7 +1223,8 @@ static PyObject *ForthonPackage_gfree(PyObject *_self_,PyObject *args)
 
   for (i=0;i<self->narrays;i++) {
     if (strcmp(s,self->farrays[i].group)==0 || strcmp(s,"*")==0) {
-      r = Forthon_freearray(self,(void *)i);
+      r = 1;
+      Forthon_freearray(self,(void *)i);
       }
     }
 
