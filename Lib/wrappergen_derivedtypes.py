@@ -101,10 +101,12 @@ class ForthonDerivedType:
       self.cw('extern PyObject *'+fname(pname+'_'+t.name+'newf')+'(void);')
 
       # --- setpointer and getpointer routine for f90
+      # --- Note that setpointers get written out for all derived types -
+      # --- for non-dynamic derived types, the setpointer routine does a copy.
       for s in slist:
+        self.cw('extern void '+fname(t.name+'setpointer'+s.name)+
+                '(char *p,char *fobj);')
         if s.dynamic:
-          self.cw('extern void '+fname(t.name+'setpointer'+s.name)+
-                  '(char *p,char *fobj);')
           self.cw('extern void '+fname(t.name+'getpointer'+s.name)+
                   '(ForthonObject **cobj__,char *obj);')
       for a in alist:
@@ -127,8 +129,7 @@ class ForthonDerivedType:
         self.cw('obj->fscalars = NULL;')
       for i in range(len(slist)):
         s = slist[i]
-        if s.dynamic: setpointer = '*'+fname(t.name+'setpointer'+s.name)
-        else:         setpointer = 'NULL'
+        setpointer = '*'+fname(t.name+'setpointer'+s.name)
         if s.dynamic: getpointer = '*'+fname(t.name+'getpointer'+s.name)
         else:         getpointer = 'NULL'
         self.cw('obj->fscalars[%d].type = PyArray_%s;'%(i,fvars.ftop(s.type)))
@@ -591,14 +592,17 @@ class ForthonDerivedType:
       # --- Write routine for each dynamic variable which gets the pointer
       # --- from the wrapper
       for s in slist:
+        self.fw('SUBROUTINE '+t.name+'setpointer'+s.name+'(p__,obj__)')
+        self.fw('  USE '+t.name+'module')
+        self.fw('  TYPE('+t.name+'):: obj__')
+        self.fw('  '+fvars.ftof(s.type)+',target::p__')
         if s.dynamic:
-          self.fw('SUBROUTINE '+t.name+'setpointer'+s.name+'(p__,obj__)')
-          self.fw('  USE '+t.name+'module')
-          self.fw('  TYPE('+t.name+'):: obj__')
-          self.fw('  '+fvars.ftof(s.type)+',target::p__')
           self.fw('  obj__%'+s.name+' => p__')
-          self.fw('  RETURN')
-          self.fw('END')
+        else:
+          self.fw('  obj__%'+s.name+' = p__')
+        self.fw('  RETURN')
+        self.fw('END')
+        if s.dynamic:
           self.fw('SUBROUTINE '+t.name+'getpointer'+s.name+'(cobj__,obj__)')
           self.fw('  USE '+t.name+'module')
           self.fw('  integer('+isz+'):: cobj__')

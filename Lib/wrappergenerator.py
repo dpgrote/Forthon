@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.11 2004/04/21 18:01:25 dave Exp $
+# $Id: wrappergenerator.py,v 1.12 2004/04/26 23:46:36 dave Exp $
 
 import sys
 import os.path
@@ -197,11 +197,14 @@ Usage:
     self.cw('')
 
     # --- setpointer and getpointer routine for f90
+    # --- Note that setpointers get written out for all derived types -
+    # --- for non-dynamic derived types, the setpointer routine does a copy.
     if self.f90:
       for s in slist:
-        if s.dynamic:
+        if s.dynamic or s.derivedtype:
           self.cw('extern void '+fname(self.pname+'setpointer'+s.name)+
                   '(char *p,long *cobj__);')
+        if s.dynamic:
           self.cw('extern void '+fname(self.pname+'getpointer'+s.name)+
                   '(ForthonObject **cobj__,long *obj);')
       for a in alist:
@@ -238,9 +241,12 @@ Usage:
       self.cw('Fortranscalar '+self.pname+'_fscalars['+repr(len(slist))+']={')
       for i in range(len(slist)):
         s = slist[i]
-        if (self.f90 or self.f90f) and s.dynamic:
+        if (self.f90 or self.f90f) and s.derivedtype:
           setpointer = '*'+fname(self.pname+'setpointer'+s.name)
-          getpointer = '*'+fname(self.pname+'getpointer'+s.name)
+          if s.dynamic:
+            getpointer = '*'+fname(self.pname+'getpointer'+s.name)
+          else:
+            getpointer = 'NULL'
         else:
           setpointer = 'NULL'
           getpointer = 'NULL'
@@ -834,14 +840,17 @@ Usage:
     # --- wrapper
     if self.f90:
       for s in slist:
+        self.fw('SUBROUTINE '+self.pname+'setpointer'+s.name+'(p__,cobj__)')
+        self.fw('  USE '+s.group)
+        self.fw('  integer('+self.isz+'):: cobj__')
+        self.fw('  '+fvars.ftof(s.type)+',target::p__')
         if s.dynamic:
-          self.fw('SUBROUTINE '+self.pname+'setpointer'+s.name+'(p__,cobj__)')
-          self.fw('  USE '+s.group)
-          self.fw('  integer('+self.isz+'):: cobj__')
-          self.fw('  '+fvars.ftof(s.type)+',target::p__')
           self.fw('  '+s.name+' => p__')
-          self.fw('  RETURN')
-          self.fw('END')
+        else:
+          self.fw('  '+s.name+' = p__')
+        self.fw('  RETURN')
+        self.fw('END')
+        if s.dynamic:
           self.fw('SUBROUTINE '+self.pname+'getpointer'+s.name+'(cobj__,obj__)')
           self.fw('  USE '+s.group)
           self.fw('  integer('+self.isz+'):: cobj__,obj__')
