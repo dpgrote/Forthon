@@ -114,6 +114,8 @@ x(0:n) _real /1/ # Sample array pointer
 z(:) _real # Sample array pointer with undefined bounds.
 xxx(2:3,n:20) _real # Sample multidimensional array
 l1 logical /.false./ # Sample logical variable
+realvar real /1./
+varreal real /2./
 
 %%%%% Type1:
 $ Sample derived type
@@ -123,6 +125,7 @@ e(10) real # Static array element of a derived type
 m integer # Size of array pointer in derived type
 y(0:m) _real # Array pointer element of a derived type
 next _Type1 # Pointer to derived type object of the same type
+xxx(:,:) _real
 
 ***** Module2:
 t1 Type1 # Test derived type
