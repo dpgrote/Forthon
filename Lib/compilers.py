@@ -30,7 +30,7 @@ appropriate block for the machine.
     self.fcompiler = fcompiler
     self.static = static
     self.defines = []
-    self.fopts = ''
+    self.fopt = ''
     self.popts = ''
     self.libs = []
     self.libdirs = []
@@ -68,7 +68,7 @@ appropriate block for the machine.
       # --- Note that this error should never happed (except during debugging)
       raise "The fortran compiler definition is not correct, f90free and f90fixed must be defined."
 
-    if debug: self.fopts = '-g'
+    if debug: self.fopt = '-g'
 
   def findfile(self,file):
     if self.machine == 'win32': file = file + '.exe'
@@ -93,9 +93,9 @@ appropriate block for the machine.
       self.libs = ['ifcore','ifport','imf','svml','cxa','irc','unwind']
       cpuinfo = open('/proc/cpuinfo','r').read()
       if re.search('Pentium III',cpuinfo):
-        self.fopts = '-O3 -xK -tpp6 -ip -unroll -prefetch'
+        self.fopt = '-O3 -xK -tpp6 -ip -unroll -prefetch'
       else:
-        self.fopts = '-O3 -xW -tpp7 -ip -unroll -prefetch'
+        self.fopt = '-O3 -xW -tpp7 -ip -unroll -prefetch'
       return 1
 
   def linux_intel(self):
@@ -110,9 +110,9 @@ appropriate block for the machine.
       self.libs = ['IEPCF90','CEPCF90','F90','intrins','imf','svml','irc','cxa']
       cpuinfo = open('/proc/cpuinfo','r').read()
       if re.search('Pentium III',cpuinfo):
-        self.fopts = '-O3 -xK -tpp6 -ip -unroll -prefetch'
+        self.fopt = '-O3 -xK -tpp6 -ip -unroll -prefetch'
       else:
-        self.fopts = '-O3 -xW -tpp7 -ip -unroll -prefetch'
+        self.fopt = '-O3 -xW -tpp7 -ip -unroll -prefetch'
       return 1
 
   def linux_pg(self):
@@ -125,7 +125,7 @@ appropriate block for the machine.
       flibroot,b = os.path.split(self.findfile('pgf90'))
       self.libdirs = [flibroot+'/lib']
       self.libs = ['pgf90'] # ???
-      self.fopts = '-fast -Mcache_align'
+      self.fopt = '-fast -Mcache_align'
 
   def linux_absoft(self):
     if (self.findfile('f90') and
@@ -137,7 +137,7 @@ appropriate block for the machine.
       flibroot,b = os.path.split(self.findfile('f90'))
       self.libdirs = [flibroot+'/lib']
       self.libs = ['U77','V77','f77math','f90math','fio']
-      self.fopts = '-O'
+      self.fopt = '-O'
       return 1
 
   #-----------------------------------------------------------------------------
@@ -151,7 +151,7 @@ appropriate block for the machine.
       flibroot,b = os.path.split(self.findfile('pgf90'))
       self.libdirs = [flibroot+'/lib']
       self.libs = ['fio','f77math','f90math','f90math_altivec']
-      self.fopts = '-O2'
+      self.fopt = '-O2'
       return 1
 
   def macosx_nag(self):
@@ -163,7 +163,7 @@ appropriate block for the machine.
       flibroot,b = os.path.split(self.findfile('f95'))
       self.libdirs = [flibroot+'/lib']
       self.libs = ['???']
-      self.fopts = '-Wc,-O3 -Wc,-funroll-loops -O3 -Ounroll=2'
+      self.fopt = '-Wc,-O3 -Wc,-funroll-loops -O3 -Ounroll=2'
       return 1
 
   #-----------------------------------------------------------------------------
@@ -178,7 +178,7 @@ appropriate block for the machine.
       flibroot,b = os.path.split(self.findfile('pgf90'))
       self.libdirs = [flibroot+'/Lib']
       self.libs = ['???']
-      self.fopts = '-fast -Mcache_align'
+      self.fopt = '-fast -Mcache_align'
       return 1
 
   def win32_intel(self):
@@ -190,7 +190,7 @@ appropriate block for the machine.
       flibroot,b = os.path.split(self.findfile('ifl'))
       self.libdirs = [flibroot+'/Lib']
       self.libs = ['CEPCF90MD','F90MD','intrinsMD']
-      self.fopts = '-O3'
+      self.fopt = '-O3'
       return 1
 
   #-----------------------------------------------------------------------------
@@ -205,7 +205,7 @@ appropriate block for the machine.
       self.ld = 'mpxlf_r -bmaxdata:0x70000000 -bmaxstack:0x10000000 -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp'
       self.libs = ' $(PYMPI)/driver.o $(PYMPI)/patchedmain.o -L$(PYMPI) -lpympi -lpthread'
       self.defines = ['PYMPI=/usr/common/homes/g/grote/pyMPI']
-      self.fopts = '-O3 -qstrict -qarch=pwr3 -qtune=pwr3'
+      self.fopt = '-O3 -qstrict -qarch=pwr3 -qtune=pwr3'
       return 1
 
   def aix_xlf(self):
@@ -217,7 +217,7 @@ appropriate block for the machine.
       self.popts = '-O'
       self.ld = 'xlf -bmaxdata:0x70000000 -bmaxstack:0x10000000 -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp'
       self.libs = ['pthread']
-      self.fopts = '-O3 -qstrict -qarch=pwr3 -qtune=pwr3'
+      self.fopt = '-O3 -qstrict -qarch=pwr3 -qtune=pwr3'
       return 1
 
   def aix_xlf_r(self):
@@ -229,6 +229,6 @@ appropriate block for the machine.
       self.popts = '-O'
       self.ld = 'xlf90_r -bmaxdata:0x70000000 -bmaxstack:0x10000000 -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp'
       self.libs = ' -lpthread -lxlf90_r -lxlopt -lxlf -lxlsmp'
-      self.fopts = '-O3 -qstrict -qarch=pwr3 -qtune=pwr3 -qsmp=omp'
+      self.fopt = '-O3 -qstrict -qarch=pwr3 -qtune=pwr3 -qsmp=omp'
       return 1
 

@@ -58,21 +58,21 @@ One or more of the following options can be specified.
     between the interface file description and the actual module.
  --macros pkg.v
     Other interface files whose macros are needed
- --FOPTS options
-    Additional options to the fortran compiler line. For example to turn on
-    profiling. If there are any spaces in options, it must be surrounded in
-    double quotes.
- --COPTS options
-    Additional options to the C compiler line. For example to turn on
-    profiling. If there are any spaces in options, it must be surrounded in
+ --fopt options
+    Optimization option for the fortran compiler. This will replace the
+    default optimization options. If there are any spaces in options, it
+    must be surrounded in double quotes.
+ --fargs options
+    Additional options for the fortran compiler. For example to turn on
+    profiling.  If there are any spaces in options, it must be surrounded in
     double quotes.
  --static
     Build the static version of the code by default, rather than the
     dynamically linker version. Not yet supported.
  --free_suffix suffix
-    Suffix used for fortran files in free format. Defaults to F90
+    Suffix to use for fortran files in free format. Defaults to F90
  --fixed_suffix suffix
-    Suffix used for fortran files in fixed format. Defaults to F
+    Suffix to use for fortran files in fixed format. Defaults to F
 """
 
 import sys,os,re
@@ -91,7 +91,7 @@ if len(sys.argv) == 1:
 # --- Process command line arguments
 optlist,args = getopt.getopt(sys.argv[1:],'agd:t:F:D:L:l:i:f:',
                          ['f90','f77','f90f','nowritemodules','macros=',
-                          'FOPTS=','COPTS=','static',
+                          'fopt=','fargs=','static',
                           'free_suffix=','fixed_suffix='])
 
 # --- Get the package name
@@ -116,8 +116,8 @@ f90f = 0
 writemodules = 1
 othermacros = []
 debug = 0
-fopts = ''
-copts = ''
+fopt = None
+fargs = ''
 libs = []
 libdirs = []
 static = 0
@@ -139,8 +139,8 @@ for o in optlist:
   elif o[0] == '--f77': f90 = ''
   elif o[0] == '--f90f': f90f = 1
   elif o[0] == '--2underscores': twounderscores = 1
-  elif o[0] == '--FOPTS': fopts = o[1]
-  elif o[0] == '--COPTS': copts = o[1]
+  elif o[0] == '--fopt': fopt = o[1]
+  elif o[0] == '--fargs': fargs = o[1]
   elif o[0] == '--static': static = 1
   elif o[0] == '--macros': othermacros.append(o[1])
   elif o[0] == '--free_suffix': free_suffix = o[1]
@@ -171,9 +171,9 @@ fcompiler = FCompiler(machine=machine,
 # --- Create some locals which are needed for strings below.
 f90free = fcompiler.f90free
 f90fixed = fcompiler.f90fixed
-fopts = fopts + ' ' + fcompiler.fopts
 popts = fcompiler.popts
 pywrapperargs = fcompiler.pywrapperargs
+if fopt is None: fopt = fcompiler.fopt
 
 # --- Find location of the python libraries and executable.
 prefix = fixpath(sys.prefix)
@@ -228,9 +228,9 @@ PYPREPROC = %(python)s -c "from Forthon.preprocess import main;main()" %(f90)s -
 %(defaultrule)s
 
 %%.o: %%.%(fixed_suffix)s %(pkg)s_p.o
-	%(f90fixed)s %(fopts)s -c $<
+	%(f90fixed)s %(fopt)s %(fargs)s -c $<
 %%.o: %%.%(free_suffix)s %(pkg)s_p.o
-	%(f90free)s %(fopts)s -c $<
+	%(f90free)s %(fopt)s %(fargs)s -c $<
 Forthon.h:%(pywrapperhome)s/Forthon.h
 	$(PYPREPROC) %(pywrapperhome)s/Forthon.h Forthon.h
 Forthon.c:%(pywrapperhome)s/Forthon.c
