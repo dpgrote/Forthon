@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.28 2004/10/12 22:46:53 dave Exp $ */
+/* $Id: Forthon.h,v 1.29 2004/10/18 17:21:20 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -641,7 +641,6 @@ static int Forthon_clear(ForthonObject *self)
   /* Note that this is called by Forthon_dealloc. */
   int i,createnew=0;
   void *d;
-  ForthonObject *objid;
   PyObject *oldobj;
 
   for (i=0;i<self->nscalars;i++) {
