@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.20 2004/09/10 18:20:41 dave Exp $
+# $Id: wrappergenerator.py,v 1.21 2004/09/28 20:31:23 dave Exp $
 
 import sys
 import os.path
@@ -640,13 +640,14 @@ Usage:
     # --- This routine gets the dimensions from an array. It is called from
     # --- fortran and the last argument should be shape(array).
     # --- This is only used for routines with the fassign attribute.
+    # --- Note that the dimensions are stored in C order.
     self.cw('void '+fname(self.fsub('setarraydims'))+
             '(Fortranarray *farray,int *dims)')
     self.cw('{')
     if self.f90:
       self.cw('  int id;')
       self.cw('  for (id=0;id<farray->nd;id++)')
-      self.cw('    farray->dimensions[id] = dims[id];')
+      self.cw('    farray->dimensions[farray->nd-1-id] = dims[id];')
     self.cw('}')
 
     ###########################################################################

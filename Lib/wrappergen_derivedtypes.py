@@ -414,13 +414,14 @@ class ForthonDerivedType:
       # --- This routine gets the dimensions from an array. It is called from
       # --- fortran and the last argument should be shape(array).
       # --- This is only used for routines with the fassign attribute.
+      # --- Note that the dimensions are stored in C order.
       self.cw('void '+fname(self.fsub(t,'setarraydims'))+
               '(Fortranarray *farray,int *dims)')
       self.cw('{')
       if f90:
         self.cw('  int id;')
         self.cw('  for (id=0;id<farray->nd;id++)')
-        self.cw('    farray->dimensions[id] = dims[id];')
+        self.cw('    farray->dimensions[farray->nd-1-id] = dims[id];')
       self.cw('}')
 
       #########################################################################
