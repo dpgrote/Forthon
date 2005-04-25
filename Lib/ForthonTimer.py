@@ -1,10 +1,15 @@
 """Routine timer and profiler
 These are generic classes which provide timing information about routine
 calls and traces.
+ForthonProfiler: accumulates function level timings and optionally prints
+                 traces on function calls and returns
+enablelinetracing: enables line level tracing
+disablelinetracing: disables line level tracing
 """
 import sys,time
+import linecache
 
-ForthonTimer_version = "$Id: ForthonTimer.py,v 1.4 2005/03/23 00:52:57 dave Exp $"
+ForthonTimer_version = "$Id: ForthonTimer.py,v 1.5 2005/04/25 17:17:24 dave Exp $"
 
 def ForthonTimerdoc():
   import ForthonTimer
@@ -143,4 +148,33 @@ Print out timing info.
     """
     self.finish()
     self.root.out(maxlevel,mintime)
+
+###############################################################################
+# --- Thanks to Andrew Dalke
+# --- See http://www.dalkescientific.com/writings/diary/archive/2005/04/20/tracing_python_code.html
+def traceit(frame, event, arg):
+    if event == "line":
+        lineno = frame.f_lineno
+        try:
+          filename = frame.f_globals["__file__"]
+        except KeyError:
+          filename = ''
+        if (filename.endswith(".pyc") or
+            filename.endswith(".pyo")):
+            filename = filename[:-1]
+        name = frame.f_globals["__name__"]
+        line = linecache.getline(filename, lineno)
+        print "%s:%s: %s" % (name, lineno, line.rstrip())
+    return traceit
+
+def enablelinetracing():
+  """
+Enables line by line tracing.
+  """
+  sys.settrace(traceit)
+def disablelinetracing():
+  """
+Disables line by line tracing.
+  """
+  sys.settrace(None)
 
