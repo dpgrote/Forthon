@@ -65,6 +65,7 @@ appropriate block for the machine.
         if self.aix_xlf() is not None: break
         if self.aix_mpxlf() is not None: break
         if self.aix_xlf_r() is not None: break
+        if self.aix_pghpf() is not None: break
       else:
         raise SystemExit,'Machine type %s is unknown'%self.machine
       raise SystemExit,'Fortran compiler not found'
@@ -174,6 +175,7 @@ appropriate block for the machine.
       self.libdirs = [flibroot+'/lib']
       self.libs = ['pgf90'] # ???
       self.fopt = '-fast -Mcache_align'
+      return 1
 
   def linux_absoft(self):
     if (self.findfile('f90') and
@@ -345,6 +347,7 @@ appropriate block for the machine.
       self.f90fixed = 'xlf95 -c -qmaxmem=8192 -u -qdpc=e -qintsize=4 -qsave=defaultinit -qfixed=132 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
       self.popt = '-O'
       self.extra_link_args = ['-bmaxdata:0x70000000','-bmaxstack:0x10000000']
+      self.extra_compile_args = ['-bmaxdata:0x70000000','-bmaxstack:0x10000000']
       self.ld = 'xlf -bmaxdata:0x70000000 -bmaxstack:0x10000000 -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp'
       self.libs = ['xlf90','xlopt','xlf','xlomp_ser','pthread','essl']
       self.fopt = '-O3 -qstrict -qarch=pwr3 -qtune=pwr3'
@@ -359,6 +362,7 @@ appropriate block for the machine.
       self.f90fixed = 'mpxlf95 -c -qmaxmem=8192 -u -qdpc=e -qintsize=4 -qsave=defaultinit -WF,-DMPIPARALLEL -qfixed=132 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
       self.popt = '-O'
       self.extra_link_args = ['-bmaxdata:0x70000000','-bmaxstack:0x10000000']
+      self.extra_compile_args = ['-bmaxdata:0x70000000','-bmaxstack:0x10000000']
       self.ld = 'mpxlf_r -bmaxdata:0x70000000 -bmaxstack:0x10000000 -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp'
       self.libs = ['xlf90','xlopt','xlf','xlomp_ser','pthread','essl']
      #self.libs = ' $(PYMPI)/driver.o $(PYMPI)/patchedmain.o -L$(PYMPI) -lpympi -lpthread'
@@ -375,8 +379,24 @@ appropriate block for the machine.
       self.f90fixed = 'xlf95 -c -qmaxmem=8192 -u -qdpc=e -qintsize=4 -qsave=defaultinit -qfixed=132 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
       self.popt = '-O'
       self.extra_link_args = ['-bmaxdata:0x70000000','-bmaxstack:0x10000000']
+      self.extra_compile_args = ['-bmaxdata:0x70000000','-bmaxstack:0x10000000']
       self.ld = 'xlf95_r -bmaxdata:0x70000000 -bmaxstack:0x10000000 -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp'
-      self.libs = ['pthread','xlf90','xlopt','xlf','xlsmp']
+      #self.libs = ['pthread','xlf90','xlopt','xlf','xlsmp']
+      self.libs = ['xlf90','xlopt','xlf','xlsmp','pthreads','essl']
       self.fopt = '-O3 -qstrict -qarch=pwr3 -qtune=pwr3 -qsmp=omp'
+      return 1
+
+  def aix_pghpf(self):
+    if (self.findfile('pghpf') and
+        (self.fcompname=='pghpf' or self.fcompname is None)):
+      self.fcompname = 'pghpf'
+      # --- Portland group
+      self.f90free  = 'pghpf -Mextend -Mdclchk -r8'
+      self.f90fixed = 'pghpf -Mextend -Mdclchk -r8'
+      self.popt = '-Mcache_align'
+      flibroot,b = os.path.split(self.findfile('pghpf'))
+      self.libdirs = [flibroot+'/lib']
+      self.libs = ['pghpf'] # ???
+      self.fopt = '-fast -Mcache_align'
       return 1
 
