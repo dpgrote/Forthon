@@ -35,7 +35,7 @@ class ForthonDerivedType:
     for ss in sl:
       if re.search('[a-zA-Z]',ss) != None:
         if sdict.has_key (ss):
-          dim = re.sub(ss,'*(int *)obj->fscalars['+repr(sdict[ss])+'].data',
+          dim = re.sub(ss,'*(long *)obj->fscalars['+repr(sdict[ss])+'].data',
                        dim,count=1)
         else:
           raise ss + ' is not declared in a .v file'
@@ -264,7 +264,7 @@ class ForthonDerivedType:
           # --- reverse order
           for d in a.dims:
             if d.high == '': continue
-            self.cw('   '+vname+'.dimensions['+repr(len(a.dims)-1-j)+']=',
+            self.cw('   '+vname+'.dimensions['+repr(len(a.dims)-1-j)+']=(int)',
                     noreturn=1)
             j = j + 1
             if re.search('[a-zA-Z]',d.high) == None:

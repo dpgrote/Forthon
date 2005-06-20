@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.29 2005/06/20 21:48:00 dave Exp $
+# $Id: wrappergenerator.py,v 1.30 2005/06/20 22:52:52 dave Exp $
 
 import sys
 import os.path
@@ -79,12 +79,12 @@ Usage:
       if re.search('[a-zA-Z]',ss) != None:
         if sdict.has_key (ss):
           dim = re.sub(ss,
-                   '*(int *)'+self.pname+'_fscalars['+repr(sdict[ss])+'].data',
+                   '*(long *)'+self.pname+'_fscalars['+repr(sdict[ss])+'].data',
                    dim,count=1)
         else:
           for other_dict in self.other_scalar_dicts:
             if other_dict.has_key (ss):
-              dim = re.sub(ss,'*(int *)'+other_dict['_module_name_']+
+              dim = re.sub(ss,'*(long *)'+other_dict['_module_name_']+
                         '_fscalars['+repr(other_dict[ss])+'].data',dim,count=1)
               break
           else:
@@ -561,7 +561,7 @@ Usage:
         # --- create lines of the form dims[1] = high-low+1, in reverse order
         for d in a.dims:
           if d.high == '': continue
-          self.cw('   '+vname+'.dimensions['+repr(len(a.dims)-1-j)+']=',
+          self.cw('   '+vname+'.dimensions['+repr(len(a.dims)-1-j)+']=(int)',
                   noreturn=1)
           j = j + 1
           if re.search('[a-zA-Z]',d.high) == None:
