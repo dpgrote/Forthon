@@ -363,7 +363,7 @@ class ForthonDerivedType:
       #########################################################################
       # --- Write set pointers routine which gets all of the fortran pointers
       self.cw('void '+fname(self.fsub(t,'setscalarpointers'))+
-              '(int *i,char *p,ForthonObject **obj',noreturn=1)
+              '(long *i,char *p,ForthonObject **obj',noreturn=1)
       if machine=='J90':
         self.cw(',int *iflag)')
       else:
@@ -377,14 +377,14 @@ class ForthonDerivedType:
       self.cw('}')
 
       self.cw('void '+fname(self.fsub(t,'setderivedtypepointers'))+
-              '(int *i,char **p,ForthonObject **obj)')
+              '(long *i,char **p,ForthonObject **obj)')
       self.cw('{')
       self.cw('  /* Get pointers for the derived types */')
       self.cw('  (*obj)->fscalars[*i].data = (char *)(*p);')
       self.cw('}')
 
       self.cw('void '+fname(self.fsub(t,'setarraypointers'))+
-              '(int *i,char *p,ForthonObject **obj',noreturn=1)
+              '(long *i,char *p,ForthonObject **obj',noreturn=1)
       if machine=='J90':
         self.cw(',int *iflag)')
       else:

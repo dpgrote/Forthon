@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.28 2005/04/02 00:12:36 dave Exp $
+# $Id: wrappergenerator.py,v 1.29 2005/06/20 21:48:00 dave Exp $
 
 import sys
 import os.path
@@ -589,7 +589,7 @@ Usage:
     ###########################################################################
     # --- Write set pointers routine which gets all of the fortran pointers
     self.cw('void '+fname(self.fsub('setscalarpointers'))+
-            '(int *i,char *p',noreturn=1)
+            '(long *i,char *p',noreturn=1)
     if machine=='J90':
       self.cw(',int *iflag)')
     else:
@@ -605,7 +605,7 @@ Usage:
     # --- A serarate routine is needed for derived types since the cobj__
     # --- that is passed in is already a pointer, so **p is needed.
     self.cw('void '+fname(self.fsub('setderivedtypepointers'))+
-            '(int *i,char **p)')
+            '(long *i,char **p)')
     self.cw('{')
     self.cw('  /* Get pointers for the scalars */')
     self.cw('  '+self.pname+'_fscalars[*i].data = (char *)(*p);')
@@ -613,7 +613,7 @@ Usage:
 
     # --- Get pointer to an array. This takes an integer to specify which array
     self.cw('void '+fname(self.fsub('setarraypointers'))+
-            '(int *i,char *p',noreturn=1)
+            '(long *i,char *p',noreturn=1)
     if machine=='J90':
       self.cw(',int *iflag)')
     else:
