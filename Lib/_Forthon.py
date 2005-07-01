@@ -36,7 +36,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.16 2005/07/01 18:50:18 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.17 2005/07/01 22:55:57 dave Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling
@@ -886,13 +886,25 @@ def pyrestoreforthonobject(ff,gname,vlist,fobjdict,varsuffix,verbose,doarrays,
         # --- forceassign is used, allowing the array read in to have a
         # --- different size than the current size of the warp array.
         if verbose: print "reading in "+gname+"."+fullname
-        pkg.forceassign(vname,ff.__getattr__(vpdbname))
-        #setattr(pkg,vname,ff.__getattr__(vpdbname))
+        # --- Original version
+        #pkg.forceassign(vname,ff.__getattr__(vpdbname))
+        # --- Newer version using convenient setattr routine. This can be
+        # --- done this way since now all scalars are read in first so
+        # --- the arrays will be of the correct size.
+        setattr(pkg,vname,ff.__getattr__(vpdbname))
+        # --- This does the same thing but is more sensitive to some types
+        # --- of array sizing errors.
+        #v = ff.__getattr__(vpdbname)
+        #setattr(pkg,vname,fzeros(shape(v),v.typecode()))
+        #getattr(pkg,vname)[...] = v
     except:
       # --- The catches errors in cases where the variable is not an
       # --- actual warp variable, for example if it had been deleted
       # --- after the dump was originally made.
       print "Warning: There was problem restoring %s"% (fullname)
+      # --- Pring out information about exactly what went wrong.
+      #print sys.exc_info()[0:2]
+      #print sys.exc_info()[2].tb_lineno
 
   # --- Read in rest of groups.
   for g,v in groups.items():
