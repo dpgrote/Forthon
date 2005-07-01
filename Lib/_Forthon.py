@@ -36,7 +36,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.15 2005/04/02 00:13:21 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.16 2005/07/01 18:50:18 dave Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling
@@ -350,20 +350,28 @@ def getgroupsize(pkg,grp):
   return ss
 
 # --- Print out all variables in a group
-def printgroup(pkg,group='',maxelements=10):
+def printgroup(pkg,group='',maxelements=10,sumarrays=0):
   """
 Print out all variables in a group or with an attribute
-  - pkg: package name
+  - pkg: package name or class instance (where group is ignored)
   - group: group name
   - maxelements=10: only up to this many elements of arrays are printed
+  - sumarrays=0: when true, prints the total sum of arrays rather than the
+                 first several elements
   """
   if type(pkg) == StringType: pkg = __main__.__dict__[pkg]
-  vlist = pkg.varlist(group)
+  try:
+    vlist = pkg.varlist(group)
+  except AttributeError:
+    vlist = pkg.__dict__.keys()
   if not vlist:
     print "Unknown group name "+group
     return
   for vname in vlist:
-    v = pkg.getpyobject(vname)
+    try:
+      v = pkg.getpyobject(vname)
+    except AttributeError:
+      v = pkg.__dict__[vname]
     if v is None:
       print vname+' is not allocated'
     elif type(v) != ArrayType:
@@ -371,6 +379,9 @@ Print out all variables in a group or with an attribute
     else:
       if v.typecode() == 'c':
         print vname+' = "'+str(arraytostr(v))+'"'
+      elif sumarrays:
+        sumv = sum(reshape(v,tuple([product(array(v.shape))])))
+        print 'sum('+vname+') = '+str(sumv)
       elif size(v) <= maxelements:
         print vname+' = '+str(v)
       else:
@@ -876,6 +887,7 @@ def pyrestoreforthonobject(ff,gname,vlist,fobjdict,varsuffix,verbose,doarrays,
         # --- different size than the current size of the warp array.
         if verbose: print "reading in "+gname+"."+fullname
         pkg.forceassign(vname,ff.__getattr__(vpdbname))
+        #setattr(pkg,vname,ff.__getattr__(vpdbname))
     except:
       # --- The catches errors in cases where the variable is not an
       # --- actual warp variable, for example if it had been deleted
