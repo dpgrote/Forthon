@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.33 2005/04/02 00:10:21 dave Exp $ */
+/* $Id: Forthon.h,v 1.34 2005/07/07 21:25:57 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -129,7 +129,7 @@ static PyMethodDef *getForthonPackage_methods(void);
 /* ######################################################################### */
 /* This variable is used to keep track of the total amount of memory         */
 /* dynamically allocated in the package. */
-static int totmembytes=0;
+static long totmembytes=0;
 
 /* ######################################################################### */
 /* Utility function used by attribute handling routines.                     */
@@ -310,7 +310,7 @@ static void ForthonPackage_staticarrays(ForthonObject *self)
                  (int)(PyArray_SIZE(self->farrays[i].pya)-(long)c+
                  (long)self->farrays[i].data.s));
       /* Add the array size to totmembytes. */
-      totmembytes += PyArray_NBYTES(self->farrays[i].pya);
+      totmembytes += (long)PyArray_NBYTES(self->farrays[i].pya);
       }
     }
 }
@@ -390,7 +390,7 @@ static int Forthon_freearray(ForthonObject *self,void *closure)
   if (farray->dynamic) {
     if (farray->pya != NULL) {
       /* Subtract the array size from totmembytes. */
-      totmembytes -= PyArray_NBYTES(farray->pya);
+      totmembytes -= (long)PyArray_NBYTES(farray->pya);
       Py_XDECREF(farray->pya);
       farray->pya = NULL;
 %py_ifelse(f90 and not f90f,0,'*(farray->data.d)=0;','')
@@ -856,14 +856,14 @@ static PyObject *ForthonPackage_forceassign(PyObject *_self_,PyObject *args)
     FARRAY_FROMOBJECT(ax,pyobj,self->farrays[i].type);
     if (self->farrays[i].dynamic && ax->nd == self->farrays[i].nd) {
       if (self->farrays[i].pya != NULL)
-        totmembytes -= PyArray_NBYTES(self->farrays[i].pya);
+        totmembytes -= (long)PyArray_NBYTES(self->farrays[i].pya);
       Py_XDECREF(self->farrays[i].pya);
       self->farrays[i].pya = ax;
       /* Note that pya->dimensions are in the correct fortran order, but */
       /* farray->dimensions are in C order. */
 %py_ifelse(f90 and not f90f,1,'(self->farrays[i].setpointer)((self->farrays[i].pya)->data,(self->fobj),(self->farrays[i].pya)->dimensions);','')
 %py_ifelse(f90 and not f90f,0,'*(self->farrays[i].data.d)=(self->farrays[i].pya)->data;','')
-      totmembytes += PyArray_NBYTES(self->farrays[i].pya);
+      totmembytes += (long)PyArray_NBYTES(self->farrays[i].pya);
       returnnone;}
     else if (ax->nd == self->farrays[i].nd) {
       /* Copy input data into the array. This does a copy   */
@@ -941,7 +941,7 @@ static PyObject *ForthonPackage_gallot(PyObject *_self_,PyObject *args)
     if (self->farrays[i].dynamic && self->farrays[i].dynamic != 3) {
       /* Subtract the array size from totmembytes. */
       if (self->farrays[i].pya != NULL)
-        totmembytes -= PyArray_NBYTES(self->farrays[i].pya);
+        totmembytes -= (long)PyArray_NBYTES(self->farrays[i].pya);
       /* Always dereference the previous value so array can become */
       /* Unallocated if it has dimensions <= 0. */
       Py_XDECREF(self->farrays[i].pya);
@@ -995,7 +995,7 @@ static PyObject *ForthonPackage_gallot(PyObject *_self_,PyObject *args)
             *((double *)((self->farrays[i].pya)->data)+j) = self->farrays[i].initvalue;
           }
         /* Add the array size to totmembytes. */
-        totmembytes += PyArray_NBYTES(self->farrays[i].pya);
+        totmembytes += (long)PyArray_NBYTES(self->farrays[i].pya);
         if (iverbose) printf("%s.%s %d\n",self->name,self->farrays[i].name,
                                        PyArray_SIZE(self->farrays[i].pya));
         }
@@ -1057,7 +1057,7 @@ static PyObject *ForthonPackage_gchange(PyObject *_self_,PyObject *args)
               self->farrays[i].pya->dimensions[self->farrays[i].nd-j-1])
             changeit = 1;}
         /* Subtract the array size from totmembytes. */
-        if (changeit) totmembytes -= PyArray_NBYTES(self->farrays[i].pya);
+        if (changeit) totmembytes -= (long)PyArray_NBYTES(self->farrays[i].pya);
         }
       /* Make sure all of the dimensions are >= 0. If not, then free it. */
       freeit = 0;
@@ -1137,7 +1137,7 @@ static PyObject *ForthonPackage_gchange(PyObject *_self_,PyObject *args)
 %py_ifelse(f90 and not f90f,1,'(self->farrays[i].setpointer)((self->farrays[i].pya)->data,(self->fobj),(self->farrays[i].pya)->dimensions);','')
 %py_ifelse(f90 and not f90f,0,'*(self->farrays[i].data.d)=(self->farrays[i].pya)->data;','')
         /* Add the array size to totmembytes. */
-        totmembytes += PyArray_NBYTES(self->farrays[i].pya);
+        totmembytes += (long)PyArray_NBYTES(self->farrays[i].pya);
         if (iverbose) printf("%s.%s %d\n",self->name,self->farrays[i].name,
                                        PyArray_SIZE(self->farrays[i].pya));
         }
@@ -1682,7 +1682,7 @@ static PyObject *ForthonPackage_setdict(PyObject *_self_,PyObject *args)
 static char totmembytes_doc[] = "Returns total number of bytes dynamically allocated for the object.";
 static PyObject *ForthonPackage_totmembytes(PyObject *self,PyObject *args)
 {
-  return Py_BuildValue("i",totmembytes);
+  return Py_BuildValue("l",totmembytes);
 }
 
 /* ######################################################################### */
