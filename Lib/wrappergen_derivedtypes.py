@@ -788,6 +788,7 @@ class ForthonDerivedType:
             self.fw('  USE '+t.name+'module')
             self.fw('  integer('+isz+'):: i__')
             self.fw('  TYPE('+t.name+'):: obj__')
+            self.fw('  if (.not. associated(obj__%'+a.name+')) return ')
             self.fw('  call '+self.fsub(t,'setarraypointersobj')+
                                                    '(i__,obj__%'+a.name+')')
             self.fw('  call '+self.fsub(t,'setarraydims')+

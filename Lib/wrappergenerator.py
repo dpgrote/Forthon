@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.30 2005/06/20 22:52:52 dave Exp $
+# $Id: wrappergenerator.py,v 1.31 2005/07/12 18:35:21 dave Exp $
 
 import sys
 import os.path
@@ -950,6 +950,7 @@ Usage:
             self.fw('SUBROUTINE '+self.fsub('getpointer',a.name)+'(i__,obj__)')
             self.fw('  USE '+a.group)
             self.fw('  integer('+self.isz+'):: i__,obj__')
+            self.fw('  if (.not. associated('+a.name+')) return')
             self.fw('  call '+self.fsub('setarraypointersobj')+'(i__,'+a.name+')')
             self.fw('  call '+self.fsub('setarraydims')+'(i__,shape('+a.name+'))')
             self.fw('  return')
