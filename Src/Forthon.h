@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.34 2005/07/07 21:25:57 dave Exp $ */
+/* $Id: Forthon.h,v 1.35 2005/07/12 18:26:32 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -340,7 +340,7 @@ static PyObject *Forthon_getscalarderivedtype(ForthonObject *self,void *closure)
 {
   Fortranscalar *fscalar = &(self->fscalars[(long)closure]);
   ForthonObject *objid;
-  int createnew=1;
+  long createnew=1;
   /* These are attached to variables of fortran derived type */
   ForthonPackage_updatederivedtype(self,(long)closure,createnew);
   objid = (ForthonObject *)fscalar->data;
@@ -464,7 +464,7 @@ static int Forthon_setscalarderivedtype(ForthonObject *self,PyObject *value,
 {
   Fortranscalar *fscalar = &(self->fscalars[(long)closure]);
   void *d;
-  int createnew;
+  long createnew;
   PyObject *oldobj;
 
   /* Only create a new instance if a non-NULL value is passed in. */
@@ -647,7 +647,8 @@ static int Forthon_traverse(ForthonObject *self,visitproc visit,void *arg)
 static int Forthon_clear(ForthonObject *self)
 {
   /* Note that this is called by Forthon_dealloc. */
-  int i,createnew=0;
+  int i;
+  long createnew=0;
   void *d;
   PyObject *oldobj;
 
@@ -961,7 +962,7 @@ static PyObject *ForthonPackage_gallot(PyObject *_self_,PyObject *args)
 %py_ifelse(f90f,1,'self->farrays[i].pya = (PyArrayObject *)PyArray_FromDimsAndData(self->farrays[i].nd,self->farrays[i].dimensions,self->farrays[i].type,self->farrays[i].data.s);')
         /* Check if the allocation was unsuccessful. */
         if (self->farrays[i].pya==NULL) {
-          int arraysize=1;
+          long arraysize=1;
           for (j=0;j<self->farrays[i].nd;j++)
             arraysize *= self->farrays[i].dimensions[j];
           printf("GALLOT: allocation failure for %s to size %d\n",
@@ -1074,7 +1075,7 @@ static PyObject *ForthonPackage_gchange(PyObject *_self_,PyObject *args)
                             self->farrays[i].dimensions,self->farrays[i].type);
         /* Check if the allocation was unsuccessful. */
         if (ax==NULL) {
-          int arraysize=1;
+          long arraysize=1;
           for (j=0;j<self->farrays[i].nd;j++)
             arraysize *= self->farrays[i].dimensions[j];
           printf("GCHANGE: allocation failure for %s to size %d\n",
