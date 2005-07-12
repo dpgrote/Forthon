@@ -36,7 +36,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.17 2005/07/01 22:55:57 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.18 2005/07/12 18:36:16 dave Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling
@@ -885,7 +885,7 @@ def pyrestoreforthonobject(ff,gname,vlist,fobjdict,varsuffix,verbose,doarrays,
         pkg = eval(gname,__main__.__dict__)
         # --- forceassign is used, allowing the array read in to have a
         # --- different size than the current size of the warp array.
-        if verbose: print "reading in "+gname+"."+fullname
+        if verbose: print "reading in "+fullname
         # --- Original version
         #pkg.forceassign(vname,ff.__getattr__(vpdbname))
         # --- Newer version using convenient setattr routine. This can be
