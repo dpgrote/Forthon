@@ -14,7 +14,7 @@ static char* cstrfromfstr(char *fstr,int fstrlen)
 }
 
 void
-%fname('gallot')+'(FSTRING name,int *iverbose SL1)'
+%fname('gallot')+'(FSTRING name,long *iverbose SL1)'
 {
   char *cname;
   PyObject *m, *d, *f, *r;
@@ -36,7 +36,7 @@ void
 }
 
 void
-%fname('gchange')+'(FSTRING name,int *iverbose SL1)'
+%fname('gchange')+'(FSTRING name,long *iverbose SL1)'
 {
   char *cname;
   PyObject *m, *d, *f, *r;
@@ -198,22 +198,22 @@ int
 }
 
 void
-%fname('kaboom')+'(int *e)'
+%fname('kaboom')+'(long *e)'
 {
 printf("KABOOM! Something bad happened\n");
 exit(1);
 }
 
 void
-%fname('glbheadi')+'(int dum1,int dum2,int runtime,int rundate,int dum3,int dum4)'
+%fname('glbheadi')+'(long dum1,long dum2,long runtime,long rundate,long dum3,long dum4)'
 {}
 
 void
-%fname('slbasis')+'(FSTRING s,int *v SL1)'
+%fname('slbasis')+'(FSTRING s,long *v SL1)'
 {}
 
 void
-%fname('hstall')+'(FSTRING s,int *v SL1)'
+%fname('hstall')+'(FSTRING s,long *v SL1)'
 {
 /* collector.sample (cycle, time) */
 }
@@ -277,7 +277,7 @@ double
 }
 
 void
-%fname('setshape')+'(FSTRING s,int *v SL1)'
+%fname('setshape')+'(FSTRING s,long *v SL1)'
 {}
 void
 %fname('parsetuf')+'(void)'
@@ -292,12 +292,12 @@ void
 %fname('change')+'(void)'
 {}
 void
-%fname('edit')+'(int *iunit,FSTRING s SL1)'
+%fname('edit')+'(long *iunit,FSTRING s SL1)'
 {
 /* place holder for now - this should probably be written */
 }
 void
-%fname('outfile')+'(int *iunit,FSTRING s SL1)'
+%fname('outfile')+'(long *iunit,FSTRING s SL1)'
 {
 /* place holder for now - this should probably be written */
 }
