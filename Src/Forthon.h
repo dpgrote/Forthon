@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.35 2005/07/12 18:26:32 dave Exp $ */
+/* $Id: Forthon.h,v 1.36 2005/07/13 00:35:43 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -1540,6 +1540,54 @@ static PyObject *ForthonPackage_gsetdims(PyObject *_self_,PyObject *args)
 
 /* ######################################################################### */
 /* # Print information about the variable name.                              */
+static char getvartype_doc[] = "Returns the fortran type of a variable";
+static PyObject *ForthonPackage_getvartype(PyObject *_self_,PyObject *args)
+{
+  ForthonObject *self = (ForthonObject *)_self_;
+  PyObject *pyi;
+  int i;
+  char *name;
+  if (!PyArg_ParseTuple(args,"s",&name)) return NULL;
+
+  /* The PyString stuff is done to avoid having to deal with strings at the
+     C level, which would require explicit memory allocations (yuck!) */
+
+  /* Get index for variable from scalar dictionary */
+  /* If it is not found, the pyi is returned as NULL */
+  pyi = PyDict_GetItemString(self->scalardict,name);
+  if (pyi != NULL) {
+    PyArg_Parse(pyi,"i",&i);
+    if (self->fscalars[i].type == PyArray_CHAR) {
+      return PyString_FromString("character");}
+    else if (self->fscalars[i].type == PyArray_LONG) {
+      return PyString_FromString("integer");}
+    else if (self->fscalars[i].type == PyArray_DOUBLE) {
+      return PyString_FromString("double");}
+    else if (self->fscalars[i].type == PyArray_CDOUBLE) {
+      return PyString_FromString("double complex");}
+    }
+
+  /* Get index for variable from array dictionary */
+  /* If it is not found, the pyi is returned as NULL */
+  pyi = PyDict_GetItemString(self->arraydict,name);
+  if (pyi != NULL) {
+    PyArg_Parse(pyi,"i",&i);
+    if (self->farrays[i].type == PyArray_CHAR) {
+      return PyString_FromString("character");}
+    else if (self->farrays[i].type == PyArray_LONG) {
+      return PyString_FromString("integer");}
+    else if (self->farrays[i].type == PyArray_DOUBLE) {
+      return PyString_FromString("double");}
+    else if (self->farrays[i].type == PyArray_CDOUBLE) {
+      return PyString_FromString("double complex");}
+    }
+
+  returnnone;
+
+}
+
+/* ######################################################################### */
+/* # Print information about the variable name.                              */
 static char listvar_doc[] = "Returns information about a variable";
 static PyObject *ForthonPackage_listvar(PyObject *_self_,PyObject *args)
 {
@@ -1748,6 +1796,7 @@ static struct PyMethodDef ForthonPackage_methods[] = {
   {"gfree"       ,(PyCFunction)ForthonPackage_gfree,1,gfree_doc},
   {"gsetdims"    ,(PyCFunction)ForthonPackage_gsetdims,1,gsetdims_doc},
   {"isdynamic"   ,(PyCFunction)ForthonPackage_isdynamic,1,isdynamic_doc},
+  {"getvartype"  ,(PyCFunction)ForthonPackage_getvartype,1,getvartype_doc},
   {"listvar"     ,(PyCFunction)ForthonPackage_listvar,1,listvar_doc},
   {"name"        ,(PyCFunction)ForthonPackage_name,1,name_doc},
   {"reprefix"    ,(PyCFunction)ForthonPackage_reprefix,1,reprefix_doc},
