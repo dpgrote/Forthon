@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.36 2005/07/13 00:35:43 dave Exp $ */
+/* $Id: Forthon.h,v 1.37 2005/07/13 01:05:06 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -965,7 +965,7 @@ static PyObject *ForthonPackage_gallot(PyObject *_self_,PyObject *args)
           long arraysize=1;
           for (j=0;j<self->farrays[i].nd;j++)
             arraysize *= self->farrays[i].dimensions[j];
-          printf("GALLOT: allocation failure for %s to size %d\n",
+          printf("GALLOT: allocation failure for %s to size %ld\n",
                  self->farrays[i].name,arraysize);
           exit(EXIT_FAILURE);
           }
@@ -1078,7 +1078,7 @@ static PyObject *ForthonPackage_gchange(PyObject *_self_,PyObject *args)
           long arraysize=1;
           for (j=0;j<self->farrays[i].nd;j++)
             arraysize *= self->farrays[i].dimensions[j];
-          printf("GCHANGE: allocation failure for %s to size %d\n",
+          printf("GCHANGE: allocation failure for %s to size %ld\n",
                  self->farrays[i].name,arraysize);
           exit(EXIT_FAILURE);
           }
@@ -1904,7 +1904,7 @@ static int Forthon_setattro(ForthonObject *self,PyObject *oname,PyObject *v)
 /* # Create output routines                                                  */
 static int Forthon_print(ForthonObject *self, FILE *fp, int flags)
 {
-  fprintf(fp,"<%s instance at address = %d>",self->name,(long)self);
+  fprintf(fp,"<%s instance at address = %ld>",self->name,(long)self);
   return 0;
 }
 
