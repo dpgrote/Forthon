@@ -41,7 +41,7 @@ One or more of the following options can be specified.
     Additional include paths
  -t type
     Machine type. Will automatically be determined if not supplied.
-    Can be one of linux2, aix4, darwin, win32.
+    Can be one of linux2, aix4, aix5, darwin, win32.
  --f90
     Writes wrapper code using f90, which means that python accessible
     variables are defined in f90 modules. This is the default.
