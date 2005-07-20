@@ -1,5 +1,5 @@
 # Created by David P. Grote, March 6, 1998
-# $Id: cfinterface.py,v 1.3 2005/04/02 00:12:36 dave Exp $
+# $Id: cfinterface.py,v 1.4 2005/07/20 00:15:39 dave Exp $
 
 # Routines which allows c functions to be callable by fortran
 import sys
@@ -42,7 +42,7 @@ if struct.calcsize('l') == 8:
 #----------------------------------------------------------------------------
 # Creates a function which converts a C name into a Fortran name
 
-if machine in ['hp-uxB','aix4','win32','MAC']:
+if machine in ['hp-uxB','aix4','aix5','win32','MAC']:
   def fname(n):
     return string.lower(n)
 elif machine in ['linux2','darwin','SOL','sunos5','AXP','osf1V4','DOS']:
@@ -89,7 +89,7 @@ else:
 # Sets up C macros which are used to take the place of the length
 # of a string passed from Fortran to C.
 
-if machine in ['hp-uxB','linux2','darwin','SOL','sunos5','DOS','aix4','win32']:
+if machine in ['hp-uxB','linux2','darwin','SOL','sunos5','DOS','aix4','aix5','win32']:
   charlen_at_end = 1
   forthonf2c = """
 #define FSTRING char*
