@@ -209,8 +209,11 @@ if builddir is None:
   dummybuild = build(dummydist)
   dummybuild.finalize_options()
   builddir = dummybuild.build_temp
-  del dummydist,dummybuild
-upbuilddir = os.getcwd()
+  bb = string.split(builddir,os.sep)
+  upbuilddir = len(bb)*(os.pardir + os.sep)
+  del dummydist,dummybuild,bb
+else:
+  upbuilddir = os.getcwd()
 
 # --- Add prefix to interfacefile since it will only be referenced from
 # --- the build directory.
