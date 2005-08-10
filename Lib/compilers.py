@@ -26,6 +26,7 @@ appropriate block for the machine.
   def __init__(self,machine=None,debug=0,fcompname=None,static=0):
     if machine is None: machine = sys.platform
     self.machine = machine
+    self.processor = os.uname()[4]
 
     self.paths = string.split(os.environ['PATH'],os.pathsep)
 
@@ -115,6 +116,12 @@ appropriate block for the machine.
         self.fopt = '-O3 -xK -tpp6 -ip -unroll -prefetch'
       elif re.search('AMD Athlon',cpuinfo):
         self.fopt = '-O3 -ip -unroll -prefetch'
+      elif self.processor == 'ia64':
+        self.fopt = '-O3 -ip -unroll -tpp2'
+        # --- The IA64 is needed for top.h - ISZ must be 8.
+        self.f90free = self.f90free + ' -fpic -DIA64 -i8'
+        self.f90fixed = self.f90fixed + ' -fpic -DIA64 -i8'
+        self.libs.remove('svml')
       elif struct.calcsize('l') == 8:
         self.fopt = '-O3 -xW -tpp7 -ip -unroll -prefetch'
         self.f90free = self.f90free + ' -DISZ=8 -i8'
