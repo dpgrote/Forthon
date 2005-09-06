@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.32 2005/09/06 10:29:30 dave Exp $
+# $Id: wrappergenerator.py,v 1.33 2005/09/06 10:39:34 dave Exp $
 
 import sys
 import os.path
@@ -363,7 +363,7 @@ Usage:
       # --- Replaces newlines with '\\n' so that the string is all on one line
       # --- in the C coding.
       docstring = re.sub(r'\
- ','\\\\n',docstring)
+','\\\\n',docstring)
       self.cw(docstring)
       # --- Now write out the wrapper
       self.cw('static PyObject *')
