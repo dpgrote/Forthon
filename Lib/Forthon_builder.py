@@ -334,7 +334,7 @@ Forthon.c:%(forthonhome)s%(pathsep)sForthon.c
 %(pkg)spymodule.c %(pkg)s_p.%(free_suffix)s:%(interfacefile)s
 	%(python)s -c "from Forthon.wrappergenerator import wrappergenerator_main;wrappergenerator_main()" \\
 	%(f90)s -t %(machine)s %(forthonargs)s %(initialgallot)s \\
-        %(othermacstr)s %(interfacefile)s %(dep)s
+        %(othermacstr)s %(pkg)s %(interfacefile)s %(dep)s
 clean:
 	rm -rf *%(osuffix)s *_p.%(free_suffix)s *.mod *module.c *.scalars *.so Forthon.c Forthon.h forthonf2c.h build
 """%(locals())
@@ -366,7 +366,8 @@ except:
 
 addbuilddir = lambda p:os.path.join(builddir,p)
 cfiles = map(addbuilddir,[pkg+'pymodule.c','Forthon.c'])
-ofiles = map(addbuilddir,[pkg+osuffix,pkg+'_p'+osuffix]+extraobjectslist)
+ofiles = map(addbuilddir,[fortranroot+osuffix,pkg+'_p'+osuffix]+
+             extraobjectslist)
 sys.argv = ['Forthon','build','--build-platlib','.']
 
 # --- DOS requires an extra argument and include directory to build properly

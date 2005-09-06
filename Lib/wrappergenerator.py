@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.31 2005/07/12 18:35:21 dave Exp $
+# $Id: wrappergenerator.py,v 1.32 2005/09/06 10:29:30 dave Exp $
 
 import sys
 import os.path
@@ -363,7 +363,7 @@ Usage:
       # --- Replaces newlines with '\\n' so that the string is all on one line
       # --- in the C coding.
       docstring = re.sub(r'\
-  ','\\\\n',docstring)
+ ','\\\\n',docstring)
       self.cw(docstring)
       # --- Now write out the wrapper
       self.cw('static PyObject *')
@@ -1029,9 +1029,10 @@ def wrappergenerator_main(argv=None):
 
   # --- Get package name from argument list
   try:
-    ifile = args[0]
-    otherfortranfiles = args[1:]
-    pname = os.path.splitext(os.path.split(ifile)[1])[0]
+    pname = args[0]
+    ifile = args[1]
+    otherfortranfiles = args[2:]
+    #pname = os.path.splitext(os.path.split(ifile)[1])[0]
     #pname = args[0][:re.search('\.',args[0]).start()]
   except IndexError:
     print PyWrap.__doc__
