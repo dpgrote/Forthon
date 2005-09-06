@@ -1,7 +1,7 @@
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 19, 1998
 # Parse the interface description file
-# $Id: interfaceparser.py,v 1.7 2004/03/17 14:23:08 dave Exp $
+# $Id: interfaceparser.py,v 1.8 2005/09/06 10:25:44 dave Exp $
 
 # This reads in the entire variable description file and extracts all of
 # the variable and subroutine information needed to create an interface
@@ -116,7 +116,7 @@ def processfile(packname,filename,othermacros=[],timeroutines=0):
       # Look for the 'hidden' attribute
       hidden = 0
       if re.search(' hidden ',attributes) != None:
-	hidden = 1
+        hidden = 1
       # Strip off group name and any comments
       text = string.strip(text[i+1:]) + '\n'
       while text[0] ==  '#':
