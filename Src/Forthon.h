@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.37 2005/07/13 01:05:06 dave Exp $ */
+/* $Id: Forthon.h,v 1.38 2005/09/15 00:29:33 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -1470,6 +1470,35 @@ static PyObject *ForthonPackage_isdynamic(PyObject *_self_,PyObject *args)
 }
 
 /* ######################################################################### */
+static char getstrides_doc[] = "Returns the strides of the input array. The input must be an array (no lists or tuples).";
+static PyObject *ForthonPackage_getstrides(PyObject *_self_,PyObject *args)
+{
+  ForthonObject *self = (ForthonObject *)_self_;
+  PyObject *pyobj;
+  PyArrayObject *ax;
+  PyObject *result;
+  int i;
+  long *strides;
+
+  if (!PyArg_ParseTuple(args,"O",&pyobj)) return NULL;
+  if (!PyArray_Check(pyobj)) {
+    PyErr_SetString(PyExc_TypeError,"Input argument must be an array");
+    return NULL;
+    }
+
+  ax = (PyArrayObject *)pyobj;
+
+  /* Note that the second argument gives the dimensions of the 1-d array. */
+  result = PyArray_FromDims((int)1,&(ax->nd),PyArray_LONG);
+
+  strides = (long *)((PyArrayObject *)result)->data;
+  for (i=0;i<ax->nd;i++)
+    strides[i] = (long)(ax->strides[i]);
+
+  return result;
+}
+
+/* ######################################################################### */
 /* # Group allocation freeing routine */
 static char gfree_doc[] = "Frees the memory of all dynamic arrays in a group";
 static PyObject *ForthonPackage_gfree(PyObject *_self_,PyObject *args)
@@ -1803,6 +1832,7 @@ static struct PyMethodDef ForthonPackage_methods[] = {
   {"setdict"     ,(PyCFunction)ForthonPackage_setdict,1,setdict_doc},
   {"totmembytes" ,(PyCFunction)ForthonPackage_totmembytes,1,totmembytes_doc},
   {"varlist"     ,(PyCFunction)ForthonPackage_varlist,1,varlist_doc},
+  {"getstrides"  ,(PyCFunction)ForthonPackage_getstrides,1,getstrides_doc},
   {NULL,NULL}};
 
 static PyMethodDef *getForthonPackage_methods(void)
