@@ -1,7 +1,7 @@
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 19, 1998
 # Parse the interface description file
-# $Id: interfaceparser.py,v 1.8 2005/09/06 10:25:44 dave Exp $
+# $Id: interfaceparser.py,v 1.9 2005/09/20 19:13:39 dave Exp $
 
 # This reads in the entire variable description file and extracts all of
 # the variable and subroutine information needed to create an interface
@@ -218,7 +218,7 @@ def processfile(packname,filename,othermacros=[],timeroutines=0):
 
     # Check if variable is a subroutine
     elif re.match('subroutine\s',text):
-      v.function = 1
+      v.function = 'fsub'
       v.array = 0
       v.type = 'void'
       i = 9
@@ -231,6 +231,25 @@ def processfile(packname,filename,othermacros=[],timeroutines=0):
         timerv.data = '/0./'
         timerv.unit = 'seconds'
         timerv.comment = 'Run time for subroutine %s'%v.name
+        timerv.group = packname+'timers'
+        timerv.attr = ' timer dump '
+        vlist.append(timerv)
+
+    # Check if variable is a C subroutine (takes C ordered arrays)
+    elif re.match('csubroutine\s',text):
+      v.function = 'csub'
+      v.array = 0
+      v.type = 'void'
+      i = 10
+      readyfortype = 0
+      if timeroutines:
+        # --- Add variable used to accumulate the time
+        timerv = fvars.Fvars()
+        timerv.name = v.name+'runtime'
+        timerv.type = 'real'
+        timerv.data = '/0./'
+        timerv.unit = 'seconds'
+        timerv.comment = 'Run time for C subroutine %s'%v.name
         timerv.group = packname+'timers'
         timerv.attr = ' timer dump '
         vlist.append(timerv)

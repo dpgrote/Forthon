@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.33 2005/09/06 10:39:34 dave Exp $
+# $Id: wrappergenerator.py,v 1.34 2005/09/20 19:13:39 dave Exp $
 
 import sys
 import os.path
@@ -410,8 +410,12 @@ Usage:
       for i in range(len(f.args)):
         self.cw('  argno++;')
         if not fvars.isderivedtype(f.args[i]):
-          self.cw('  FARRAY_FROMOBJECT(ax['+repr(i)+'],'+
-                'pyobj['+repr(i)+'], PyArray_'+fvars.ftop(f.args[i].type)+');')
+          if f.function == 'fsub':
+            self.cw('  FARRAY_FROMOBJECT(ax['+repr(i)+'],'+
+                  'pyobj['+repr(i)+'], PyArray_'+fvars.ftop(f.args[i].type)+');')
+          elif f.function == 'csub':
+            self.cw('  ax['+repr(i)+']=(PyArrayObject *)PyArray_ContiguousFromObject('+
+                  'pyobj['+repr(i)+'], PyArray_'+fvars.ftop(f.args[i].type)+',0,0);')
           self.cw('  if (ax['+repr(i)+'] == NULL) goto err;')
           if f.args[i].type == 'string' or f.args[i].type == 'character':
             self.cw('  FSETSTRING(fstr[%d],ax[%d]->data,PyArray_SIZE(ax[%d]));'
