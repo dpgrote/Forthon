@@ -36,7 +36,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.18 2005/07/12 18:36:16 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.19 2005/09/20 19:14:23 dave Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling
@@ -338,13 +338,33 @@ where the file name can not be determined - None is returned.
     return determineoriginatingfile(o.__module__)
 
 # --- Get size of all variables in a group
-def getgroupsize(pkg,grp):
-  ll = pkg.varlist(grp)
+def getgroupsize(pkg,grp='',recursive=1):
+  """
+Gets the total size of a package or dictionary.
+  - pkg: Either a Forthon object, dictionary, or a class instance
+  - grp='': For a Forthon object, only include the variables in the specified
+            group
+  - recursive=1: When true, include the size of sub objects.
+Warning: this will go into an infinite loop of the data structure is
+recursive and recursive is true.
+  """
+  if IsForthonType(pkg):
+    ll = pkg.varlist(grp)
+  elif type(pkg) == DictType:
+    ll = pkg.keys()
+  else:
+    pkg = pkg.__dict__
+    ll = pkg.keys()
   ss = 0
   for v in ll:
-    vv = pkg.getpyobject(v)
+    if type(pkg) == DictType:
+      vv = pkg[v]
+    else:
+      vv = pkg.getpyobject(v)
     if type(vv) == type(array([1])):
       ss = ss + product(array(shape(vv)))
+    elif IsForthonType(vv) and recursive:
+      ss = ss + getgroupsize(vv,'')
     else:
       ss = ss + 1
   return ss
