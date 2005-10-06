@@ -36,7 +36,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.19 2005/09/20 19:14:23 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.20 2005/10/06 00:52:19 dave Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling
@@ -805,7 +805,7 @@ Note that it will automatically detect whether the file is PDB or HDF.
   if lreturnfobjdict: return fobjdict
 
 def sortrestorevarsbysuffix(vlist,skip):
-  # --- Sort the variables, collecting them in groups based on there suffix.
+  # --- Sort the variables, collecting them in groups based on their suffix.
   groups = {}
   for v in vlist:
     if '@' in v:
@@ -861,7 +861,7 @@ def pyrestoreforthonobject(ff,gname,vlist,fobjdict,varsuffix,verbose,doarrays,
   if neednew:
     # --- A new variable needs to be created.
     try:
-      fobj = ff.read("FOBJ@"+gpdbname)
+      fobj = ff.__getattr__("FOBJ@"+gpdbname)
     except:
       return
     # --- First, check if the object has already be restored.
@@ -872,7 +872,7 @@ def pyrestoreforthonobject(ff,gname,vlist,fobjdict,varsuffix,verbose,doarrays,
     else:
       # --- Otherwise, create a new instance of the appropriate type,
       # --- and add it to the list of objects.
-      typename = ff.read("TYPENAME@"+gpdbname)
+      typename = ff.__getattr__("TYPENAME@"+gpdbname)
       exec("%s = %s()"%(gname,typename),__main__.__dict__)
       fobjdict[fobj] = gname
 
