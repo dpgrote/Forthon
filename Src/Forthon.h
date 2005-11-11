@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.38 2005/09/15 00:29:33 dave Exp $ */
+/* $Id: Forthon.h,v 1.39 2005/11/11 00:34:50 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -668,8 +668,12 @@ static int Forthon_clear(ForthonObject *self)
       }
     }
   for (i=0;i<self->narrays;i++) {
+    if (self->farrays[i].pya != NULL) {
+      /* Subtract the array size from totmembytes. */
+      totmembytes -= (long)PyArray_NBYTES(self->farrays[i].pya);
+      Py_DECREF(self->farrays[i].pya);
+      }
     free(self->farrays[i].dimensions);
-    Py_XDECREF(self->farrays[i].pya);
     }
   if (self->fobj != NULL) {
     /* Note that for package instance (as opposed to derived type */
