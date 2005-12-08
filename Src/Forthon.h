@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.39 2005/11/11 00:34:50 dave Exp $ */
+/* $Id: Forthon.h,v 1.40 2005/12/08 19:15:33 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -1477,7 +1477,6 @@ static PyObject *ForthonPackage_isdynamic(PyObject *_self_,PyObject *args)
 static char getstrides_doc[] = "Returns the strides of the input array. The input must be an array (no lists or tuples).";
 static PyObject *ForthonPackage_getstrides(PyObject *_self_,PyObject *args)
 {
-  ForthonObject *self = (ForthonObject *)_self_;
   PyObject *pyobj;
   PyArrayObject *ax;
   PyObject *result;
