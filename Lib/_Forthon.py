@@ -36,15 +36,21 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.20 2005/10/06 00:52:19 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.21 2006/01/03 07:08:15 dave Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling
 def forthonobject_constructor(typename,dict):
   import __main__
-  type = __main__.__dict__[typename]
-  obj = type()
+  typecreator = __main__.__dict__[typename]
+  obj = typecreator()
   obj.setdict(dict)
+ #for k,v in dict.items():
+ #  if type(v) != ArrayType:
+ #    setattr(obj,k,v)
+ #for k,v in dict.items():
+ #  if type(v) == ArrayType:
+ #    setattr(obj,k,v)
   return obj
 def pickle_forthonobject(o):
   return (forthonobject_constructor, (o.gettypename(),o.getdict()))
