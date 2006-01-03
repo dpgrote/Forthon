@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.40 2005/12/08 19:15:33 dave Exp $ */
+/* $Id: Forthon.h,v 1.41 2006/01/03 07:06:34 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -1749,11 +1749,28 @@ static PyObject *ForthonPackage_setdict(PyObject *_self_,PyObject *args)
   int pos=0;
   int e;
   if (!PyArg_ParseTuple(args,"O",&dict)) return NULL;
+  /* First set the scalars so that the array dimensions are set. */
   while (PyDict_Next(dict,&pos,&key,&value)) {
     if (value == Py_None) continue;
-    e = Forthon_setattro(self,key,value);
-    if (e==0) continue;
-    PyErr_Clear();
+    pyi = PyDict_GetItem(self->scalardict,key);
+    if (pyi != NULL) {
+      e = Forthon_setattro(self,key,value);
+      if (e==0) continue;
+      PyErr_Clear();
+      }
+    }
+  /* Now arrays can be set. */
+  /* This is done this way since the setpointer routine uses the farray */
+  /* dimensions instead of the dimensions from the PyArrayObject. */
+  pos = 0;
+  while (PyDict_Next(dict,&pos,&key,&value)) {
+    if (value == Py_None) continue;
+    pyi = PyDict_GetItem(self->arraydict,key);
+    if (pyi != NULL) {
+      e = Forthon_setattro(self,key,value);
+      if (e==0) continue;
+      PyErr_Clear();
+      }
     }
   returnnone;
 }
