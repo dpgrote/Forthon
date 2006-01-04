@@ -15,7 +15,7 @@ class ForthonDerivedType:
     self.ffile.close()
 
   transtable = (10*string.ascii_lowercase)[:256]
-  def fsub(self,type,prefix,suffix=''):
+  def fsub(self,type,prefix,suffix='',dohash=1):
     """
     The fortran standard limits routine names to 31 characters. If the
     routine name is longer than that, this routine takes the first 15
@@ -24,7 +24,7 @@ class ForthonDerivedType:
     should be minute.
     """
     name = type.name+prefix+suffix
-    if len(name) < 32: return name
+    if len(name) < 32 or not dohash: return name
     hash = string.translate(md5.new(name).digest(),
                             ForthonDerivedType.transtable)
     return name[:15] + hash
@@ -123,7 +123,7 @@ class ForthonDerivedType:
       # --- for non-dynamic derived types, the setpointer routine does a copy.
       for s in slist:
         self.cw('extern void '+fname(self.fsub(t,'setpointer',s.name))+
-                '(char *p,char *fobj);')
+                '(char *p,char *fobj,long *nullit);')
         if s.dynamic:
           self.cw('extern void '+fname(self.fsub(t,'getpointer',s.name))+
                   '(ForthonObject **cobj__,char *obj,long *createnew__);')
@@ -678,6 +678,7 @@ class ForthonDerivedType:
       self.fw('END SUBROUTINE '+t.name+'free')
 
       #########################################################################
+      self.fw('! '+self.fsub(t,'passpointers',dohash=0))
       self.fw('SUBROUTINE '+self.fsub(t,'passpointers')+'(obj__,setinitvalues)')
 
       # --- Write out the Use statements
@@ -745,12 +746,18 @@ class ForthonDerivedType:
       # --- Write routine for each dynamic variable which gets the pointer
       # --- from the wrapper
       for s in slist:
-        self.fw('SUBROUTINE '+self.fsub(t,'setpointer',s.name)+'(p__,obj__)')
+        self.fw('! '+self.fsub(t,'setpointer',s.name,dohash=0))
+        self.fw('SUBROUTINE '+self.fsub(t,'setpointer',s.name)+'(p__,obj__,nullit__)')
         self.fw('  USE '+t.name+'module')
         self.fw('  TYPE('+t.name+'):: obj__')
         self.fw('  '+fvars.ftof(s.type)+',target::p__')
+        self.fw('  INTEGER('+isz+'):: nullit__')
         if s.dynamic:
-          self.fw('  obj__%'+s.name+' => p__')
+          self.fw('  if (nullit__ == 0) then')
+          self.fw('    obj__%'+s.name+' => p__')
+          self.fw('  else')
+          self.fw('    NULLIFY(obj__%'+s.name+')')
+          self.fw('  endif')
         else:
           self.fw('  obj__%'+s.name+' = p__')
         self.fw('  RETURN')
@@ -774,6 +781,7 @@ class ForthonDerivedType:
 
       for a in alist:
         if a.dynamic:
+          self.fw('! '+self.fsub(t,'setpointer',a.name,dohash=0))
           self.fw('SUBROUTINE '+self.fsub(t,'setpointer',a.name)+'(p__,obj__,dims__)')
           self.fw('  USE '+t.name+'module')
           self.fw('  TYPE('+t.name+'):: obj__')
@@ -784,6 +792,7 @@ class ForthonDerivedType:
           self.fw('  RETURN')
           self.fw('END')
           if a.dynamic or re.search('fassign',a.attr):
+            self.fw('! '+self.fsub(t,'getpointer',a.name,dohash=0))
             self.fw('SUBROUTINE '+self.fsub(t,'getpointer',a.name)+'(i__,obj__)')
             self.fw('  USE '+t.name+'module')
             self.fw('  integer('+isz+'):: i__')
