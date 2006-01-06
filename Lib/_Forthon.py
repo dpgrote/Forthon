@@ -36,7 +36,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.21 2006/01/03 07:08:15 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.22 2006/01/06 23:17:58 dave Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling
@@ -196,7 +196,7 @@ def arraytostr(a,strip=true):
   if len(shape(a)) == 1:
     result = ''
     for c in a:
-      result = result + c
+      result = result + str(c)
     if strip: result = string.strip(result)
   elif len(shape(a)) == 2:
     result = []
