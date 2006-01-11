@@ -36,7 +36,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.22 2006/01/06 23:17:58 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.23 2006/01/11 22:24:57 dave Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling
@@ -351,28 +351,51 @@ Gets the total size of a package or dictionary.
   - grp='': For a Forthon object, only include the variables in the specified
             group
   - recursive=1: When true, include the size of sub objects.
-Warning: this will go into an infinite loop of the data structure is
-recursive and recursive is true.
   """
+  # --- Keep track of objects already accounted for.
+  # --- The call level is noted so that at the end, at call level zero,
+  # --- the list of already accounted for objects can be deleted.
+  try:
+    if pkg in getgroupsize.grouplist: return
+    getgroupsize.grouplist.append(pkg)
+    getgroupsize.calllevel += 1
+  except AttributeError:
+    getgroupsize.grouplist = []
+    getgroupsize.calllevel = 0
+
+  # --- Get the list of variables to check. Note that the grp option only
+  # --- affects Forthon objects.
   if IsForthonType(pkg):
     ll = pkg.varlist(grp)
   elif type(pkg) == DictType:
     ll = pkg.keys()
   else:
-    pkg = pkg.__dict__
-    ll = pkg.keys()
+    ll = pkg.__dict__.keys()
+
+  # --- Now, add up the sizes.
   ss = 0
   for v in ll:
-    if type(pkg) == DictType:
+    if IsForthonType(pkg):
+      vv = pkg.getpyobject(v)
+    elif type(pkg) == DictType:
       vv = pkg[v]
     else:
-      vv = pkg.getpyobject(v)
+      vv = getattr(pkg,v)
     if type(vv) == type(array([1])):
       ss = ss + product(array(shape(vv)))
     elif IsForthonType(vv) and recursive:
       ss = ss + getgroupsize(vv,'')
     else:
       ss = ss + 1
+
+  # --- Do some clean up or accounting before exiting.
+  if getgroupsize.calllevel == 0:
+    del getgroupsize.grouplist
+    del getgroupsize.calllevel
+  else:
+    getgroupsize.calllevel -= 1
+
+  # --- Return the result
   return ss
 
 # --- Print out all variables in a group
