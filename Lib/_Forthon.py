@@ -36,7 +36,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.23 2006/01/11 22:24:57 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.24 2006/01/12 21:35:25 dave Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling
@@ -343,8 +343,8 @@ where the file name can not be determined - None is returned.
   if type(o) is ClassType:
     return determineoriginatingfile(o.__module__)
 
-# --- Get size of all variables in a group
-def getgroupsize(pkg,grp='',recursive=1):
+# --- Get size of an object, recursively including anything inside of it.
+def getobjectsize(pkg,grp='',recursive=1):
   """
 Gets the total size of a package or dictionary.
   - pkg: Either a Forthon object, dictionary, or a class instance
@@ -352,16 +352,24 @@ Gets the total size of a package or dictionary.
             group
   - recursive=1: When true, include the size of sub objects.
   """
+
+  # --- Return sizes of shallow objects
+  if type(pkg) in [IntType,FloatType]:
+    return 1
+  elif type(pkg) is ArrayType:
+    return product(array(shape(pkg)))
+
   # --- Keep track of objects already accounted for.
   # --- The call level is noted so that at the end, at call level zero,
   # --- the list of already accounted for objects can be deleted.
   try:
-    if pkg in getgroupsize.grouplist: return
-    getgroupsize.grouplist.append(pkg)
-    getgroupsize.calllevel += 1
+    if pkg in getobjectsize.grouplist:
+      return 0
+    getobjectsize.grouplist.append(pkg)
+    getobjectsize.calllevel += 1
   except AttributeError:
-    getgroupsize.grouplist = []
-    getgroupsize.calllevel = 0
+    getobjectsize.grouplist = []
+    getobjectsize.calllevel = 0
 
   # --- Get the list of variables to check. Note that the grp option only
   # --- affects Forthon objects.
@@ -369,34 +377,40 @@ Gets the total size of a package or dictionary.
     ll = pkg.varlist(grp)
   elif type(pkg) == DictType:
     ll = pkg.keys()
+  elif type(pkg) in [ListType,TupleType]:
+    ll = pkg
   else:
-    ll = pkg.__dict__.keys()
+    try:
+      ll = pkg.__dict__.keys()
+    except AttributeError:
+      ll = []
 
   # --- Now, add up the sizes.
   ss = 0
   for v in ll:
     if IsForthonType(pkg):
+      # --- This is needed so unallocated arrays will only return None
       vv = pkg.getpyobject(v)
     elif type(pkg) == DictType:
       vv = pkg[v]
+    elif type(pkg) in [ListType,TupleType]:
+      vv = v
     else:
       vv = getattr(pkg,v)
-    if type(vv) == type(array([1])):
-      ss = ss + product(array(shape(vv)))
-    elif IsForthonType(vv) and recursive:
-      ss = ss + getgroupsize(vv,'')
-    else:
-      ss = ss + 1
+    ss = ss + getobjectsize(vv,'')
 
   # --- Do some clean up or accounting before exiting.
-  if getgroupsize.calllevel == 0:
-    del getgroupsize.grouplist
-    del getgroupsize.calllevel
+  if getobjectsize.calllevel == 0:
+    del getobjectsize.grouplist
+    del getobjectsize.calllevel
   else:
-    getgroupsize.calllevel -= 1
+    getobjectsize.calllevel -= 1
 
   # --- Return the result
   return ss
+
+# --- Keep the old name around
+getgroupsize = getobjectsize
 
 # --- Print out all variables in a group
 def printgroup(pkg,group='',maxelements=10,sumarrays=0):
