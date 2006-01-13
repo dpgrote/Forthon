@@ -36,7 +36,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.24 2006/01/12 21:35:25 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.25 2006/01/13 01:02:08 dave Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling
@@ -353,23 +353,26 @@ Gets the total size of a package or dictionary.
   - recursive=1: When true, include the size of sub objects.
   """
 
-  # --- Return sizes of shallow objects
-  if type(pkg) in [IntType,FloatType]:
-    return 1
-  elif type(pkg) is ArrayType:
-    return product(array(shape(pkg)))
-
   # --- Keep track of objects already accounted for.
   # --- The call level is noted so that at the end, at call level zero,
   # --- the list of already accounted for objects can be deleted.
   try:
-    if pkg in getobjectsize.grouplist:
+    if id(pkg) in getobjectsize.grouplist:
       return 0
-    getobjectsize.grouplist.append(pkg)
+    getobjectsize.grouplist.append(id(pkg))
     getobjectsize.calllevel += 1
   except AttributeError:
     getobjectsize.grouplist = []
     getobjectsize.calllevel = 0
+
+
+  # --- Return sizes of shallow objects
+  if type(pkg) in [IntType,FloatType]:
+    result = 1
+  elif type(pkg) is ArrayType:
+    result = product(array(shape(pkg)))
+  else:
+    result = 0
 
   # --- Get the list of variables to check. Note that the grp option only
   # --- affects Forthon objects.
@@ -385,8 +388,10 @@ Gets the total size of a package or dictionary.
     except AttributeError:
       ll = []
 
+  if not recursive and getobjectsize.calllevel > 0:
+    ll = []
+
   # --- Now, add up the sizes.
-  ss = 0
   for v in ll:
     if IsForthonType(pkg):
       # --- This is needed so unallocated arrays will only return None
@@ -397,7 +402,7 @@ Gets the total size of a package or dictionary.
       vv = v
     else:
       vv = getattr(pkg,v)
-    ss = ss + getobjectsize(vv,'')
+    result = result + getobjectsize(vv,'',recursive=recursive)
 
   # --- Do some clean up or accounting before exiting.
   if getobjectsize.calllevel == 0:
@@ -407,7 +412,7 @@ Gets the total size of a package or dictionary.
     getobjectsize.calllevel -= 1
 
   # --- Return the result
-  return ss
+  return result
 
 # --- Keep the old name around
 getgroupsize = getobjectsize
