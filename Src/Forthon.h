@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.42 2006/01/04 18:16:22 dave Exp $ */
+/* $Id: Forthon.h,v 1.43 2006/01/18 01:02:52 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -315,8 +315,8 @@ static void ForthonPackage_updatederivedtype(ForthonObject *self,long i,
     }
 }
 /* ------------------------------------------------------------------------- */
-static int Forthon_updatederivedtypeelements(ForthonObject *self,
-                                             ForthonObject *value)
+static void Forthon_updatederivedtypeelements(ForthonObject *self,
+                                              ForthonObject *value)
 {
   long i;
   PyObject *oldobj;
