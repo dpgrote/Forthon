@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.43 2006/01/18 01:02:52 dave Exp $ */
+/* $Id: Forthon.h,v 1.44 2006/01/19 02:07:41 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -41,7 +41,7 @@ static PyObject *ErrorObject;
   _c = 1;                                                     \
   if (_tmp != NULL) {                                         \
     _c = _tmp->descr->elsize;                                 \
-    for (_j=0 ; _j < _tmp->nd-1 ; _j++) {                     \
+    for (_j=0 ; _j < _tmp->nd ; _j++) {                       \
       if (_tmp->strides[_j] != _c) {_c=0;break;}              \
       _c *= _tmp->dimensions[_j];}}                           \
   if (!_c) {                                                  \
