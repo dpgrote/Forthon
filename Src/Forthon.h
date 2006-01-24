@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.44 2006/01/19 02:07:41 dave Exp $ */
+/* $Id: Forthon.h,v 1.45 2006/01/24 22:40:41 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -156,6 +156,54 @@ static double cputime(void)
   (void) times(&usage);
   hardware_ticks_per_second = sysconf(_SC_CLK_TCK);
   return (double) usage.tms_utime/hardware_ticks_per_second;
+}
+
+/* ###################################################################### */
+/* Utility routines used in wrapping the subroutines                      */
+static int Forthon_checksubroutineargtype(PyObject *pyobj,int type_num,int i)
+{
+  int ret;
+  if (PyArray_Check(pyobj)) {
+    /* If the input argument is an array, make sure that it is of the */
+    /* correct type. */
+    ret = (((PyArrayObject *)pyobj)->descr->type_num == type_num);
+    }
+  else {
+    /* Scalars can always be cast. Note that the data won't be returned */
+    /* after the call. */
+    ret = 1;
+    }
+  return ret;
+}
+static void Forthon_restoresubroutineargs(int n,PyObject **pyobj,
+                                          PyArrayObject **ax)
+{
+  int i,ret;
+  /* Loop over the arguments */
+  for (i=0;i<n;i++) {
+    /* For each input value that is an array... */
+    if (PyArray_Check(pyobj[i])) { 
+      /* ... check if a copy was made to pass into the wrapped subroutine... */
+      if (pyobj[i] != (PyObject *)ax[i]) {
+        /* ... If so, copy it back. */
+        ret = PyArray_CopyArray((PyArrayObject *)pyobj[i],ax[i]);
+        /* Look for errors */
+        if (ret == -1) {
+          /* If there was one, print the message and clear it */
+          if (PyErr_Occurred()) {
+            printf("Error restoring argument number %d\n",i);
+            PyErr_Print();
+            PyErr_Clear();
+            }
+          else {
+            printf("Unsupported problem restoring argument number %d, bad value returned but no error raised. This should never happan.\n",i);
+            }
+          }
+        }
+      }
+    /* Make sure the temporary references are removed */
+    if (ax[i] != NULL) Py_XDECREF(ax[i]);
+    }
 }
 
 /* ###################################################################### */

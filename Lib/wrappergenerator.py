@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.34 2005/09/20 19:13:39 dave Exp $
+# $Id: wrappergenerator.py,v 1.35 2006/01/24 22:40:40 dave Exp $
 
 import sys
 import os.path
@@ -396,6 +396,10 @@ Usage:
         self.cw('  PyObject * ret_val;')
         self.cw('  '+fvars.ftoc(f.type)+' r;')
 
+      # --- Set all of the ax's to NULL
+      if len(f.args) > 0:
+        self.cw('  for (i=0;i<'+repr(len(f.args))+';i++) ax[i] = NULL;')
+
       # --- Parse incoming arguments into a list of PyObjects
       self.cw('  if (!PyArg_ParseTuple(args, "'+'O'*len(f.args)+'"',noreturn=1)
       for i in range(len(f.args)):
@@ -404,35 +408,76 @@ Usage:
 
       # --- Loop over arguments, extracting the data addresses.
       # --- Convert all arguments into arrays. This allows complete flexibility
-      # --- in what can be passed to fortran functions. The caveat is that it
-      # --- does no type checking and no array size checking.
+      # --- in what can be passed to fortran functions.
       istr = 0
       for i in range(len(f.args)):
         self.cw('  argno++;')
         if not fvars.isderivedtype(f.args[i]):
+          self.cw('  if (!Forthon_checksubroutineargtype(pyobj['+repr(i)+'],'+
+              'PyArray_'+fvars.ftop(f.args[i].type)+','+repr(i)+')) {')
+          self.cw('    sprintf(e,"Argument '+repr(i+1)+ ' in '+f.name+
+                               ' has the wrong type");')
+          self.cw('    goto err;}')
           if f.function == 'fsub':
             self.cw('  FARRAY_FROMOBJECT(ax['+repr(i)+'],'+
                   'pyobj['+repr(i)+'], PyArray_'+fvars.ftop(f.args[i].type)+');')
           elif f.function == 'csub':
             self.cw('  ax['+repr(i)+']=(PyArrayObject *)PyArray_ContiguousFromObject('+
                   'pyobj['+repr(i)+'], PyArray_'+fvars.ftop(f.args[i].type)+',0,0);')
-          self.cw('  if (ax['+repr(i)+'] == NULL) goto err;')
+          self.cw('  if (ax['+repr(i)+'] == NULL) {')
+          self.cw('    sprintf(e,"There is an error in argument '+repr(i+1)+
+                               ' in '+f.name+'");')
+          self.cw('    goto err;}')
           if f.args[i].type == 'string' or f.args[i].type == 'character':
             self.cw('  FSETSTRING(fstr[%d],ax[%d]->data,PyArray_SIZE(ax[%d]));'
                     %(istr,i,i))
             istr = istr + 1
         else:
-          self.cw('  ax['+repr(i)+'] = NULL;')
           self.cw('  {')
           self.cw('  PyObject *t;')
           self.cw('  t = PyObject_Type(pyobj['+repr(i)+']);')
-          self.cw('  if (strcmp(((PyTypeObject *)t)->tp_name,"Forthon") != 0)'
-                      +'goto err;')
+          self.cw('  if (strcmp(((PyTypeObject *)t)->tp_name,"Forthon") != 0) {')
+          self.cw('     sprintf(e,"Argument '+repr(i+1)+ ' in '+f.name+
+                               ' has the wrong type");')
+          self.cw('     goto err;}')
           self.cw('  Py_DECREF(t);')
           typename = '((ForthonObject *)pyobj['+repr(i)+'])->typename'
-          self.cw('  if (strcmp('+typename+',"'+f.args[i].type+'") != 0) '+
-                     'goto err;')
+          self.cw('  if (strcmp('+typename+',"'+f.args[i].type+'") != 0) {')
+          self.cw('     sprintf(e,"Argument '+repr(i+1)+ ' in '+f.name+
+                               ' has the wrong type");')
+          self.cw('     goto err;}')
           self.cw('  }')
+
+      # --- Write the code checking dimensions of arrays
+      # --- This must be done after all of the ax's are setup in case the
+      # --- dimensioning arguments come after the array argument.
+      # --- This creates a local variable with the same name as the argument
+      # --- and gives it the value passed in. Then any expressions in the
+      # --- dimensions statements will be explicitly evaluated in C.
+      if len(f.dimvars) > 0:
+        self.cw('  {')
+        self.cw('  int _n;')
+        # --- Declare the dimension variables.
+        for var,i in f.dimvars:
+          self.cw('  '+fvars.ftoc(var.type)+' '+var.name+'=*'+
+                  '('+fvars.ftoc(a.type)+' *)(ax['+repr(i)+']->data);')
+        # --- Loop over the arguments, looking for dimensioned arrays
+        i = -1
+        for arg in f.args:
+          i += 1
+          if len(arg.dims) > 0:
+            # --- Set argno in case there is an error
+            self.cw('  argno = %d;'%(i+1))
+            j = -1
+            for dim in arg.dims:
+              j += 1
+              # --- Compare each dimension with its specified value
+              self.cw('  _n = ('+dim.high+')-('+dim.low+')+1;')
+              self.cw('  if (_n != ax['+repr(i)+']->dimensions[%d]) {'%j)
+              self.cw('    sprintf(e,"Argument '+repr(i+1)+ ' in '+f.name+
+                               ' has the wrong dimensions");')
+              self.cw('    goto err;}')
+        self.cw('  }')
 
       # --- Write the actual call to the fortran routine.
       if f.type == 'void':
@@ -465,14 +510,12 @@ Usage:
       self.cw(');') # --- Closing parenthesis on the call list
 
       # --- Copy the data that was sent to the routine back into the passed
-      # --- in object if it is an PyArray. This needs to be thoroughly checked.
+      # --- in object if it is an PyArray.
       # --- Decrement reference counts of array objects created.
+      # --- This is now handled by a separate subroutine included in Forthon.h
       if len(f.args) > 0:
-        self.cw('  for (i=0;i<'+repr(len(f.args))+';i++) {')
-        self.cw('    if (PyArray_Check(pyobj[i])) {')
-        self.cw('      if (pyobj[i] != (PyObject *)ax[i])')
-        self.cw('        PyArray_CopyArray((PyArrayObject *)pyobj[i],ax[i]);}')
-        self.cw('    if (ax[i] != NULL) {Py_XDECREF(ax[i]);}}')
+        self.cw('  Forthon_restoresubroutineargs('+repr(len(f.args))+
+                   ',pyobj,ax);')
 
       if self.timeroutines:
         # --- Now get ending time and add to timer variable
@@ -492,7 +535,6 @@ Usage:
         self.cw('err:') 
 
         # --- Decrement reference counts of array objects created.
-        self.cw('  sprintf(e,"There is an error in argument %d",argno);')
         self.cw('  PyErr_SetString(ErrorObject,e);')
         self.cw('  for (i=0;i<'+repr(len(f.args))+';i++)')
         self.cw('    if (ax[i] != NULL) {Py_XDECREF(ax[i]);}')
@@ -1068,6 +1110,19 @@ def wrappergenerator_main(argv=None):
   cc = PyWrap(ifile,pname,f90,f90f,initialgallot,writemodules,
               otherinterfacefiles,other_scalar_dicts,timeroutines,
               otherfortranfiles,fcompname)
+
+# --- This might make some of the write statements cleaner.
+# --- From http://aspn.activestate.com/ASPN/Python/Cookbook/
+class PrintEval:
+    def __init__(self, globals=None, locals=None):
+        self.globals = globals or {}
+        self.locals = locals or None
+        
+    def __getitem__(self, key):
+        if self.locals is None:
+            self.locals = sys._getframe(1).f_locals
+        key = key % self
+        return eval(key, self.globals, self.locals)
 
 if __name__ == '__main__':
   wrappergenerator_main(sys.argv[1:])

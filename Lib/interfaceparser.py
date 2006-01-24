@@ -1,7 +1,7 @@
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 19, 1998
 # Parse the interface description file
-# $Id: interfaceparser.py,v 1.9 2005/09/20 19:13:39 dave Exp $
+# $Id: interfaceparser.py,v 1.10 2006/01/24 22:40:40 dave Exp $
 
 # This reads in the entire variable description file and extracts all of
 # the variable and subroutine information needed to create an interface
@@ -257,29 +257,9 @@ def processfile(packname,filename,othermacros=[],timeroutines=0):
     # Check if there are any dimensions
     elif text[0] == '(':
       v.array = 1
-      i = 0
-      p = 1
-      while p > 0:
-        i = i + 1
-        try:
-          if text[i] == '(':
-            p = p + 1
-          elif text[i] == ')':
-            p = p - 1
-        except IndexError:
-          print 'Error in subscript of variable '+v.name
+      i = findmatchingparenthesis(0,text,v.name)
       v.dimstring = text[0:i+1]
-      d = text[1:i]
-      # Strip out all white space
-      d = re.sub(' ','',d)
-      d = re.sub('\t','',d)
-      d = re.sub('\n','',d)
-      if len(d) > 0 and d[0] == ';':
-        d = d[1:]
-      d = re.sub(';',',',d)
-      d = string.splitfields(d,',')
-      #v.dims.append(d)
-      v.dims = v.dims + d
+      v.dims = v.dims + convertdimstringtodims(v.dimstring)
 
     # Look for a data field
     elif text[0] == '/':
@@ -296,17 +276,7 @@ def processfile(packname,filename,othermacros=[],timeroutines=0):
     # Look for a limited field
     elif text[0:7] == 'limited':
       j = re.search('\(',text).start()
-      i = j
-      p = 1
-      while p > 0:
-        i = i + 1
-        try:
-          if text[i] == '(':
-            p = p + 1
-          elif text[i] == ')':
-            p = p - 1
-        except IndexError:
-          print 'Error in subscript of variable '+v.name
+      i = findmatchingparenthesis(j,text,v.name)
       v.limit = text[j:i+1]
       readyfortype = 0
 
@@ -418,18 +388,51 @@ def processfile(packname,filename,othermacros=[],timeroutines=0):
     if v.function:
       # Remove a possible blank first argument
       if len(v.dims) > 0 and v.dims[0]=='': del v.dims[0]
-      # Extract type from arguments
+      # Extract type from arguments, this includes possible dimension
+      # descriptions of arrays
+      # --- dimvars holds the list of arguments that are used in array
+      # --- dimensions
+      v.dimvars = []
       for a in v.dims:
-        sa = string.splitfields(a,':')
         fa = fvars.Fargs()
-        fa.name = sa[0]
-        if len(sa) > 1:
-          fa.type = sa[1]
+        v.args = v.args + [fa]
+        # --- parse the pattern name(dim1:dim2,...):type
+        # --- Only the name must be given, the other parts are optional
+        ma = re.search("[:(]|\Z",a)
+        fa.name = a[:ma.start()]
+        if ma.group() == '(':
+          i = findmatchingparenthesis(ma.start(),a,v.name)
+          fa.dimstring = a[ma.start():i+1]
+          dimlist = string.split(fa.dimstring[1:-1],',')
+          fa.dims = processargdimvars(dimlist,v.dimvars)
+          a = a[i+1:]
+          ma = re.search("[:]|\Z",a)
+        else:
+          fa.dimstring = ''
+          fa.dims = []
+        # --- Set the argument type
+        if ma.group() == ':':
+          fa.type = a[ma.start()+1:]
         else:
           fa.type = 'real'
           if 'i' <= fa.name[0] and fa.name[0] <= 'n':
             fa.type = 'integer'
-        v.args = v.args + [fa]
+      # --- Change the list of dimvars from names of the arguments to
+      # --- references to the Fargs instance and position number
+      i = 0
+      for arg in v.args:
+        if arg.name in v.dimvars:
+          assert arg.type in ['integer'],"Error in %s:Variables used in array dimensions for argument list must be integer type"%v.name
+          v.dimvars[v.dimvars.index(arg.name)] = [arg,i]
+        i += 1
+      # --- Make sure that only names that are arguments are used
+      # --- This checks for leftover names that wern't replaced by the
+      # --- above loop.
+      for var in v.dimvars:
+        if type(var) == type(''):
+          raise "Only subroutine arguments can be specified as dimensions."
+      # --- Empty out dims which is no longer needed (so it won't cause
+      # --- confusion later).
       v.dims = []
 
     # Clean up the comment, removing extra spaces and replace " with '
@@ -444,3 +447,83 @@ def processfile(packname,filename,othermacros=[],timeroutines=0):
 
   # Return the list
   return (vlist, hidden_vlist, typelist)
+
+def findmatchingparenthesis(i,text,errname):
+  # --- Note that text[i] should be "(".
+  p = 1
+  while p > 0:
+    i = i + 1
+    try:
+      if text[i] == '(':
+        p = p + 1
+      elif text[i] == ')':
+        p = p - 1
+    except IndexError:
+      print 'Error in subscript of variable '+errname
+  return i
+
+def convertdimstringtodims(dimstring):
+  # --- Remove the beginning and ending parenthesis
+  d = dimstring[1:-1]
+  # --- Strip out all white space
+  d = re.sub(' ','',d)
+  d = re.sub('\t','',d)
+  d = re.sub('\n','',d)
+  # --- Remove optional argument signifying if it is the first character
+  if len(d) > 0 and d[0] == ';':
+    d = d[1:]
+  # --- Remove other optional arguments
+  d = re.sub(';',',',d)
+  # --- Carefully search through dimstring, looking for comma separated
+  # --- arguments and for parenthetical blocks (that may contain commas
+  # --- as well as other text, numbers, math symbols, and parenthesis).
+  dimlist = []
+  while len(d) > 0:
+    m = re.search("[,(]",d)
+    if m is not None and m.group() == '(':
+      i0 = findmatchingparenthesis(m.start(),d,d) + 1
+      m = re.search("[,(]",d[i0:])
+    else:
+      i0 = 0
+    if m is None:
+      i = len(d)
+    elif m.group() == ',':
+      i = i0 + m.start()
+    dimlist = dimlist + [d[:i]]
+    d = d[i+1:]
+  return dimlist
+
+def processargdimvars(dims,dimvars):
+  # --- For each dimensions, finds the low and high pieces and finds all
+  # --- of the names which appear.
+  dimlist = []
+  for d in dims:
+    fd = fvars.Fdims()
+    dimlist = dimlist + [fd]
+    # --- Find the low and high pieces, which are separated by a colon
+    sd = string.splitfields(d,':')
+    if len(sd) == 1:
+      fd.low = '1'
+      fd.high = sd[0]
+    else:
+      fd.low = sd[0]
+      fd.high = sd[1]
+   # --- This is not really needed since it can be done in C too.
+   #try:
+   #  low = repr(eval(fd.low))
+   #  fd.low = low
+   #except:
+   #  pass
+   #try:
+   #  high = repr(eval(fd.high))
+   #  fd.high = high
+   #except:
+   #  pass
+    # --- Add any variable names to the list of variables in dimensions
+    for dim in [fd.low,fd.high]:
+      sl = re.split('[ ()/\*\+\-]',dim)
+      for ss in sl:
+        if re.search('[a-zA-Z]',ss) != None:
+          if ss not in dimvars: dimvars.append(ss)
+  return dimlist
+

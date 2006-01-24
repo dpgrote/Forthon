@@ -1,5 +1,5 @@
 # Created by David P. Grote, March 6, 1998
-# $Id: fvars.py,v 1.3 2005/04/02 00:12:36 dave Exp $
+# $Id: fvars.py,v 1.4 2006/01/24 22:40:40 dave Exp $
 
 import cfinterface
 
@@ -24,6 +24,8 @@ class Fvars:
 class Fargs:
   name = ''
   type = ''
+  dimstring = ''
+  dims = []
 
 class Fdims:
   low = ''
