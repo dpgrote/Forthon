@@ -1,7 +1,7 @@
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 19, 1998
 # Parse the interface description file
-# $Id: interfaceparser.py,v 1.10 2006/01/24 22:40:40 dave Exp $
+# $Id: interfaceparser.py,v 1.11 2006/01/25 01:11:02 dave Exp $
 
 # This reads in the entire variable description file and extracts all of
 # the variable and subroutine information needed to create an interface
@@ -430,7 +430,7 @@ def processfile(packname,filename,othermacros=[],timeroutines=0):
       # --- above loop.
       for var in v.dimvars:
         if type(var) == type(''):
-          raise "Only subroutine arguments can be specified as dimensions."
+          raise "%s: Only subroutine arguments can be specified as dimensions."%v.name
       # --- Empty out dims which is no longer needed (so it won't cause
       # --- confusion later).
       v.dims = []
