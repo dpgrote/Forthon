@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.35 2006/01/24 22:40:40 dave Exp $
+# $Id: wrappergenerator.py,v 1.36 2006/01/25 00:54:06 dave Exp $
 
 import sys
 import os.path
@@ -460,7 +460,7 @@ Usage:
         # --- Declare the dimension variables.
         for var,i in f.dimvars:
           self.cw('  '+fvars.ftoc(var.type)+' '+var.name+'=*'+
-                  '('+fvars.ftoc(a.type)+' *)(ax['+repr(i)+']->data);')
+                  '('+fvars.ftoc(var.type)+' *)(ax['+repr(i)+']->data);')
         # --- Loop over the arguments, looking for dimensioned arrays
         i = -1
         for arg in f.args:
