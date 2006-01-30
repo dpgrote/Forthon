@@ -36,7 +36,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.25 2006/01/13 01:02:08 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.26 2006/01/30 18:21:18 dave Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling
@@ -969,10 +969,9 @@ def pyrestoreforthonobject(ff,gname,vlist,fobjdict,varsuffix,verbose,doarrays,
       # --- The catches errors in cases where the variable is not an
       # --- actual warp variable, for example if it had been deleted
       # --- after the dump was originally made.
-      print "Warning: There was problem restoring %s"% (fullname)
+      print "Warning: There was a problem restoring %s"% (fullname)
       # --- Pring out information about exactly what went wrong.
-      #print sys.exc_info()[0:2]
-      #print sys.exc_info()[2].tb_lineno
+      if verbose: sys.excepthook(*sys.exc_info())
 
   # --- Read in rest of groups.
   for g,v in groups.items():
