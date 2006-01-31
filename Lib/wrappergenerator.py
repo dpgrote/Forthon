@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.36 2006/01/25 00:54:06 dave Exp $
+# $Id: wrappergenerator.py,v 1.37 2006/01/31 22:43:11 dave Exp $
 
 import sys
 import os.path
@@ -468,14 +468,34 @@ Usage:
           if len(arg.dims) > 0:
             # --- Set argno in case there is an error
             self.cw('  argno = %d;'%(i+1))
+            # --- Check the rank of the input argument
+            # --- For a 1-D argument, allow a scaler to be passed, which has
+            # --- a number of dimensions (nd) == 0.
+            self.cw('  if (!(ax[%d]->nd == %d'%(i,len(arg.dims)),noreturn=1)
+            if len(arg.dims) == 1:
+              self.cw('      ||ax[%d]->nd == 0)) {'%i)
+            else:
+              self.cw('      )) {')
+            self.cw('    sprintf(e,"Argument %d in %s '%(i,f.name) +
+                             'has the wrong number of dimensions");')
+            self.cw('    goto err;}')
             j = -1
             for dim in arg.dims:
               j += 1
               # --- Compare each dimension with its specified value
+              # --- For a 1-D argument, allow a scaler to be passed, which has
+              # --- a number of dimensions (nd) == 0, but only if the
+              # --- argument needs to have a length of 0 or 1.
               self.cw('  _n = ('+dim.high+')-('+dim.low+')+1;')
-              self.cw('  if (_n != ax['+repr(i)+']->dimensions[%d]) {'%j)
-              self.cw('    sprintf(e,"Argument '+repr(i+1)+ ' in '+f.name+
-                               ' has the wrong dimensions");')
+              if len(arg.dims) == 1:
+                self.cw('  if (!((_n==0||_n==1)||(ax[%d]->nd > 0 &&'%i,
+                        noreturn=1)
+              else:
+                self.cw('  if (!((',noreturn=1)
+              self.cw('_n == ax[%d]->dimensions[%d]))) {'%(i,j))
+              self.cw('    sprintf(e,"Dimension '+repr(j+1)+' of argument '+
+                               repr(i+1)+ ' in '+f.name+
+                               ' has the wrong size");')
               self.cw('    goto err;}')
         self.cw('  }')
 
