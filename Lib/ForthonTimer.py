@@ -9,7 +9,7 @@ disablelinetracing: disables line level tracing
 import sys,time
 import linecache
 
-ForthonTimer_version = "$Id: ForthonTimer.py,v 1.5 2005/04/25 17:17:24 dave Exp $"
+ForthonTimer_version = "$Id: ForthonTimer.py,v 1.6 2006/02/02 00:12:31 dave Exp $"
 
 def ForthonTimerdoc():
   import ForthonTimer
@@ -64,13 +64,14 @@ called on a function return, so it returns the timer instance of the caller
     self.endtime = time.clock()
     self.time = self.time + self.endtime - self.starttime
     return self.parent
-  def out(self,maxlevel,mintime):
+  def out(self,maxlevel,mintime=0.):
     """
 Prints info about the function and all of its callees, up to the input level.
     """
     if self.level > maxlevel: return
-    if self.time < mintime: return
-    print "%s%s %d %f"%(self.level*'  ',self.name,self.ncalls,self.time)
+    if self.time > mintime:
+      print "%2d%s%s %d %f"%(self.level,self.level*'  ',self.name,
+                             self.ncalls,self.time)
     for v in self.subtimers.values():
       v.out(maxlevel,mintime)
 
