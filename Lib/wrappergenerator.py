@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.37 2006/01/31 22:43:11 dave Exp $
+# $Id: wrappergenerator.py,v 1.38 2006/02/08 17:38:12 dave Exp $
 
 import sys
 import os.path
@@ -476,7 +476,7 @@ Usage:
               self.cw('      ||ax[%d]->nd == 0)) {'%i)
             else:
               self.cw('      )) {')
-            self.cw('    sprintf(e,"Argument %d in %s '%(i,f.name) +
+            self.cw('    sprintf(e,"Argument %d in %s '%(i+1,f.name) +
                              'has the wrong number of dimensions");')
             self.cw('    goto err;}')
             j = -1
