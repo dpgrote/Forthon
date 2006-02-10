@@ -1,7 +1,7 @@
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 19, 1998
 # Parse the interface description file
-# $Id: interfaceparser.py,v 1.11 2006/01/25 01:11:02 dave Exp $
+# $Id: interfaceparser.py,v 1.12 2006/02/10 20:30:12 dave Exp $
 
 # This reads in the entire variable description file and extracts all of
 # the variable and subroutine information needed to create an interface
@@ -200,7 +200,7 @@ def processfile(packname,filename,othermacros=[],timeroutines=0):
 
     # Check if variable is a function
     elif re.match('function\s',text):
-      v.function = 1
+      v.function = 'fsub'
       v.array = 0
       i = 7
       readyfortype = 0
