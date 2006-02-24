@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.45 2006/01/24 22:40:41 dave Exp $ */
+/* $Id: Forthon.h,v 1.46 2006/02/24 21:21:20 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -1051,6 +1051,8 @@ static PyObject *ForthonPackage_gallot(PyObject *_self_,PyObject *args)
   /* Now Process the arrays now that the dimensions are set */
   for (i=0;i<self->narrays;i++) {
    if (strcmp(s,self->farrays[i].group)==0 || strcmp(s,"*")==0) {
+    /* Update the array if it is dynamic and fortran assignable. */
+    ForthonPackage_updatearray(self,i);
     r = 1;
     /* Note that deferred-shape arrays shouldn't be allocated in this way */
     /* since they have no specified dimensions. */
@@ -1160,6 +1162,8 @@ static PyObject *ForthonPackage_gchange(PyObject *_self_,PyObject *args)
    if (strcmp(s,self->farrays[i].group)==0 || strcmp(s,"*")==0) {
     r = 1;
     if (self->farrays[i].dynamic) {
+      /* Update the array if it is dynamic and fortran assignable. */
+      ForthonPackage_updatearray(self,i);
       /* Check if any of the dimensions have changed or if array is */
       /* unallocated. In either case, change it. */
       changeit = 0;
@@ -1642,6 +1646,8 @@ static PyObject *ForthonPackage_gfree(PyObject *_self_,PyObject *args)
 
   for (i=0;i<self->narrays;i++) {
     if (strcmp(s,self->farrays[i].group)==0 || strcmp(s,"*")==0) {
+      /* Update the array if it is dynamic and fortran assignable. */
+      ForthonPackage_updatearray(self,i);
       r = 1;
       Forthon_freearray(self,(void *)i);
       }
