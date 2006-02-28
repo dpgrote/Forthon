@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.46 2006/02/24 21:21:20 dave Exp $ */
+/* $Id: Forthon.h,v 1.47 2006/02/28 00:09:29 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -392,7 +392,7 @@ static void Forthon_updatederivedtypeelements(ForthonObject *self,
 
   /* Also, update any dynamic arrays, since the old will be discarded and */
   /* the new one will be pointed to.                                      */
-  (*self->setdims)(self->typename,self);
+  (*self->setdims)(self->typename,self,-1);
   for (i=0;i<self->narrays;i++) {
     if (value->farrays[i].dynamic) {
       Py_XINCREF(value->farrays[i].pya);
@@ -666,9 +666,7 @@ static int Forthon_setarray(ForthonObject *self,PyObject *value,
         }
     else {
       /* Call the routine which sets the dimensions */
-      /* Note that this sets the dimensions for everything in the group. */
-      /* This may cause some slow down, but is hard to get around. */
-      (*self->setdims)(farray->group,self);
+      (*self->setdims)(farray->group,self,(long)closure);
       }
     setit = 1;
     for (j=0;j<ax->nd;j++) {
@@ -1045,14 +1043,15 @@ static PyObject *ForthonPackage_gallot(PyObject *_self_,PyObject *args)
           Py_DECREF(star);
       }}}}
 
-  /* Call the routine which sets the dimensions */
-  (*self->setdims)(s,self);
-
   /* Now Process the arrays now that the dimensions are set */
   for (i=0;i<self->narrays;i++) {
    if (strcmp(s,self->farrays[i].group)==0 || strcmp(s,"*")==0) {
     /* Update the array if it is dynamic and fortran assignable. */
     ForthonPackage_updatearray(self,i);
+    /* Call the routine which sets the dimensions */
+    /* Call this after updatearray since updatearray might change */
+    /* farrays[i].dimensions. */
+    (*self->setdims)(s,self,i);
     r = 1;
     /* Note that deferred-shape arrays shouldn't be allocated in this way */
     /* since they have no specified dimensions. */
@@ -1154,9 +1153,6 @@ static PyObject *ForthonPackage_gchange(PyObject *_self_,PyObject *args)
           Py_DECREF(star);
       }}}}
 
-  /* Call the routine which sets the dimensions */
-  (*self->setdims)(s,self);
-
   /* Now Process the arrays now that the dimensions are set */
   for (i=0;i<self->narrays;i++) {
    if (strcmp(s,self->farrays[i].group)==0 || strcmp(s,"*")==0) {
@@ -1164,6 +1160,10 @@ static PyObject *ForthonPackage_gchange(PyObject *_self_,PyObject *args)
     if (self->farrays[i].dynamic) {
       /* Update the array if it is dynamic and fortran assignable. */
       ForthonPackage_updatearray(self,i);
+      /* Call the routine which sets the dimensions */
+      /* Call this after updatearray since updatearray might change */
+      /* farrays[i].dimensions. */
+      (*self->setdims)(s,self,i);
       /* Check if any of the dimensions have changed or if array is */
       /* unallocated. In either case, change it. */
       changeit = 0;
@@ -1682,7 +1682,7 @@ static PyObject *ForthonPackage_gsetdims(PyObject *_self_,PyObject *args)
       }}}}
 
   /* Call the routine which sets the dimensions */
-  (*self->setdims)(s,self);
+  (*self->setdims)(s,self,-1);
 
   returnnone;
 }

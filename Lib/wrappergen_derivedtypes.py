@@ -251,7 +251,7 @@ class ForthonDerivedType:
       # --- everything in one routine, the cc compiler was giving a core dump!)
       # --- Loop over the variables. This assumes that the variables are sorted
       # --- by group.
-      self.cw('static void '+t.name+'setdims(char *name,ForthonObject *obj)')
+      self.cw('static void '+t.name+'setdims(char *name,ForthonObject *obj,long i)')
       self.cw('{')
 
       i = -1
@@ -260,6 +260,7 @@ class ForthonDerivedType:
         vname = 'obj->farrays[%d]'%i
         if a.dynamic:
           j = 0
+          self.cw('  if (i == -1 || i == %d) {'%i)
           # --- create lines of the form dims[1] = high - low + 1, in
           # --- reverse order
           for d in a.dims:
@@ -275,6 +276,7 @@ class ForthonDerivedType:
               self.cw('('+d.low+')+1;')
             else:
               self.cw('('+self.prefixdimsc(d.low,sdict)+')+1;')
+          self.cw('  }')
       self.cw('}')
 
       #########################################################################

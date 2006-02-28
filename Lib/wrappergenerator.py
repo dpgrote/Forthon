@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.38 2006/02/08 17:38:12 dave Exp $
+# $Id: wrappergenerator.py,v 1.39 2006/02/28 00:09:29 dave Exp $
 
 import sys
 import os.path
@@ -615,8 +615,9 @@ Usage:
         if currentgroup != '':
           self.cw('  }}')
         currentgroup = a.group
-        dyngroups.append(currentgroup)
-        self.cw('static void '+self.pname+'setdims'+currentgroup+'(char *name)')
+        if len(dyngroups) > 0: dyngroups[-1][2] = i
+        dyngroups.append([currentgroup,i+1,len(alist)])
+        self.cw('static void '+self.pname+'setdims'+currentgroup+'(char *name,long i)')
         self.cw('{')
         self.cw('  if (strcmp(name,"'+a.group+'") || strcmp(name,"*")) {')
 
@@ -624,6 +625,7 @@ Usage:
       vname = self.pname+'_farrays['+repr(i)+']'
       if a.dynamic:
         j = 0
+        self.cw('  if (i == -1 || i == %d) {'%i)
         # --- create lines of the form dims[1] = high-low+1, in reverse order
         for d in a.dims:
           if d.high == '': continue
@@ -638,16 +640,19 @@ Usage:
             self.cw('('+d.low+')+1;')
           else:
             self.cw('('+self.prefixdimsc(d.low,sdict)+')+1;',noreturn=1)
+        self.cw('  }')
 
     if currentgroup != '':
       self.cw('  }}')
 
     # --- Now write out the setdims routine which calls of the routines
     # --- for the individual groups.
-    self.cw('void '+self.pname+'setdims(char *name,ForthonObject *obj)')
+    self.cw('void '+self.pname+'setdims(char *name,ForthonObject *obj,long i)')
     self.cw('{')
-    for group in dyngroups:
-        self.cw('  '+self.pname+'setdims'+group+'(name);')
+    for groupinfo in dyngroups:
+        self.cw('  if (i == -1 || (%d <= i && i <= %d))'%tuple(groupinfo[1:]),
+                noreturn=1)
+        self.cw('  '+self.pname+'setdims'+groupinfo[0]+'(name,i);')
     self.cw('}')
   
     self.cw('')
