@@ -258,7 +258,7 @@ class ForthonDerivedType:
       for a in alist:
         i = i + 1
         vname = 'obj->farrays[%d]'%i
-        if a.dynamic:
+        if a.dynamic == 1 or a.dynamic == 2:
           j = 0
           self.cw('  if (i == -1 || i == %d) {'%i)
           # --- create lines of the form dims[1] = high - low + 1, in

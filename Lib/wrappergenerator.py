@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.39 2006/02/28 00:09:29 dave Exp $
+# $Id: wrappergenerator.py,v 1.40 2006/03/01 00:14:49 dave Exp $
 
 import sys
 import os.path
@@ -623,7 +623,7 @@ Usage:
 
       i = i + 1
       vname = self.pname+'_farrays['+repr(i)+']'
-      if a.dynamic:
+      if a.dynamic == 1 or a.dynamic == 2:
         j = 0
         self.cw('  if (i == -1 || i == %d) {'%i)
         # --- create lines of the form dims[1] = high-low+1, in reverse order
