@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.47 2006/02/28 00:09:29 dave Exp $ */
+/* $Id: Forthon.h,v 1.48 2006/03/01 00:17:50 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -839,6 +839,8 @@ static PyObject *ForthonPackage_allocated(PyObject *_self_,PyObject *args)
   pyi = PyDict_GetItemString(self->arraydict,name);
   if (pyi != NULL) {
     PyArg_Parse(pyi,"i",&i);
+    /* Update the array if it is dynamic and fortran assignable. */
+    ForthonPackage_updatearray(self,i);
     if (self->farrays[i].pya == NULL) {return Py_BuildValue("i",0);}
     else                              {return Py_BuildValue("i",1);}
     }
@@ -954,7 +956,8 @@ static char forceassign_doc[] = "Forces assignment to a dynamic array, resizing 
 static PyObject *ForthonPackage_forceassign(PyObject *_self_,PyObject *args)
 {
   ForthonObject *self = (ForthonObject *)_self_;
-  int i,j,r=-1;
+  long i;
+  int j,r=-1;
   int *d,*pyadims,*axdims;
   PyObject *pyobj;
   PyArrayObject *ax;
@@ -969,9 +972,9 @@ static PyObject *ForthonPackage_forceassign(PyObject *_self_,PyObject *args)
     PyArg_Parse(pyi,"i",&i);
     FARRAY_FROMOBJECT(ax,pyobj,self->farrays[i].type);
     if (self->farrays[i].dynamic && ax->nd == self->farrays[i].nd) {
-      if (self->farrays[i].pya != NULL)
-        totmembytes -= (long)PyArray_NBYTES(self->farrays[i].pya);
-      Py_XDECREF(self->farrays[i].pya);
+      /* Free the existing array */
+      Forthon_freearray(self,(void *)i);
+      /* Point to the new one */
       self->farrays[i].pya = ax;
       /* Note that pya->dimensions are in the correct fortran order, but */
       /* farray->dimensions are in C order. */
@@ -1025,7 +1028,8 @@ static PyObject *ForthonPackage_gallot(PyObject *_self_,PyObject *args)
 {
   ForthonObject *self = (ForthonObject *)_self_;
   char *s=NULL;
-  int i,j,r=0,allotit,iverbose=0;
+  long i;
+  int j,r=0,allotit,iverbose=0;
   PyObject *star;
   if (!PyArg_ParseTuple(args,"|si",&s,&iverbose)) return NULL;
   self->allocated = 1;
@@ -1056,13 +1060,8 @@ static PyObject *ForthonPackage_gallot(PyObject *_self_,PyObject *args)
     /* Note that deferred-shape arrays shouldn't be allocated in this way */
     /* since they have no specified dimensions. */
     if (self->farrays[i].dynamic && self->farrays[i].dynamic != 3) {
-      /* Subtract the array size from totmembytes. */
-      if (self->farrays[i].pya != NULL)
-        totmembytes -= (long)PyArray_NBYTES(self->farrays[i].pya);
-      /* Always dereference the previous value so array can become */
-      /* Unallocated if it has dimensions <= 0. */
-      Py_XDECREF(self->farrays[i].pya);
-      self->farrays[i].pya = NULL;
+      /* First, free the existing array */
+      Forthon_freearray(self,(void *)i);
       /* Make sure the dimensions are all greater then zero. */
       /* If not, then don't allocate the array. */
       allotit = 1;
@@ -1131,7 +1130,8 @@ static PyObject *ForthonPackage_gchange(PyObject *_self_,PyObject *args)
 {
   ForthonObject *self = (ForthonObject *)_self_;
   char *s=NULL;
-  int i,r=0;
+  long i;
+  int r=0;
   PyArrayObject *ax;
   int j,rt,changeit,freeit,iverbose=0;
   int *d,*pyadims,*axdims;
@@ -1176,20 +1176,16 @@ static PyObject *ForthonPackage_gchange(PyObject *_self_,PyObject *args)
           if (self->farrays[i].dimensions[j] !=
               self->farrays[i].pya->dimensions[self->farrays[i].nd-j-1])
             changeit = 1;}
-        /* Subtract the array size from totmembytes. */
-        if (changeit) totmembytes -= (long)PyArray_NBYTES(self->farrays[i].pya);
         }
       /* Make sure all of the dimensions are >= 0. If not, then free it. */
       freeit = 0;
       for (j=0;j<self->farrays[i].nd;j++)
         if (self->farrays[i].dimensions[j] <= 0) freeit = 1;
-      if (freeit) {
-        Py_XDECREF(self->farrays[i].pya);
-        self->farrays[i].pya = NULL;}
+      if (freeit) Forthon_freearray(self,(void *)i);
       /* Only allocate new space and copy old data if */
       /* any dimensions are different. */
       if (changeit && !freeit) {
-        /* Use array routine to create space */
+        /* Use array routine to create new space */
         ax = (PyArrayObject *)PyArray_FromDims(self->farrays[i].nd,
                             self->farrays[i].dimensions,self->farrays[i].type);
         /* Check if the allocation was unsuccessful. */
@@ -1249,8 +1245,9 @@ static PyObject *ForthonPackage_gchange(PyObject *_self_,PyObject *args)
           ax->dimensions = axdims;
           free(d);
           }
+        /* Free the old array */
+        Forthon_freearray(self,(void *)i);
         /* Point pointers to new space. */
-        Py_XDECREF(self->farrays[i].pya);
         self->farrays[i].pya = ax;
         /* Note that pya->dimensions are in the correct fortran order, but */
         /* farray->dimensions are in C order. */
@@ -1646,9 +1643,10 @@ static PyObject *ForthonPackage_gfree(PyObject *_self_,PyObject *args)
 
   for (i=0;i<self->narrays;i++) {
     if (strcmp(s,self->farrays[i].group)==0 || strcmp(s,"*")==0) {
+      r = 1;
       /* Update the array if it is dynamic and fortran assignable. */
       ForthonPackage_updatearray(self,i);
-      r = 1;
+      /* Then free it */
       Forthon_freearray(self,(void *)i);
       }
     }
