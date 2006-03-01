@@ -223,8 +223,8 @@ void
 
 void
 %fname('ostime')
-%py_ifelse(f90 or f90f,1,'(double *cpu, double *io, double *sys, double *mem)')
-%py_ifelse(f90 or f90f,0,py_ifelse(machine,'T3E','(double *cpu, double *io, double *sys, double *mem)','(float *cpu, float *io, float *sys, float *mem)'))
+%py_ifelse(f90,1,'(double *cpu, double *io, double *sys, double *mem)')
+%py_ifelse(f90,0,py_ifelse(machine,'T3E','(double *cpu, double *io, double *sys, double *mem)','(float *cpu, float *io, float *sys, float *mem)'))
 {
   /*
   double utime,stime;

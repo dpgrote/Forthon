@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Created by David P. Grote, March 6, 1998
-# $Id: preprocess.py,v 1.3 2004/10/07 19:58:02 dave Exp $
+# $Id: preprocess.py,v 1.4 2006/03/01 00:37:53 dave Exp $
 
 from cfinterface import *
 import sys
@@ -14,7 +14,7 @@ def py_ifelse(m,v,t,f=''):
 
 def main():
   optlist,args=getopt.getopt(sys.argv[1:],"at:F:",
-                             ["f90","f90f","2underscores","nowritemodules"])
+                             ["f90","2underscores","nowritemodules"])
 
   file = open(args[0],'r')
   text = file.readlines()

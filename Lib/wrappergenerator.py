@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.40 2006/03/01 00:14:49 dave Exp $
+# $Id: wrappergenerator.py,v 1.41 2006/03/01 00:37:53 dave Exp $
 
 import sys
 import os.path
@@ -25,7 +25,6 @@ Usage:
   -F <compiler> The fortran compiler being used. This is needed since some
                 operations depend on the compiler specific oddities.
   --f90    F90 syntax will be assumed
-  --f90f   F90 syntax will be assumed, dynamic arrays allocated in fortran
   --nowritemodules The modules will not be written out, assuming
                    that they are already written.
   --macros pkg.v Other interface files that are needed for the definition
@@ -35,13 +34,12 @@ Usage:
   [file2, ...] Subsidiary variable description files
   """
 
-  def __init__(self,ifile,pname,f90=1,f90f=0,initialgallot=1,writemodules=1,
+  def __init__(self,ifile,pname,f90=1,initialgallot=1,writemodules=1,
                otherinterfacefiles=[],other_scalar_dicts=[],timeroutines=0,
                otherfortranfiles=[],fcompname=None):
     self.ifile = ifile
     self.pname = pname
     self.f90 = f90
-    self.f90f = f90f
     self.initialgallot = initialgallot
     self.writemodules = writemodules
     self.timeroutines = timeroutines
@@ -189,7 +187,7 @@ Usage:
     # --- Print out the external commands
     self.cw('extern void '+fname(self.fsub('passpointers'))+'(void);')
     self.cw('extern void '+fname(self.fsub('nullifypointers'))+'(void);')
-    if not self.f90 and not self.f90f:
+    if not self.f90:
       self.cw('extern void '+self.pname+'data();')
 
     # --- fortran routine prototypes
@@ -234,19 +232,6 @@ Usage:
         if re.search('fassign',a.attr):
           self.cw('extern void '+fname(self.fsub('getpointer',a.name))+
                   '(long *i,long *cobj__);')
-    if self.f90f:
-      for s in slist:
-        if s.dynamic:
-          self.cw('extern void '+fname(self.fsub('setpointer',s.name))+
-                  '(PyObject *p,long *cobj__);')
-          self.cw('extern void '+fname(self.fsub('getpointer',s.name))+
-                  '(ForthonObject **cobj__,long *obj);')
-      for a in alist:
-        self.cw('extern void '+fname(self.fsub('setpointer',a.name))+
-                '(PyObject *p,long *cobj__,int *dims__);')
-        if re.search('fassign',a.attr):
-          self.cw('extern void '+fname(self.fsub('getpointer',a.name))+
-                  '(long *i,long *cobj__);')
 
     ###########################################################################
     # --- Write declarations of c pointers to fortran variables
@@ -262,7 +247,7 @@ Usage:
       self.cw('Fortranscalar '+self.pname+'_fscalars['+repr(len(slist))+']={')
       for i in range(len(slist)):
         s = slist[i]
-        if (self.f90 or self.f90f) and s.derivedtype:
+        if (self.f90) and s.derivedtype:
           setpointer = '*'+fname(self.fsub('setpointer',s.name))
           if s.dynamic:
             getpointer = '*'+fname(self.fsub('getpointer',s.name))
@@ -293,11 +278,11 @@ Usage:
               self.pname+'_farrays['+repr(len(alist))+']={')
       for i in range(len(alist)):
         a = alist[i]
-        if (self.f90 or self.f90f) and a.dynamic:
+        if (self.f90) and a.dynamic:
           setpointer = '*'+fname(self.fsub('setpointer',a.name))
         else:
           setpointer = 'NULL'
-        if (self.f90 or self.f90f) and re.search('fassign',a.attr):
+        if (self.f90) and re.search('fassign',a.attr):
           getpointer = '*'+fname(self.fsub('getpointer',a.name))
         else:
           getpointer = 'NULL'
@@ -777,7 +762,7 @@ Usage:
     self.cw('  '+fname(self.fsub('passpointers'))+'();')
     self.cw('  '+fname(self.fsub('nullifypointers'))+'();')
     self.cw('  ForthonPackage_staticarrays('+self.pname+'Object);')
-    if not self.f90 and not self.f90f:
+    if not self.f90:
       self.cw('  '+fname(self.fsub('data'))+'();')
     if self.initialgallot:
       self.cw('  {')
@@ -818,7 +803,7 @@ Usage:
     ###########################################################################
     ###########################################################################
     # --- Write out fortran initialization routines
-    if self.f90 or self.f90f:
+    if self.f90:
       self.ffile = open(self.pname+'_p.F90','w')
     else:
       self.ffile = open(self.pname+'_p.m','w')
@@ -834,16 +819,15 @@ Usage:
     ###########################################################################
     ###########################################################################
 
-    if self.f90 or self.f90f:
+    if self.f90:
       self.ffile = open(self.pname+'_p.F90','a')
     else:
       self.ffile = open(self.pname+'_p.m','a')
 
     ###########################################################################
     # --- Write out f90 modules, including any data statements
-    if (self.f90 or self.f90f) and self.writemodules:
+    if self.f90 and self.writemodules:
       if   self.f90 : dyntype = 'pointer'
-      elif self.f90f: dyntype = 'allocatable,target'
       if   self.fcompname == 'xlf': save = ',SAVE'
       else:                         save = ''
       for g in groups+hidden_groups:
@@ -897,7 +881,7 @@ Usage:
 
     # --- Write out the Use statements
     for g in groups+hidden_groups:
-      if self.f90 or self.f90f:
+      if self.f90:
        self.fw('  USE '+g)
       else:
        self.fw('  Use('+g+')')
@@ -936,7 +920,7 @@ Usage:
     for i in range(len(alist)):
       a = alist[i]
       if a.dynamic:
-        if not self.f90 and not self.f90f:
+        if not self.f90:
           self.fw('  call '+self.fsub('setarraypointers')+'('+repr(i)+','+
                   'p'+a.name+str)
       else:
@@ -1027,27 +1011,8 @@ Usage:
             self.fw('  return')
             self.fw('end')
 
-    if self.f90f:
-      for a in alist:
-        if a.dynamic:
-          self.fw('SUBROUTINE '+self.fsub('setpointer',a.name)+'(p__,cobj__,dims__)')
-          groups = self.dimsgroups(a.dimstring,sdict,slist)
-          groupsprinted = [a.group]
-          for g in groups:
-            if g not in groupsprinted:
-              self.fw('  USE '+g)
-              groupsprinted.append(g)
-          self.fw('  USE '+a.group)
-          self.fw('  integer('+self.isz+'):: cobj__')
-          self.fw('  integer(4):: dims__('+repr(len(a.dims))+')')
-          self.fw('  integer(kind=8)::p__)')
-          self.fw('  allocate('+a.name+'('+self.prefixdimsf(a.dimstring)+'))')
-          self.fw('  fortranarrayspointerassignment(p__,' + a.name+')')
-          self.fw('  return')
-          self.fw('end')
-
     ###########################################################################
-    if not self.f90 and not self.f90f:
+    if not self.f90:
       # --- Write out fortran data routine, only for f77 version
       self.fw('      SUBROUTINE '+self.fsub('data')+'()')
 
@@ -1095,7 +1060,7 @@ def get_another_scalar_dict(file_name):
 def wrappergenerator_main(argv=None):
   if argv is None: argv = sys.argv[1:]
   optlist,args=getopt.getopt(argv,'at:d:F:',
-                     ['f90','f90f','2underscores','nowritemodules',
+                     ['f90','2underscores','nowritemodules',
                       'timeroutines','macros='])
 
   # --- Get package name from argument list
@@ -1113,7 +1078,6 @@ def wrappergenerator_main(argv=None):
   initialgallot = 0
   fcompname = None
   f90 = 0
-  f90f = 0
   writemodules = 1
   timeroutines = 0
   otherinterfacefiles = []
@@ -1126,13 +1090,12 @@ def wrappergenerator_main(argv=None):
     elif o[0]=='-t': machine = o[1]
     elif o[0]=='-F': fcompname = o[1]
     elif o[0]=='--f90': f90 = 1
-    elif o[0]=='--f90f': f90f = 1
     elif o[0]=='-d': get_another_scalar_dict (o[1])
     elif o[0]=='--nowritemodules': writemodules = 0
     elif o[0]=='--timeroutines': timeroutines = 1
     elif o[0]=='--macros': otherinterfacefiles.append(o[1])
 
-  cc = PyWrap(ifile,pname,f90,f90f,initialgallot,writemodules,
+  cc = PyWrap(ifile,pname,f90,initialgallot,writemodules,
               otherinterfacefiles,other_scalar_dicts,timeroutines,
               otherfortranfiles,fcompname)
 

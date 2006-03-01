@@ -49,9 +49,6 @@ One or more of the following options can be specified.
     Writes wrapper code using f77, which means that python accessible
     variables are defined in common blocks. This is obsolete and is not
     supported.
- --f90f
-    Writes wrapper code using a variant of the f90 method. This is under
-    development and should not be used.
  --nowritemodules
     Don't write out the module definitions. Useful if the modules have
     been written already. Note that if variables of derived type are used, the
@@ -106,7 +103,7 @@ if len(sys.argv) == 1:
 
 # --- Process command line arguments
 optlist,args = getopt.getopt(sys.argv[1:],'agd:t:F:D:L:l:I:i:f:',
-                         ['f90','f77','f90f','nowritemodules',
+                         ['f90','f77','nowritemodules',
                           'timeroutines','macros=',
                           'fopt=','fargs=','static',
                           '2underscores',
@@ -126,7 +123,6 @@ dependencies   = []
 defines        = []
 fcomp          = None
 f90            = '--f90'
-f90f           = 0
 writemodules   = 1
 timeroutines   = ''
 othermacros    = []
@@ -157,7 +153,6 @@ for o in optlist:
   elif o[0] == '-f': fortranfile = o[1]
   elif o[0] == '--f90': f90 = '--f90'
   elif o[0] == '--f77': f90 = ''
-  elif o[0] == '--f90f': f90f = 1
   elif o[0] == '--2underscores': twounderscores = 1
   elif o[0] == '--fopt': fopt = o[1]
   elif o[0] == '--fargs': fargs = fargs + ' ' + o[1]

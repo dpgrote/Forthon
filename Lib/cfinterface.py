@@ -1,5 +1,5 @@
 # Created by David P. Grote, March 6, 1998
-# $Id: cfinterface.py,v 1.4 2005/07/20 00:15:39 dave Exp $
+# $Id: cfinterface.py,v 1.5 2006/03/01 00:37:53 dave Exp $
 
 # Routines which allows c functions to be callable by fortran
 import sys
@@ -11,21 +11,18 @@ import struct
 # Set default values of inputs
 machine = sys.platform
 f90 = 1
-f90f = 0
 twounderscores = 0 # When true, names with underscores in them have an extra
                  # underscore appedend to the fortran name
 
 # Get system name from the command line
 try:
   optlist,args = getopt.getopt(sys.argv[1:],'ad:t:F:',
-                     ['f90','f90f','2underscores','nowritemodules','macros='])
+                     ['f90','2underscores','nowritemodules','macros='])
   for o in optlist:
     if o[0] == '-t':
       machine = o[1]
     elif o[0] == '--f90':
       f90 = 1
-    elif o[0] == '--f90f':
-      f90f = 1
     elif o[0] == '--2underscores':
       twounderscores = 1
 except (getopt.error,IndexError):
