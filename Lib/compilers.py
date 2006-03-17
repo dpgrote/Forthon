@@ -54,11 +54,11 @@ appropriate block for the machine.
         if self.linux_absoft() is not None: break
         if self.linux_lahey() is not None: break
       elif self.machine == 'darwin':
-        if self.macosx_gnu() is not None: break
         if self.macosx_xlf() is not None: break
         if self.macosx_g95() is not None: break
         if self.macosx_absoft() is not None: break
         if self.macosx_nag() is not None: break
+        if self.macosx_gnu() is not None: break
       elif self.machine == 'win32':
         if self.win32_pg() is not None: break
         if self.win32_intel() is not None: break
