@@ -23,7 +23,7 @@ Also, the new function must be included in the while loop below in the
 appropriate block for the machine.
   """
 
-  def __init__(self,machine=None,debug=0,fcompname=None,static=0):
+  def __init__(self,machine=None,debug=0,fcompname=None,static=0,implicitnone=1):
     if machine is None: machine = sys.platform
     self.machine = machine
     self.processor = os.uname()[4]
@@ -32,6 +32,7 @@ appropriate block for the machine.
 
     self.fcompname = fcompname
     self.static = static
+    self.implicitnone = implicitnone
     self.defines = []
     self.fopt = ''
     self.popt = ''
@@ -105,8 +106,11 @@ appropriate block for the machine.
         (self.fcompname=='intel8' or self.fcompname is None)):
       self.fcompname = 'ifort'
       # --- Intel8
-      self.f90free  = 'ifort -nofor_main -free -r8 -DIFC -fpp -implicitnone -Zp8 -fPIC'
-      self.f90fixed = 'ifort -nofor_main -132 -r8 -DIFC -fpp -implicitnone -Zp8 -fPIC'
+      self.f90free  = 'ifort -nofor_main -free -r8 -DIFC -fpp -Zp8 -fPIC'
+      self.f90fixed = 'ifort -nofor_main -132 -r8 -DIFC -fpp -Zp8 -fPIC'
+      if self.implicitnone:
+        self.f90free  += ' -implicitnone'
+        self.f90fixed += ' -implicitnone'
       self.popt = '-O'
       flibroot,b = os.path.split(self.findfile('ifort'))
       self.libdirs = [flibroot+'/lib']
@@ -135,8 +139,11 @@ appropriate block for the machine.
         (self.fcompname=='intel' or self.fcompname is None)):
       self.fcompname = 'ifc'
       # --- Intel
-      self.f90free  = 'ifc -132 -r8 -DIFC -fpp -implicitnone -C90 -Zp8'
-      self.f90fixed = 'ifc -132 -r8 -DIFC -fpp -implicitnone -C90 -Zp8'
+      self.f90free  = 'ifc -132 -r8 -DIFC -fpp -C90 -Zp8'
+      self.f90fixed = 'ifc -132 -r8 -DIFC -fpp -C90 -Zp8'
+      if self.implicitnone:
+        self.f90free  += ' -implicitnone'
+        self.f90fixed += ' -implicitnone'
       self.popt = '-O'
       flibroot,b = os.path.split(self.findfile('ifc'))
       self.libdirs = [flibroot+'/lib']
@@ -155,8 +162,11 @@ appropriate block for the machine.
         (self.fcompname=='g95' or self.fcompname is None)):
       self.fcompname = 'g95'
       # --- Intel
-      self.f90free  = 'g95 -r8'
-      self.f90fixed = 'g95 -ffixed-line-length-132 -r8'
+      self.f90free  = 'g95 -ffree-form -r8 -fPIC -Wno=155 -fshort-circuit'
+      self.f90fixed = 'g95 -ffixed-line-length-132 -r8 -fPIC -fshort-circuit'
+      if self.implicitnone:
+        self.f90free  += ' -fimplicit-none'
+        self.f90fixed += ' -fimplicit-none'
       self.popt = '-O'
       self.forthonargs = ['--2underscores']
       flibroot,b = os.path.split(self.findfile('g95'))
@@ -167,6 +177,10 @@ appropriate block for the machine.
         self.fopt = '-O3'
       elif re.search('AMD Athlon',cpuinfo):
         self.fopt = '-O3'
+      elif struct.calcsize('l') == 8:
+        self.fopt = '-O3 -mfpmath=sse -ftree-vectorize -ftree-vectorizer-verbose=5'
+        self.f90free = self.f90free + ' -DISZ=8 -i8'
+        self.f90fixed = self.f90fixed + ' -DISZ=8 -i8'
       else:
         self.fopt = '-O3'
       return 1
@@ -209,8 +223,11 @@ appropriate block for the machine.
       # [n]fix = fixed or free form
       # wide = column width longer than 72
       # ap = preserve arithmetic precision
-      self.f90free  = 'lf95 --nfix --dbl --in --mlcdecl'
-      self.f90fixed = 'lf95 --fix --wide --dbl --in --mlcdecl'
+      self.f90free  = 'lf95 --nfix --dbl --mlcdecl'
+      self.f90fixed = 'lf95 --fix --wide --dbl --mlcdecl'
+      if self.implicitnone:
+        self.f90free  += ' --in'
+        self.f90fixed += ' --in'
       self.popt = '-O'
       flibroot,b = os.path.split(self.findfile('lf95'))      
       self.libdirs = [flibroot+'/lib']
@@ -232,8 +249,11 @@ appropriate block for the machine.
       self.fcompname = 'g95'
       print "WARNING: This compiler might cause a bus error."
       # --- g95
-      self.f90free  = 'g95 -r8'
+      self.f90free  = 'g95 -r8 -ffree-form -Wno=155'
       self.f90fixed = 'g95 -r8 -ffixed-line-length-132'
+      if self.implicitnone:
+        self.f90free  += ' -fimplicit-none'
+        self.f90fixed += ' -fimplicit-none'
       self.forthonargs = ['--2underscores']
       flibroot,b = os.path.split(self.findfile('g95'))
       self.fopt = '-O3 -mtune=G5 -mcpu=G5'
@@ -254,6 +274,9 @@ appropriate block for the machine.
       # --- XLF
       self.f90free  = 'xlf95 -WF,-DXLF -qsuffix=f=f90:cpp=F90 -qextname -qintsize=4 -qdpc=e -bmaxdata:0x70000000 -bmaxstack:0x10000000 -qinitauto'
       self.f90fixed = 'xlf95 -WF,-DXLF -qextname -qfixed=132 -qintsize=4 -qdpc=e -bmaxdata:0x70000000 -bmaxstack:0x10000000 -qinitauto'
+      if self.implicitnone:
+        self.f90free  += ' -u'
+        self.f90fixed += ' -u'
       self.fopt = '-O5'
 #      self.fopt = '-O1'
       #self.f90free  = 'xlf95 -qsuffix=f=F90'
@@ -351,8 +374,11 @@ appropriate block for the machine.
         (self.fcompname is None and self.findfile('xlf95'))):
       self.fcompname = 'xlf'
       # --- IBM SP, serial
-      self.f90free  = 'xlf95 -c -WF,-DXLF -qmaxmem=8192 -u -qdpc=e -qintsize=4 -qsave=defaultinit -qsuffix=f=f90:cpp=F90 -qfree=f90 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
-      self.f90fixed = 'xlf95 -c -WF,-DXLF -qmaxmem=8192 -u -qdpc=e -qintsize=4 -qsave=defaultinit -qfixed=132 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
+      self.f90free  = 'xlf95 -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qintsize=4 -qsave=defaultinit -qsuffix=f=f90:cpp=F90 -qfree=f90 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
+      self.f90fixed = 'xlf95 -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qintsize=4 -qsave=defaultinit -qfixed=132 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
+      if self.implicitnone:
+        self.f90free  += ' -u'
+        self.f90fixed += ' -u'
       self.popt = '-O'
       if struct.calcsize('l') == 4:
         self.extra_link_args = ['-bmaxdata:0x70000000','-bmaxstack:0x10000000']
@@ -373,8 +399,11 @@ appropriate block for the machine.
         (self.fcompname is None and self.findfile('mpxlf95'))):
       self.fcompname = 'xlf'
       # --- IBM SP, parallel
-      self.f90free  = 'mpxlf95 -c -WF,-DXLF -qmaxmem=8192 -u -qdpc=e -qintsize=4 -qsave=defaultinit -WF,-DMPIPARALLEL -qsuffix=f=f90:cpp=F90 -qfree=f90 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
-      self.f90fixed = 'mpxlf95 -c -WF,-DXLF -qmaxmem=8192 -u -qdpc=e -qintsize=4 -qsave=defaultinit -WF,-DMPIPARALLEL -qfixed=132 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
+      self.f90free  = 'mpxlf95 -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qintsize=4 -qsave=defaultinit -WF,-DMPIPARALLEL -qsuffix=f=f90:cpp=F90 -qfree=f90 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
+      self.f90fixed = 'mpxlf95 -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qintsize=4 -qsave=defaultinit -WF,-DMPIPARALLEL -qfixed=132 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
+      if self.implicitnone:
+        self.f90free  += ' -u'
+        self.f90fixed += ' -u'
       self.popt = '-O'
       self.extra_link_args = ['-bmaxdata:0x70000000','-bmaxstack:0x10000000']
       self.extra_compile_args = ['-bmaxdata:0x70000000','-bmaxstack:0x10000000']
@@ -390,8 +419,11 @@ appropriate block for the machine.
         (self.fcompname is None and self.findfile('xlf95_r'))):
       self.fcompname = 'xlf'
       # --- IBM SP, OpenMP
-      self.f90free  = 'xlf95_r -c -WF,-DXLF -qmaxmem=8192 -u -qdpc=e -qintsize=4 -qsave=defaultinit -qsuffix=f=f90:cpp=F90 -qfree=f90 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
-      self.f90fixed = 'xlf95 -c -WF,-DXLF -qmaxmem=8192 -u -qdpc=e -qintsize=4 -qsave=defaultinit -qfixed=132 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
+      self.f90free  = 'xlf95_r -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qintsize=4 -qsave=defaultinit -qsuffix=f=f90:cpp=F90 -qfree=f90 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
+      self.f90fixed = 'xlf95 -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qintsize=4 -qsave=defaultinit -qfixed=132 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
+      if self.implicitnone:
+        self.f90free  += ' -u'
+        self.f90fixed += ' -u'
       self.popt = '-O'
       self.extra_link_args = ['-bmaxdata:0x70000000','-bmaxstack:0x10000000']
       self.extra_compile_args = ['-bmaxdata:0x70000000','-bmaxstack:0x10000000']
@@ -406,8 +438,11 @@ appropriate block for the machine.
         (self.fcompname is None and self.findfile('mpxlf95'))):
       self.fcompname = 'xlf'
       # --- IBM SP, parallel
-      self.f90free  = 'mpxlf95_r -c -q64 -WF,-DISZ=8 -WF,-DXLF -qmaxmem=8192 -u -qdpc=e -qintsize=8 -qsave=defaultinit -WF,-DMPIPARALLEL -qsuffix=f=f90:cpp=F90 -qfree=f90 -WF,-DESSL'
-      self.f90fixed = 'mpxlf95_r -c -q64 -WF,-DISZ=8 -WF,-DXLF -qmaxmem=8192 -u -qdpc=e -qintsize=8 -qsave=defaultinit -WF,-DMPIPARALLEL -qfixed=132 -WF,-DESSL'
+      self.f90free  = 'mpxlf95_r -c -q64 -WF,-DISZ=8 -WF,-DXLF -qmaxmem=8192 -qdpc=e -qintsize=8 -qsave=defaultinit -WF,-DMPIPARALLEL -qsuffix=f=f90:cpp=F90 -qfree=f90 -WF,-DESSL'
+      self.f90fixed = 'mpxlf95_r -c -q64 -WF,-DISZ=8 -WF,-DXLF -qmaxmem=8192 -qdpc=e -qintsize=8 -qsave=defaultinit -WF,-DMPIPARALLEL -qfixed=132 -WF,-DESSL'
+      if self.implicitnone:
+        self.f90free  += ' -u'
+        self.f90fixed += ' -u'
       self.popt = '-O'
       self.extra_link_args = ['-q64']
       self.extra_compile_args = ['-q64']

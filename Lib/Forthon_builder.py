@@ -84,6 +84,8 @@ One or more of the following options can be specified.
  --builddir path
     Location where the temporary compilation files (such as object files)
     should be placed. This defaults to build/temp-osname.
+ --noimplicitnone
+    When specified, the implicitnone is not enforced
 """
 
 import sys,os,re
@@ -108,7 +110,7 @@ optlist,args = getopt.getopt(sys.argv[1:],'agd:t:F:D:L:l:I:i:f:',
                           'fopt=','fargs=','static',
                           '2underscores',
                           'free_suffix=','fixed_suffix=',
-                          'compile_first=','builddir='])
+                          'compile_first=','builddir=','noimplicitnone'])
 
 # --- Get the package name and any other extra files
 pkg = args[0]
@@ -138,6 +140,7 @@ free_suffix    = 'F90'
 fixed_suffix   = 'F'
 compile_first  = ''
 builddir       = None
+implicitnone   = 1
 
 for o in optlist:
   if o[0]=='-a': initialgallot = '-a'
@@ -164,6 +167,7 @@ for o in optlist:
   elif o[0] == '--fixed_suffix': fixed_suffix = o[1]
   elif o[0] == '--compile_first': compile_first = o[1]
   elif o[0] == '--builddir': builddir = o[1]
+  elif o[0] == '--noimplicitnone': implicitnone = 0
 
 if fortranfile is None: fortranfile = pkg + '.' + fixed_suffix
 
@@ -218,7 +222,8 @@ interfacefile = fixpath(os.path.join(upbuilddir,interfacefile))
 fcompiler = FCompiler(machine=machine,
                       debug=debug,
                       fcompname=fcomp,
-                      static=static)
+                      static=static,
+                      implicitnone=implicitnone)
 
 # --- Create some locals which are needed for strings below.
 f90free = fcompiler.f90free
