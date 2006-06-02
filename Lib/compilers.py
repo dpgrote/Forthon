@@ -376,20 +376,20 @@ appropriate block for the machine.
       # --- IBM SP, serial
       self.f90free  = 'xlf95 -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qintsize=4 -qsave=defaultinit -qsuffix=f=f90:cpp=F90 -qfree=f90 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
       self.f90fixed = 'xlf95 -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qintsize=4 -qsave=defaultinit -qfixed=132 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
-      if self.implicitnone:
-        self.f90free  += ' -u'
-        self.f90fixed += ' -u'
       self.popt = '-O'
       if struct.calcsize('l') == 4:
         self.extra_link_args = ['-bmaxdata:0x70000000','-bmaxstack:0x10000000']
         self.extra_compile_args = ['-bmaxdata:0x70000000','-bmaxstack:0x10000000']
         self.ld = 'xlf -bmaxdata:0x70000000 -bmaxstack:0x10000000 -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp'
       elif struct.calcsize('l') == 8:
-        self.f90free  = 'xlf95_r -q64 -WF,-DISZ=8 -c -WF,-DXLF -qmaxmem=8192 -u -qdpc=e -qintsize=8 -qsave=defaultinit -qsuffix=f=f90:cpp=F90 -qfree=f90 -WF,-DESSL'
-        self.f90fixed = 'xlf95_r -q64 -WF,-DISZ=8 -c -WF,-DXLF -qmaxmem=8192 -u -qdpc=e -qintsize=8 -qsave=defaultinit -qfixed=132 -WF,-DESSL'
+        self.f90free  = 'xlf95_r -q64 -WF,-DISZ=8 -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qintsize=8 -qsave=defaultinit -qsuffix=f=f90:cpp=F90 -qfree=f90 -WF,-DESSL'
+        self.f90fixed = 'xlf95_r -q64 -WF,-DISZ=8 -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qintsize=8 -qsave=defaultinit -qfixed=132 -WF,-DESSL'
         self.extra_link_args = ['-q64'] #,'-qheapdebug','-qcheck=all']
         self.extra_compile_args = ['-q64'] #,'-qheapdebug','-qcheck=all']
         self.ld = 'xlf_r -q64 -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp'
+      if self.implicitnone:
+        self.f90free  += ' -u'
+        self.f90fixed += ' -u'
       self.libs = ['xlf90','xlopt','xlf','xlomp_ser','pthread','essl']
       self.fopt = '-O3 -qstrict -qarch=pwr3 -qtune=pwr3'
       return 1
