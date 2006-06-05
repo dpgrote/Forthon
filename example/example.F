@@ -1,6 +1,9 @@
+#ifndef ISZ
+#define ISZ 4
+#endif
 c========================================================================
       subroutine testsub1(ii,aa)
-      integer(4):: ii
+      integer(ISZ):: ii
       real(8):: aa
       print*,"ii,aa = ",ii,aa
       return
@@ -8,7 +11,7 @@ c========================================================================
 c========================================================================
       subroutine testsub2(ii,aa,dd)
       use Module1
-      integer(4):: ii
+      integer(ISZ):: ii
       real(8):: aa,dd(3)
       print*,"i,a = ",i,a
       print*,"d = ",d
@@ -20,7 +23,7 @@ c========================================================================
 c========================================================================
       subroutine testsub3(ii,aa,nn)
       use Module2
-      integer(4):: ii,nn
+      integer(ISZ):: ii,nn
       real(8):: aa
       t2 => NewType1()
       t2%j = ii
