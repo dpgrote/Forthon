@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.50 2006/07/12 10:08:18 dave Exp $ */
+/* $Id: Forthon.h,v 1.51 2006/07/12 10:10:23 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -202,7 +202,7 @@ static void Forthon_restoresubroutineargs(int n,PyObject **pyobj,
         }
       }
     /* Make sure the temporary references are removed */
-    if (ax[i] != NULL) {Py_XDECREF(ax[i])i};
+    if (ax[i] != NULL) {Py_XDECREF(ax[i]);}
     }
 }
 
