@@ -54,6 +54,7 @@ appropriate block for the machine.
         if self.linux_pg() is not None: break
         if self.linux_absoft() is not None: break
         if self.linux_lahey() is not None: break
+        if self.linux_pathscale() is not None: break
       elif self.machine == 'darwin':
         if self.macosx_xlf() is not None: break
         if self.macosx_g95() is not None: break
@@ -239,6 +240,32 @@ appropriate block for the machine.
         self.fopt = '--O2 --unroll --prefetch --nap --npca --ntrace --nsav'
       else:
         self.fopt = '--O2 --unroll --prefetch --nap --npca --ntrace --nsav'
+      return 1
+
+  def linux_pathscale(self):
+    if (self.findfile('pathf90') and
+        (self.fcompname=='pathf90' or self.fcompname is None)):
+      self.fcompname = 'pathf90'
+      # --- Intel8
+      self.f90free  = 'pathf90 -freeform -r8 -DPATHF90 -ftpp -fPIC -woff1615'
+      self.f90fixed = 'pathf90 -fixedform -extend_source -r8 -DPATHF90 -ftpp -fPIC -woff1615'
+      self.popt = '-O'
+      flibroot,b = os.path.split(self.findfile('pathf90'))
+      self.libdirs = [flibroot+'/lib/2.1']
+      self.libs = ['pathfortran']
+      cpuinfo = open('/proc/cpuinfo','r').read()
+      self.extra_compile_args = ['-fPIC']
+      self.extra_link_args = ['-fPIC']
+      if re.search('Pentium III',cpuinfo):
+        self.fopt = '-Ofast'
+      elif re.search('AMD Athlon',cpuinfo):
+        self.fopt = '-O3'
+      elif struct.calcsize('l') == 8:
+        self.fopt = '-O3 -OPT:Ofast -fno-math-errno'
+        self.f90free = self.f90free + ' -DISZ=8 -i8'
+        self.f90fixed = self.f90fixed + ' -DISZ=8 -i8'
+      else:
+        self.fopt = '-Ofast'
       return 1
 
   #-----------------------------------------------------------------------------
