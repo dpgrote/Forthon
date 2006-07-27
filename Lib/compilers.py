@@ -26,8 +26,10 @@ appropriate block for the machine.
   def __init__(self,machine=None,debug=0,fcompname=None,static=0,implicitnone=1):
     if machine is None: machine = sys.platform
     self.machine = machine
-    self.processor = os.uname()[4]
-
+    if self.machine <> 'win32':
+      self.processor = os.uname()[4]
+    else:
+      self.processor = 'i686'
     self.paths = string.split(os.environ['PATH'],os.pathsep)
 
     self.fcompname = fcompname
@@ -61,6 +63,8 @@ appropriate block for the machine.
         if self.macosx_absoft() is not None: break
         if self.macosx_nag() is not None: break
         if self.macosx_gnu() is not None: break
+      elif self.machine == 'cygwin':
+        if self.cygwin_g95() is not None: break
       elif self.machine == 'win32':
         if self.win32_pg() is not None: break
         if self.win32_intel() is not None: break
@@ -266,6 +270,30 @@ appropriate block for the machine.
         self.f90fixed = self.f90fixed + ' -DISZ=8 -i8'
       else:
         self.fopt = '-Ofast'
+      return 1
+
+  #-----------------------------------------------------------------------------
+  # --- CYGWIN
+  def cygwin_g95(self):
+    if (self.findfile('g95') and
+        (self.fcompname=='g95' or self.fcompname is None)):
+      self.fcompname = 'g95'
+#      print "WARNING: This compiler might cause a bus error."
+      # --- g95
+      self.f90free  = 'g95 -r8'
+      self.f90fixed = 'g95 -r8 -ffixed-line-length-132'
+      self.forthonargs = ['--2underscores']
+#      flibroot,b = os.path.split(self.findfile('g95'))
+      self.fopt = '-O3 -ftree-vectorize -ftree-vectorizer-verbose=5'
+#      self.fopt = '-O3 -funroll-loops -fstrict-aliasing -fsched-interblock  \
+#           -falign-loops=16 -falign-jumps=16 -falign-functions=16 \
+#           -falign-jumps-max-skip=15 -falign-loops-max-skip=15 -malign-natural \
+#           -ffast-math -mpowerpc-gpopt -force_cpusubtype_ALL \
+#           -fstrict-aliasing'
+#      self.extra_link_args = ['-flat_namespace','-undefined suppress','-lg2c']
+      self.extra_link_args = ['-flat_namespace','--allow-shlib-undefined','-Wl,--export-all-symbols','-Wl,-export-dynamic','-Wl,--unresolved-symbols=ignore-all','-lg2c']
+      self.libdirs = ['/usr/local/lib/gcc-lib/i686-pc-cygwin/4.0.2','/lib/w32api']
+      self.libs = ['f95']
       return 1
 
   #-----------------------------------------------------------------------------
