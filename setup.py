@@ -2,19 +2,25 @@
 # To use:
 #       python setup.py install
 #
-import os, os.path, sys, string, re
+import os, sys, string, re
 from glob import glob
 
 try:
     import distutils
     from distutils.command.install import install
     from distutils.core import setup, Extension
-    from distutils.command.install_data import install_data
     from distutils.sysconfig import get_python_lib
 except:
     raise SystemExit, "Distutils problem"
 
 data_files_home = os.path.join(get_python_lib(),'Forthon')
+
+# --- Get around a "bug" in disutils on 64 big systems. When there is no extension to be installed, distutils
+# --- will put the scripts in /usr/lib/... instead of /usr/lib64. This fixes it.
+if get_python_lib().find('lib64') != -1:
+  import distutils.command.install
+  distutils.command.install.INSTALL_SCHEMES['unix_prefix']['purelib'] = '$base/lib64/python$py_version_short/site-packages'
+  distutils.command.install.INSTALL_SCHEMES['unix_home']['purelib'] = '$base/lib64/python$py_version_short/site-packages'
 
 # --- Normally, the package building script is called Forthon, but on Windows,
 # --- it works better if it is called Forthon.py.
@@ -43,8 +49,9 @@ setup (name = "Forthon",
        author_email = "DPGrote@lbl.gov",
        description = "Fortran wrapper/code development package",
        platforms = "Unix, Windows (cygwin), Mac OSX",
-       packages = ['Forthon'],
-       package_dir = {'Forthon': 'Lib'},
+       extra_path = 'Forthon',
+       packages = [''],
+       package_dir = {'': 'Lib'},
        data_files = [(data_files_home,['Notice','Src/Forthon.h','Src/Forthon.c'])],
        scripts = [Forthon]
        )
