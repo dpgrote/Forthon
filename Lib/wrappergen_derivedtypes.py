@@ -509,7 +509,7 @@ class ForthonDerivedType:
         self.fw('    ELSE')
         self.fw('      d = 0')
         self.fw('    ENDIF')
-        self.fw('    call init'+t.name+'py(-1,newobj__,newobj__%cobj__,1,d)')
+        self.fw('    call init'+t.name+'py(int(-1,'+isz+'),newobj__,newobj__%cobj__,int(1,'+isz+'),d)')
         self.fw('    RETURN')
         self.fw('  END FUNCTION New'+t.name+'')
         self.fw('  SUBROUTINE Del'+t.name+'(oldobj__)')
@@ -608,7 +608,7 @@ class ForthonDerivedType:
       self.fw('  ELSE')
       self.fw('    d = 1')
       self.fw('  ENDIF')
-      self.fw('  call init'+t.name+'py(-1,newobj__,newobj__%cobj__,s,d)')
+      self.fw('  call init'+t.name+'py(int(-1,'+isz+'),newobj__,newobj__%cobj__,s,d)')
       self.fw('  RETURN')
       self.fw('END SUBROUTINE InitPyRef'+t.name)
       self.fw('SUBROUTINE IncRef'+t.name+'(obj__)')
@@ -695,18 +695,18 @@ class ForthonDerivedType:
         if s.derivedtype:
           # --- This is only called for static instances, so deallocatable is
           # --- set to false (the last argument).
-          self.fw('  CALL init'+s.type+'py(-1,obj__%'+s.name+
-                  ',obj__%'+s.name+'%cobj__,setinitvalues,0)')
+          self.fw('  CALL init'+s.type+'py(int(-1,'+isz+'),obj__%'+s.name+
+                  ',obj__%'+s.name+'%cobj__,setinitvalues,int(0,'+isz+'))')
           self.fw('  CALL '+self.fsub(t,'setderivedtypepointers')+'('+
-                  repr(i)+',obj__%'+s.name+'%cobj__,obj__%cobj__)')
+                  'int('+repr(i)+','+isz+'),obj__%'+s.name+'%cobj__,obj__%cobj__)')
         else:
           self.fw('  CALL '+self.fsub(t,'setscalarpointers')+'('+
-                  repr(i)+',obj__%'+s.name+',obj__%cobj__',noreturn=1)
+                  'int('+repr(i)+','+isz+'),obj__%'+s.name+',obj__%cobj__',noreturn=1)
           if machine == 'J90':
             if s.type == 'string' or s.type == 'character':
-              self.fw(',1)')
+              self.fw(',int(1,'+isz+'))')
             else:
-              self.fw(',0)')
+              self.fw(',int(0,'+isz+'))')
           else:
             self.fw(')')
 
@@ -715,9 +715,9 @@ class ForthonDerivedType:
       # --- anyway to get the numbering of arrays correct.
       if machine == 'J90':
         if a.type == 'string' or a.type == 'character':
-          str = ',1)'
+          str = ',int(1,'+isz+'))'
         else:
-          str = ',0)'
+          str = ',int(0,'+isz+'))'
       else:
         str = ')'
       for i in range(len(alist)):
@@ -727,7 +727,7 @@ class ForthonDerivedType:
             # --- This assumes that a scalar is given which is broadcasted
             # --- to fill the array.
             #if a.data: self.fw('  obj__%'+a.name+' = '+a.data[1:-1])
-            self.fw('  CALL '+self.fsub(t,'setarraypointers')+'('+repr(i)+
+            self.fw('  CALL '+self.fsub(t,'setarraypointers')+'('+'int('+repr(i)+','+isz+')'+
                     ',obj__%'+a.name+',obj__%cobj__'+str)
 
       # --- Set the initial values only if the input flag is 1.
@@ -771,9 +771,10 @@ class ForthonDerivedType:
           self.fw('  integer('+isz+'):: cobj__,createnew__')
           self.fw('  TYPE('+t.name+'):: obj__')
           self.fw('  if (ASSOCIATED(obj__%'+s.name+')) then')
-          self.fw('    if (obj__%'+s.name+'%cobj__ == 0 .and. createnew__==1) '+
-                        'call init'+s.type+'py(-1,obj__%'+s.name+','+
-                                               'obj__%'+s.name+'%cobj__,0,0)')
+          self.fw('    if (obj__%'+s.name+'%cobj__ == 0 .and. createnew__==1) then')
+          self.fw('      call init'+s.type+'py(int(-1,'+isz+'),obj__%'+s.name+','+
+                                               'obj__%'+s.name+'%cobj__,int(0,'+isz+'),int(0,'+isz+'))')
+          self.fw('    endif')
           self.fw('    cobj__ = obj__%'+s.name+'%cobj__')
           self.fw('  else')
           self.fw('    cobj__ = 0')
@@ -798,12 +799,13 @@ class ForthonDerivedType:
             self.fw('SUBROUTINE '+self.fsub(t,'getpointer',a.name)+'(i__,obj__)')
             self.fw('  USE '+t.name+'module')
             self.fw('  integer('+isz+'):: i__')
+            self.fw('  integer('+isz+'):: ss(%d)'%(len(a.dims)))
             self.fw('  TYPE('+t.name+'):: obj__')
             self.fw('  if (.not. associated(obj__%'+a.name+')) return ')
             self.fw('  call '+self.fsub(t,'setarraypointersobj')+
                                                    '(i__,obj__%'+a.name+')')
-            self.fw('  call '+self.fsub(t,'setarraydims')+
-                                            '(i__,shape(obj__%'+a.name+'))')
+            self.fw('  ss = shape(obj__%'+a.name+')')
+            self.fw('  call '+self.fsub(t,'setarraydims')+ '(i__,ss)')
             self.fw('  return')
             self.fw('end')
 
@@ -827,7 +829,7 @@ class ForthonDerivedType:
         if s.dynamic:
           self.fw('  NULLIFY(newobj__%'+s.name+')')
       #self.fw('  call InitPyRef'+t.name+'(newobj__,1,1)')
-      self.fw('  call init'+t.name+'py(-1,newobj__,newobj__%cobj__,1,1)')
+      self.fw('  call init'+t.name+'py(int(-1,'+isz+'),newobj__,newobj__%cobj__,int(1,'+isz+'),int(1,'+isz+'))')
       self.fw('  cobj__ = newobj__%cobj__')
       self.fw('  RETURN')
       self.fw('END')

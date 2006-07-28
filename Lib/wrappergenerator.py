@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.41 2006/03/01 00:37:53 dave Exp $
+# $Id: wrappergenerator.py,v 1.42 2006/07/28 23:28:03 dave Exp $
 
 import sys
 import os.path
@@ -893,17 +893,17 @@ Usage:
       if s.derivedtype:
         # --- This is only called for static instances, so deallocatable is
         # --- set to false (the last argument).
-        self.fw('  call init'+s.type+'py('+repr(i)+','+s.name+','+
-                s.name+'%cobj__,1,0)')
-        self.fw('  call '+self.fsub('setderivedtypepointers')+'('+repr(i)+','+s.name+'%cobj__)')
+        self.fw('  call init'+s.type+'py(int('+repr(i)+','+self.isz+'),'+s.name+','+
+                s.name+'%cobj__,int(1,'+self.isz+'),int(0,'+self.isz+'))')
+        self.fw('  call '+self.fsub('setderivedtypepointers')+'(int('+repr(i)+','+self.isz+'),'+s.name+'%cobj__)')
       else:
-        self.fw('  call '+self.fsub('setscalarpointers')+'('+repr(i)+','+s.name,
+        self.fw('  call '+self.fsub('setscalarpointers')+'(int('+repr(i)+','+self.isz+'),'+s.name,
                 noreturn=1)
         if machine == 'J90':
           if s.type == 'string' or s.type == 'character':
-            self.fw(',1)')
+            self.fw(',int(1,'+self.isz+'))')
           else:
-            self.fw(',0)')
+            self.fw(',int(0,'+self.isz+'))')
         else:
           self.fw(')')
 
@@ -912,19 +912,19 @@ Usage:
     # --- anyway to get the numbering of arrays correct.
     if machine == 'J90':
       if a.type == 'string' or a.type == 'character':
-        str = ',1)'
+        str = ',int(1,'+self.isz+'))'
       else:
-        str = ',0)'
+        str = ',int(0,'+self.isz+'))'
     else:
       str = ')'
     for i in range(len(alist)):
       a = alist[i]
       if a.dynamic:
         if not self.f90:
-          self.fw('  call '+self.fsub('setarraypointers')+'('+repr(i)+','+
+          self.fw('  call '+self.fsub('setarraypointers')+'(int('+repr(i)+','+self.isz+'),'+
                   'p'+a.name+str)
       else:
-        self.fw('  call '+self.fsub('setarraypointers')+'('+repr(i)+','+a.name+str)
+        self.fw('  call '+self.fsub('setarraypointers')+'(int('+repr(i)+','+self.isz+'),'+a.name+str)
 
     # --- Finish the routine
     self.fw('  return')
@@ -974,9 +974,10 @@ Usage:
           self.fw('  USE '+s.group)
           self.fw('  integer('+self.isz+'):: cobj__,obj__,createnew__')
           self.fw('  if (ASSOCIATED('+s.name+')) then')
-          self.fw('    if ('+s.name+'%cobj__ == 0 .and. createnew__ == 1)'+
-                        'call init'+s.type+'py(-1,'+s.name+','+
-                                               s.name+'%cobj__,0,0)')
+          self.fw('    if ('+s.name+'%cobj__ == 0 .and. createnew__ == 1) then')
+          self.fw('      call init'+s.type+'py(int(-1,'+self.isz+'),'+s.name+','+
+                                               s.name+'%cobj__,int(0,'+self.isz+'),int(0,'+self.isz+'))')
+          self.fw('    endif')
           self.fw('    cobj__ = '+s.name+'%cobj__')
           self.fw('  else')
           self.fw('    cobj__ = 0')
@@ -1005,9 +1006,11 @@ Usage:
             self.fw('SUBROUTINE '+self.fsub('getpointer',a.name)+'(i__,obj__)')
             self.fw('  USE '+a.group)
             self.fw('  integer('+self.isz+'):: i__,obj__')
+            self.fw('  integer('+self.isz+'):: ss(%d)'%(len(a.dims)))
             self.fw('  if (.not. associated('+a.name+')) return')
             self.fw('  call '+self.fsub('setarraypointersobj')+'(i__,'+a.name+')')
-            self.fw('  call '+self.fsub('setarraydims')+'(i__,shape('+a.name+'))')
+            self.fw('  ss = shape('+a.name+')')
+            self.fw('  call '+self.fsub('setarraydims')+'(i__,ss)')
             self.fw('  return')
             self.fw('end')
 
