@@ -1,7 +1,7 @@
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 19, 1998
 # Parse the interface description file
-# $Id: interfaceparser.py,v 1.12 2006/02/10 20:30:12 dave Exp $
+# $Id: interfaceparser.py,v 1.13 2006/10/02 22:11:03 dave Exp $
 
 # This reads in the entire variable description file and extracts all of
 # the variable and subroutine information needed to create an interface
@@ -263,7 +263,12 @@ def processfile(packname,filename,othermacros=[],timeroutines=0):
 
     # Look for a data field
     elif text[0] == '/':
-      i = re.search('/',text[1:]).start() + 1
+      i = 1
+      # If the data is a string, skip over the string in case the
+      # '/' character appears, as in a date for example.
+      if   text[i] == '"': i = re.search('"',text[2:]).start() + 2
+      elif text[i] == "'": i = re.search("'",text[2:]).start() + 2
+      i = re.search('/',text[i:]).start() + i
       v.data = text[0:i+1]
       readyfortype = 0
 
