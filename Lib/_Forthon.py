@@ -36,7 +36,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.27 2006/10/06 18:34:33 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.28 2006/10/06 23:24:48 dave Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling
@@ -485,6 +485,17 @@ def pydumpforthonobject(ff,attr,objname,obj,varsuffix,writtenvars,fobjlist,
                         serial,verbose,lonlymakespace=0):
   # --- General work of this object
   if verbose: print "object "+objname+" being written"
+  # --- Write out the value of fobj so that in restore, any links to this
+  # --- object can be restored. Only do this if fobj != 0, which means that
+  # --- it is not a top level package, but a variable of fortran derived type.
+  fobj = obj.getfobject()
+  if fobj != 0:
+    ff.write('FOBJ'+varsuffix,fobj)
+    ff.write('TYPENAME'+varsuffix,obj.gettypename())
+    # --- If this object has already be written out, then return.
+    if fobj in fobjlist: return
+    # --- Add this object to the list of object already written out.
+    fobjlist.append(fobj)
   # --- Get variables in this package which have attribute attr.
   vlist = []
   for a in attr:
@@ -495,7 +506,7 @@ def pydumpforthonobject(ff,attr,objname,obj,varsuffix,writtenvars,fobjlist,
     # --- allocated).
     v = obj.getpyobject(vname)
     if v is None: continue
-    # --- If serial flag is set, get attributes and if it has the parallel
+    # --- If serial flag is set, get attributes and if has the parallel
     # --- attribute, don't write it.
     if serial:
       a = obj.getvarattr(vname)
@@ -515,6 +526,14 @@ def pydumpforthonobject(ff,attr,objname,obj,varsuffix,writtenvars,fobjlist,
         if verbose: print "variable "+objname+"."+vname+" skipped since other variable would have same name in the file"
         continue
       writtenvars.append(vname)
+    # --- Check if variable is a Forthon object, if so, recursively call this
+    # --- function.
+    if IsForthonType(v):
+      # --- Note that the attribute passed in is blank, since all components
+      # --- are to be written out to the file.
+      pydumpforthonobject(ff,[''],vname,v,'@'+vname+varsuffix,writtenvars,
+                          fobjlist,serial,verbose,lonlymakespace)
+      continue
     # --- If this point is reached, then variable is written out to file
     if verbose: print "writing "+objname+"."+vname+" as "+vname+varsuffix
     # --- If lonlymakespace is true, then use defent to create space in the
@@ -607,11 +626,9 @@ Dump data into a pdb file
   try:
     ff.file_type
   except:
-    raise "You have an old version of the PDB libraries and need to upgrade. There have been changes to the code that are incompatible with the old pdb modules. To get the new version, do cvs co PyPDB"
-
+    ff.file_type = 'oldPDB'
   # --- Convert attr into a list if needed
   if not (type(attr) == ListType): attr = [attr]
-
   # --- Loop through all of the packages (getting pkg object).
   # --- When varsuffix is specified, the list of variables already written
   # --- is created. This solves two problems. It gives proper precedence to
@@ -638,7 +655,6 @@ Dump data into a pdb file
       if vname in writtenvars:
         if verbose: print "variable "+vname+" skipped since other variable would have same name in the file"
         continue
-
     # --- Get the value of the variable.
     vval = __main__.__dict__[vname]
     # --- Write out the source of functions. Note that the source of functions
@@ -656,17 +672,36 @@ Dump data into a pdb file
     # --- Zero length arrays cannot by written out.
     if type(vval) == ArrayType and product(array(shape(vval))) == 0:
       continue
+    # --- Check if variable is a Forthon object.
+    if IsForthonType(vval):
+      pydumpforthonobject(ff,attr,vname,vval,'@'+vname+varsuffix,writtenvars,
+                          fobjlist,serial,verbose,lonlymakespace)
+      continue
     # --- Try writing as normal variable.
+    # --- The docontinue temporary is needed since python1.5.2 doesn't
+    # --- seem to like continue statements inside of try statements.
+    docontinue = 0
     try:
       if verbose: print "writing python variable "+vname+" as "+vname+varsuffix
       ff.write(vname+varsuffix,vval)
-      continue
+      docontinue = 1
     except:
-      if verbose: print "could not write python variable "+vname
       pass
+    if docontinue: continue
+    # --- If that didn't work, try writing as a pickled object
+    # --- This is only needed for the old pdb wrapper. The new one
+    # --- automatically pickles things as needed.
+    if ff.file_type == 'oldPDB':
+      try:
+        if verbose:
+          print "writing python variable "+vname+" as "+vname+varsuffix+'@pickle'
+        ff.write(vname+varsuffix+'@pickle',cPickle.dumps(vval,dumpsmode))
+        docontinue = 1
+      except (cPickle.PicklingError,TypeError):
+        pass
+      if docontinue: continue
     # --- All attempts failed so write warning message
     if verbose: print "cannot write python variable "+vname
-
   if closefile: ff.close()
 
   # --- Return the fobjlist for cases when pydump is called multiple times
@@ -722,7 +757,7 @@ Note that it will automatically detect whether the file is PDB or HDF.
   try:
     ff.file_type
   except:
-    raise "You have an old version of the PDB libraries and need to upgrade. There have been changes to the code that are incompatible with the old pdb modules. To get the new version, do cvs co PyPDB"
+    ff.file_type = 'oldPDB'
   # --- Get a list of all of the variables in the file, loop over that list
   vlist = ff.inquire_names()
   # --- Print list of variables
@@ -752,6 +787,23 @@ Note that it will automatically detect whether the file is PDB or HDF.
         __main__.__dict__[pyname] = ff.__getattr__(vname)
       except:
         if verbose: print "error with variable "+vname
+
+  # --- These would be interpreter variables written to the file
+  # --- as pickled objects. The data is unpickled and the variable
+  # --- in put in the main dictionary.
+  # --- This is only needed with the old pdb wrapper.
+  if ff.file_type == 'oldPDB':
+    if groups.has_key('pickle'):
+      picklelist = groups['pickle']
+      del groups['pickle']
+      for vname in picklelist:
+        pyname = vname
+        if varsuffix is not None: pyname = pyname + str(varsuffix)
+        try:
+          if verbose: print "reading in pickled variable "+vname
+          __main__.__dict__[pyname]=cPickle.loads(ff.__getattr__(vname+'@pickle'))
+        except:
+          if verbose: print "error with variable "+vname
 
   # --- These would be interpreter variables written to the file
   # --- from Basis. A simple assignment is done and the variable
@@ -786,7 +838,7 @@ Note that it will automatically detect whether the file is PDB or HDF.
         except:
           if verbose: print "error with function "+vname
 
-  # --- Ignore variables with suffix @parallel, these are handled elsewhere
+  # --- Ignore variables with suffix @parallel
   if groups.has_key('parallel'):
     del groups['parallel']
 
@@ -893,15 +945,26 @@ def pyrestoreforthonobject(ff,gname,vlist,fobjdict,varsuffix,verbose,doarrays,
     if varsuffix is not None: fullname = vname + str(varsuffix)
 
     try:
-      vval = ff.__getattr__(vpdbname)
-      if ((type(vval) != ArrayType and not doarrays) or
-          (type(vval) == ArrayType and doarrays)):
-        # --- Simple assignment is done, using the exec command
-        # --- setattr doesn't work when there is a varsuffix.
-        # --- __main__.__dict__[fullname] doesn't work when fullname
-        # --- contains attribute references. So exec must be used.
+      if type(ff.__getattr__(vpdbname)) != ArrayType and not doarrays:
+        # --- Simple assignment is done for scalars, using the exec command
         if verbose: print "reading in "+fullname
-        exec(fullname+'=vval',__main__.__dict__,locals())
+        exec(fullname+'=ff.__getattr__(vpdbname)',__main__.__dict__,locals())
+      elif type(ff.__getattr__(vpdbname)) == ArrayType and doarrays:
+        pkg = eval(gname,__main__.__dict__)
+        # --- forceassign is used, allowing the array read in to have a
+        # --- different size than the current size of the warp array.
+        if verbose: print "reading in "+fullname
+        # --- Original version
+        #pkg.forceassign(vname,ff.__getattr__(vpdbname))
+        # --- Newer version using convenient setattr routine. This can be
+        # --- done this way since now all scalars are read in first so
+        # --- the arrays will be of the correct size.
+        setattr(pkg,vname,ff.__getattr__(vpdbname))
+        # --- This does the same thing but is more sensitive to some types
+        # --- of array sizing errors.
+        #v = ff.__getattr__(vpdbname)
+        #setattr(pkg,vname,fzeros(shape(v),v.typecode()))
+        #getattr(pkg,vname)[...] = v
     except:
       # --- The catches errors in cases where the variable is not an
       # --- actual warp variable, for example if it had been deleted
@@ -911,9 +974,7 @@ def pyrestoreforthonobject(ff,gname,vlist,fobjdict,varsuffix,verbose,doarrays,
       if verbose: sys.excepthook(*sys.exc_info())
 
   # --- Read in rest of groups.
-  # --- In the new way of writing objects, this should never happen.
   for g,v in groups.items():
-    print "this statement should not be reached"
     pyrestoreforthonobject(ff,gname+'.'+g,v,fobjdict,varsuffix,verbose,doarrays,
                            g+'@'+gpdbname)
 
