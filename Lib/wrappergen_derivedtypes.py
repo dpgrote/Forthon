@@ -308,7 +308,7 @@ class ForthonDerivedType:
       self.cw('  obj=(ForthonObject *) PyObject_GC_New(ForthonObject,'+
                  '&ForthonType);')
       self.cw('  if (*i > 0) {obj->name = '+pname+'_fscalars[*i].name;}')
-      self.cw('  else        {obj->name = "pointee";}')
+      self.cw('  else        {obj->name = malloc(8);strcpy(obj->name,"pointee");}')
       self.cw('  obj->typename = "'+t.name+'";')
       self.cw('  '+t.name+'declarevars(obj);')
       self.cw('  obj->setdims = *'+t.name+'setdims;')
