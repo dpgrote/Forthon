@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.52 2006/10/06 23:28:28 dave Exp $ */
+/* $Id: Forthon.h,v 1.53 2006/10/06 23:47:28 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -865,9 +865,10 @@ static PyObject *ForthonPackage_getdict(PyObject *_self_,PyObject *args)
       PyErr_SetString(ErrorObject,"Optional argument must be a dictionary.");
       return NULL;}
     }
-  n = PyString_FromString(self->name);
-  PyDict_SetItemString(dict,"_name",n);
-  Py_DECREF(n);
+  /* There is something wrong with this code XXX */
+  /* n = PyString_FromString(self->name); */
+  /* PyDict_SetItemString(dict,"_name",n); */
+  /* Py_DECREF(n); */
   for (j=0;j<self->nscalars;j++) {
     s = self->fscalars + j;
     if (s->type == PyArray_DOUBLE) {
@@ -1866,11 +1867,12 @@ static PyObject *ForthonPackage_setdict(PyObject *_self_,PyObject *args)
   int pos=0;
   int e;
   if (!PyArg_ParseTuple(args,"O",&dict)) return NULL;
+  /* There is something wrong with this code XXX */
   /* Set the object name if it is now "pointee"*/
-  if (strcmp(self->name,"pointee") == 0) {
-    free(self->name);
-    self->name = PyString_AsString(PyDict_GetItemString(dict,"_name"));
-    }
+  /* if (strcmp(self->name,"pointee") == 0) { */
+    /* free(self->name); */
+    /* self->name = PyString_AsString(PyDict_GetItemString(dict,"_name")); */
+    /* } */
   /* First set the scalars so that the array dimensions are set. */
   while (PyDict_Next(dict,&pos,&key,&value)) {
     if (value == Py_None) continue;
