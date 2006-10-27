@@ -36,7 +36,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.28 2006/10/06 23:24:48 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.29 2006/10/27 20:40:14 dave Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling
@@ -673,21 +673,17 @@ Dump data into a pdb file
     if type(vval) == ArrayType and product(array(shape(vval))) == 0:
       continue
     # --- Check if variable is a Forthon object.
-    if IsForthonType(vval):
-      pydumpforthonobject(ff,attr,vname,vval,'@'+vname+varsuffix,writtenvars,
-                          fobjlist,serial,verbose,lonlymakespace)
-      continue
+   #if IsForthonType(vval):
+   #  pydumpforthonobject(ff,attr,vname,vval,'@'+vname+varsuffix,writtenvars,
+   #                      fobjlist,serial,verbose,lonlymakespace)
+   #  continue
     # --- Try writing as normal variable.
-    # --- The docontinue temporary is needed since python1.5.2 doesn't
-    # --- seem to like continue statements inside of try statements.
-    docontinue = 0
     try:
       if verbose: print "writing python variable "+vname+" as "+vname+varsuffix
       ff.write(vname+varsuffix,vval)
-      docontinue = 1
+      continue
     except:
       pass
-    if docontinue: continue
     # --- If that didn't work, try writing as a pickled object
     # --- This is only needed for the old pdb wrapper. The new one
     # --- automatically pickles things as needed.
