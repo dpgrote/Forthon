@@ -36,7 +36,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.29 2006/10/27 20:40:14 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.30 2006/12/04 19:06:25 dave Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling
@@ -250,36 +250,36 @@ All objects can be passed in directly.
   # --- probably a better way of doing this.
   for i in range(1):
     if type(f) == StringType:
-        # --- Check if it is a WARP variable
-        try:
-          d = listvar(f)
-          break
-        except NameError:
-          pass
-        # --- Check if it is a module name
-        try:
-          m = __import__(f)
-          d = m.__doc__
-          if d is None:
-            try:
-              d = m.__dict__[f+'doc']()
-            except KeyError:
-              pass
-          if d is None: d = ''
-          fname = determineoriginatingfile(m)
-          break
-        except ImportError:
-          pass
-        # --- Try to get the actual value of the object
-        try:
-          v = __main__.__dict__[f]
-          fname = determineoriginatingfile(v)
-          d = v.__doc__
-          break
-        except KeyError:
-          d = "Name not found"
-        except AttributeError:
-          d = "No documentation found"
+      # --- Check if it is a WARP variable
+      try:
+        d = listvar(f)
+        break
+      except NameError:
+        pass
+      # --- Check if it is a module name
+      try:
+        m = __import__(f)
+        d = m.__doc__
+        if d is None:
+          try:
+            d = m.__dict__[f+'doc']()
+          except KeyError:
+            pass
+        if d is None: d = ''
+        fname = determineoriginatingfile(m)
+        break
+      except ImportError:
+        pass
+      # --- Try to get the actual value of the object
+      try:
+        v = __main__.__dict__[f]
+        fname = determineoriginatingfile(v)
+        d = v.__doc__
+        break
+      except KeyError:
+        d = "Name not found"
+      except AttributeError:
+        d = "No documentation found"
     else:
       fname = determineoriginatingfile(f)
       # --- Check if it has a doc string
@@ -287,7 +287,7 @@ All objects can be passed in directly.
         d = f.__doc__
       except AttributeError:
         d = None
-      if d is None: d = "No documentation found"
+  if d is None: d = "No documentation found"
   if fname is not None: result = 'From file ' + fname + '\n'
   else:                 result = ''
   result += d
