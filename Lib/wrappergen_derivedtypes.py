@@ -114,6 +114,8 @@ class ForthonDerivedType:
       # --- Print out the external commands
       self.cw('extern void '+fname(self.fsub(t,'passpointers'))+'(char *fobj,'+
                                                        'long *setinitvalues);')
+      self.cw('extern void '+fname(self.fsub(t,'nullifypointers'))+
+                                                       '(char *fobj);')
       self.cw('extern PyObject *'+fname(self.fsub(t,'newf'))+'(void);')
       self.cw('extern void '+fname(self.fsub(t,'deallocatef'))+'(void);')
       self.cw('extern void '+fname(self.fsub(t,'nullifycobjf'))+'(void);')
@@ -328,6 +330,7 @@ class ForthonDerivedType:
       self.cw('  Forthon_BuildDicts(obj);')
       self.cw('  ForthonPackage_allotdims(obj);')
       self.cw('  '+fname(self.fsub(t,'passpointers'))+'(fobj,setinitvalues);')
+      self.cw('  '+fname(self.fsub(t,'nullifypointers'))+'(fobj);')
       self.cw('  ForthonPackage_staticarrays(obj);')
       if garbagecollected:
         self.cw('  PyObject_GC_Track((PyObject *)obj);')
@@ -743,6 +746,29 @@ class ForthonDerivedType:
       # --- Finish the routine
       self.fw('  RETURN')
       self.fw('END')
+
+      #########################################################################
+      # --- Nullifies the pointers of all dynamic variables. This is needed
+      # --- since in some compilers, the associated routine returns
+      # --- erroneous information if the status of a pointer is undefined.
+      # --- Pointers must be explicitly nullified in order to get
+      # --- associated to return a false value.
+      self.fw('! '+self.fsub(t,'nullifypointers',dohash=0))
+      self.fw('SUBROUTINE '+self.fsub(t,'nullifypointers')+'(obj__)')
+
+      # --- Write out the Use statements
+      self.fw('  USE '+t.name+'module')
+      self.fw('  TYPE('+t.name+'):: obj__')
+
+      for i in range(len(slist)):
+        s = slist[i]
+        if s.dynamic: self.fw('  NULLIFY(obj__%'+s.name+')')
+      for i in range(len(alist)):
+        a = alist[i]
+        if a.dynamic: self.fw('  NULLIFY(obj__%'+a.name+')')
+
+      self.fw('  return')
+      self.fw('end')
 
       #########################################################################
       # --- Write routine for each dynamic variable which gets the pointer
