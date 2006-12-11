@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.53 2006/10/06 23:47:28 dave Exp $ */
+/* $Id: Forthon.h,v 1.54 2006/12/11 23:44:05 dave Exp $ */
 
 #include <Python.h>
 #include <Numeric/arrayobject.h>
@@ -254,6 +254,13 @@ static void ForthonPackage_updatearray(ForthonObject *self,long i)
   Fortranarray *farray = &(self->farrays[i]);
   /* If the getpointer routine exists, call it to assign a value to data.s */
   if (farray->getpointer != NULL) {
+    /* Force the pointer to be null, since if the array is not associated, */
+    /* the getpointer routine just returns and does nothing. This ensures  */
+    /* that when the fortan array has been nullified, that garbage data    */
+    /* will not be returned when the array is access from python.          */
+    /* If the array is associated, then farray->data.s will be set         */
+    /* appropriately by getpointer.                                        */
+    farray->data.s = NULL;
     (farray->getpointer)(farray,self->fobj);
     /* If the data.s is NULL, then the fortran array is not associated. */
     /* Decrement the python object counter if there is one. */
