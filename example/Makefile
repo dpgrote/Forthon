@@ -1,6 +1,6 @@
 
-example: example.F example.v example_extra.F 
-	Forthon -g example example_extra.F
+example: example.F example.v example_extra.f
+	Forthon -g example example_extra.f
 	python example.py
 
 clean:
