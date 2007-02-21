@@ -253,18 +253,26 @@ for d in dependencies:
 # --- to be used in the makefile and for setup. For each C file, add to a
 # --- list to be included in setup. For each object file, add to the list
 # --- of extra objects passed to setup.
+# --- Also, for fortran files, keep a list of suffices so that the appropriate
+# --- build rules can be added to the makefile.
 extraobjectsstr = ''
 extraobjectslist = []
 extracfiles = []
+fortransuffices = [fixed_suffix,free_suffix]
 if machine == 'win32':
   osuffix = '.obj'
 else:
   osuffix = '.o'
 for f in extrafiles:
   root,suffix = os.path.splitext(f)
-  if suffix[1:] in ['F','F90','f',fixed_suffix,free_suffix,'o']:
+  if suffix[1:] in ['o','obj']:
     extraobjectsstr = extraobjectsstr + ' ' + root + osuffix
     extraobjectslist = extraobjectslist + [root + osuffix]
+  elif suffix[1:] in ['F','F90','f','f90',fixed_suffix,free_suffix]:
+    extraobjectsstr = extraobjectsstr + ' ' + root + osuffix
+    extraobjectslist = extraobjectslist + [root + osuffix]
+    if suffix[1:] not in fortransuffices:
+      fortransuffices.append(suffix[1:])
   elif suffix[1:] in ['c']:
     extracfiles.append(f)
 
@@ -311,6 +319,21 @@ forthonargs = string.join(forthonargs,' ')
 for i in includedirs:
   fargs = fargs + '-I'+i+' '
 
+# --- Add build rules for fortran files with suffices other than the
+# --- basic fixed and free ones. Those first two suffices are included
+# --- explicitly in the makefile. Note that this depends on fargs.
+extrafortranrules = ''
+if len(fortransuffices) > 2:
+  for suffix in fortransuffices[2:]:
+    suffixpath = os.path.join(upbuilddir,'%%.%(suffix)s'%locals())
+    if suffix[-2:] == '90': ff = f90free
+    else:                   ff = f90fixed
+    extrafortranrules += """
+%%%(osuffix)s: %(suffixpath)s %(modulecontainer)s%(osuffix)s
+	%(ff)s %(fopt)s %(fargs)s -c $<
+"""%locals()
+    del suffix,suffixpath,ff
+
 # --- First, create Makefile.pkg which has all the needed definitions
 makefiletext = """
 %(definesstr)s
@@ -324,6 +347,7 @@ PYPREPROC = %(python)s -c "from Forthon.preprocess import main;main()" %(f90)s -
 	%(f90fixed)s %(fopt)s %(fargs)s -c $<
 %%%(osuffix)s: %(freepath)s %(modulecontainer)s%(osuffix)s
 	%(f90free)s %(fopt)s %(fargs)s -c $<
+%(extrafortranrules)s
 Forthon.h:%(forthonhome)s%(pathsep)sForthon.h
 	$(PYPREPROC) %(forthonhome)s%(pathsep)sForthon.h Forthon.h
 Forthon.c:%(forthonhome)s%(pathsep)sForthon.c
