@@ -9,7 +9,7 @@ disablelinetracing: disables line level tracing
 import sys,time
 import linecache
 
-ForthonTimer_version = "$Id: ForthonTimer.py,v 1.6 2006/02/02 00:12:31 dave Exp $"
+ForthonTimer_version = "$Id: ForthonTimer.py,v 1.7 2007/02/21 01:51:23 dave Exp $"
 
 def ForthonTimerdoc():
   import ForthonTimer
@@ -135,6 +135,11 @@ routine called and starts and stops the timers.
       self.timer = self.timer.stoptimer()
     if self.trace:
       if self.tracelevel is None or self.tracelevel > self.level:
+        # --- The flush is added so that anything that was printed to stdout
+        # --- or stderr get outputed now so that the print outs occur
+        # --- at the proper time relative to the trace.
+        sys.stdout.flush()
+        sys.stderr.flush()
         print "%s %s %s"%(self.level*'  ',event,name)
     if event == 'call':
       self.level = self.level + 1
