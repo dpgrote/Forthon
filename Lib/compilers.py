@@ -60,6 +60,7 @@ appropriate block for the machine.
       elif self.machine == 'darwin':
         if self.macosx_xlf() is not None: break
         if self.macosx_g95() is not None: break
+        if self.macosx_gfortran() is not None: break
         if self.macosx_absoft() is not None: break
         if self.macosx_nag() is not None: break
         if self.macosx_gnu() is not None: break
@@ -302,24 +303,46 @@ appropriate block for the machine.
     if (self.findfile('g95') and
         (self.fcompname=='g95' or self.fcompname is None)):
       self.fcompname = 'g95'
-      print "WARNING: This compiler might cause a bus error."
+#      print "WARNING: This compiler might cause a bus error."
       # --- g95
-      self.f90free  = 'g95 -r8 -ffree-form -Wno=155'
-      self.f90fixed = 'g95 -r8 -ffixed-line-length-132'
+      self.f90free  = 'g95 -r8 -fzero -ffree-form -Wno=155'
+      self.f90fixed = 'g95 -r8 -fzero -ffixed-line-length-132'
       if self.implicitnone:
         self.f90free  += ' -fimplicit-none'
         self.f90fixed += ' -fimplicit-none'
       self.forthonargs = ['--2underscores']
       flibroot,b = os.path.split(self.findfile('g95'))
-      self.fopt = '-O3 -mtune=G5 -mcpu=G5'
       self.fopt = '-O3 -funroll-loops -fstrict-aliasing -fsched-interblock  \
            -falign-loops=16 -falign-jumps=16 -falign-functions=16 \
-           -falign-jumps-max-skip=15 -falign-loops-max-skip=15 -malign-natural \
+           -malign-natural -ftree-vectorize -ftree-vectorizer-verbose=5 \
            -ffast-math -mpowerpc-gpopt -force_cpusubtype_ALL \
            -fstrict-aliasing -mtune=G5 -mcpu=G5 -mpowerpc64'
-      self.extra_link_args = ['-flat_namespace','-Wl,-undefined,suppress','/home/jlvay/warp/packages/cmee-1.0-g95/posinst-0.97b/src/.libs/libsecelec.a','-lg2c']
+#      self.fopt = '-O3  -mtune=G5 -mcpu=G5 -mpowerpc64'
+      self.extra_link_args = ['-flat_namespace']
       self.libdirs = [flibroot+'/lib']
       self.libs = ['f95']
+      return 1
+
+  def macosx_gfortran(self):
+    if (self.findfile('gfortran') and
+        (self.fcompname=='gfortran' or self.fcompname is None)):
+      self.fcompname = 'gfortran'
+#      print "WARNING: This compiler might cause a bus error."
+      # --- gfortran
+      self.f90free  = 'gfortran -fdefault-real-8 -fdefault-double-8'
+      self.f90fixed = 'gfortran -fdefault-real-8 -fdefault-double-8 -ffixed-line-length-132'
+      self.forthonargs = ['--2underscores']
+      flibroot,b = os.path.split(self.findfile('gfortran'))
+      self.fopt = '-O3 -funroll-loops -fstrict-aliasing -fsched-interblock  \
+           -falign-loops=16 -falign-jumps=16 -falign-functions=16 \
+           -malign-natural \
+           -ffast-math -mpowerpc-gpopt -force_cpusubtype_ALL \
+           -fstrict-aliasing -mtune=G5 -mcpu=G5 -mpowerpc64'
+#      self.fopt = '-O3  -mtune=G5 -mcpu=G5 -mpowerpc64'
+      self.fopt = '-O3'
+      self.extra_link_args = ['-flat_namespace','-lg2c']
+      self.libdirs = [flibroot+'/lib','/usr/local/gfortran/lib']
+      self.libs = ['gfortran']
       return 1
 
   def macosx_xlf(self):
@@ -336,7 +359,7 @@ appropriate block for the machine.
 #      self.fopt = '-O1'
       #self.f90free  = 'xlf95 -qsuffix=f=F90'
       #self.f90fixed = 'xlf95 -qsuffix=f=F90'
-      self.extra_link_args = ['-flat_namespace','-Wl,-undefined,suppress']#,'-Wl,-stack_size,10000000']
+      self.extra_link_args = ['-flat_namespace']#,'-Wl,-undefined,suppress']#,'-Wl,-stack_size,10000000']
       flibroot,b = os.path.split(self.findfile('xlf95'))
       self.libdirs = [flibroot+'/lib']
       self.libs = ['xlf90','xl','xlfmath']
