@@ -311,7 +311,11 @@ appropriate block for the machine.
         self.f90free  += ' -fimplicit-none'
         self.f90fixed += ' -fimplicit-none'
       self.forthonargs = ['--2underscores']
-      flibroot,b = os.path.split(self.findfile('g95'))
+      compilerpath = self.findfile('g95')
+      # bullet-proof against an extra final slash:
+      if compilerpath[-1] == "/":
+        compilerpath=compilerpath[0:-1]
+      flibroot,b = os.path.split(compilerpath)
       self.fopt = '-O3 -funroll-loops -fstrict-aliasing -fsched-interblock  \
            -falign-loops=16 -falign-jumps=16 -falign-functions=16 \
            -malign-natural -ftree-vectorize -ftree-vectorizer-verbose=5 \
@@ -392,9 +396,8 @@ appropriate block for the machine.
       self.f90free  = 'f95 -132 -fpp -Wp,-macro=no_com -free -PIC -u -w -mismatch_all -kind=byte -r8 -Oassumed=contig'
       self.f90fixed = 'f95 -132 -fpp -Wp,-macro=no_com -Wp,-fixed -fixed -PIC -u -w -mismatch_all -kind=byte -r8 -Oassumed=contig'
       flibroot,b = os.path.split(self.findfile('f95'))
-      self.libdirs = ['/usr/local/lib/NAGWare']
-      self.extra_link_args = ['-flat_namespace','-Wl,-undefined,suppress','-framework vecLib','/usr/local/lib/NAGWare/quickfit.o','/usr/local/lib/NAGWare/libf97.dylib']
-      self.libs = ['f96','m']
+      self.extra_link_args = ['-flat_namespace','-framework vecLib','/usr/local/lib/NAGWare/quickfit.o','/usr/local/lib/NAGWare/libf96.a']
+      self.libs = ['m']
       self.fopt = '-Wc,-O3 -Wc,-funroll-loops -O3 -Ounroll=2'
       self.fopt = '-O4 -Wc,-fast'
       self.fopt = '-O3 '#-Wc,-fast'
