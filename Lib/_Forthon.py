@@ -36,7 +36,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.31 2006/12/08 17:40:31 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.32 2007/02/28 00:32:35 dave Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling
@@ -79,9 +79,15 @@ def registerpackage(pkg,name):
   """Registers a package so it can be accessed using various global routines."""
 
   # --- For each package, which has its own type, the pickling functions
-  # --- must be registered for that type.
-  import copy_reg
-  copy_reg.pickle(type(pkg),pickle_forthonobject,forthonobject_constructor)
+  # --- must be registered for that type. Note that this is not needed
+  # --- for packages that are class instances.
+  try:
+    pkg.__class__
+    assert isinstance(pkg,PackageBase),\
+           "Only instances of classes inheritting from PackageBase can be registered as a package"
+  except AttributeError:
+    import copy_reg
+    copy_reg.pickle(type(pkg),pickle_forthonobject,forthonobject_constructor)
 
   _pkg_dict[name] = pkg
   _pkg_list.append(name)
@@ -181,6 +187,22 @@ def IsForthonType(v):
   if re.search("Forthon",t): return 1
   else: return 0
 
+# --- Create a base class that can be used as a package object.
+# --- This includes all of the necessary methods, any of which
+# --- can be overwritten in the inheritting class.
+class PackageBase(object):
+  def generate(self): raise NotImplementedError
+  def step(self): raise NotImplementedError
+  def finish(self): raise NotImplementedError
+  def gallot(self,group='*',iverbose=0): return 0
+  def gchange(self,group='*',iverbose=0): return 0
+  def gfree(self,group='*'): return 0
+  def gsetdims(self,group='*'): return 0
+  def forceassign(self,name,v): pass
+  def listvar(self,name): return name
+  def deprefix(self): pass
+  def reprefix(self): pass
+  def totmembytes(self): return getobjectsize(self)
 
 # --- Some platforms have a different value of .true. in fortran.
 if sys.platform in ['sn960510']:
@@ -648,6 +670,7 @@ Dump data into a pdb file
       # --- and included in the package list without being imported into main.
       # --- Do the import here.
       pkg = __import__(pname,globals(),locals())
+    if isinstance(pkg,PackageBase): continue
     if varsuffix is None: pkgsuffix = '@' + pname
     pydumpforthonobject(ff,attr,pname,pkg,pkgsuffix,writtenvars,fobjlist,
                         serial,verbose,lonlymakespace)
@@ -1003,6 +1026,7 @@ listvar(): prints information about a variable
 deprefix(): creates a python variable for each package variable
 reprefix(): copies python variables into packages variables of the same name
 totmembytes(): returns total memory allocated for dynamic arrays
+PackageBase: Base class for classes that can be registered as a package
 arraytostr(): converts an array of chars to a string
 int(): converts data to integer
 nint(): converts data to nearest integer
