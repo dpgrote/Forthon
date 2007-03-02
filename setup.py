@@ -44,7 +44,7 @@ else:
   Forthon = 'Forthon'
 
 setup (name = "Forthon",
-       version = '0.7.5',
+       version = '0.7.6',
        author = 'David P. Grote',
        author_email = "DPGrote@lbl.gov",
        url = "http://hifweb.lbl.gov/Forthon",
