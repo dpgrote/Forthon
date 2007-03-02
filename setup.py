@@ -44,11 +44,21 @@ else:
   Forthon = 'Forthon'
 
 setup (name = "Forthon",
-       version = '2.0',
+       version = '0.7.5',
        author = 'David P. Grote',
        author_email = "DPGrote@lbl.gov",
-       description = "Fortran wrapper/code development package",
-       platforms = "Unix, Windows (cygwin), Mac OSX",
+       url = "http://hifweb.lbl.gov/Forthon",
+       download_url = "http://hifweb.lbl.gov/Forthon/Forthon.tgz",
+       description = "Fortran95 wrapper/code development package",
+       long_description = """
+Forthon provides an extensive wrapping of Fortran95 code, giving access to
+routines and to any data in Fortran modules. Forthon also
+provides an extensive wrapping of Fortran derived types, giving access to
+derived type members, allowing passing of derived types into Fortran routines,
+and creation of instances at the Python level. A mechanism for automatic
+building of extension modules is also included. Versions using Numeric and
+Numpy are available.""",
+       platforms = "Linux, Unix, Windows (cygwin), Mac OSX",
        extra_path = 'Forthon',
        packages = [''],
        package_dir = {'': 'Lib'},
