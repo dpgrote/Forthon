@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.42 2006/07/28 23:28:03 dave Exp $
+# $Id: wrappergenerator.py,v 1.43 2007/03/08 17:30:59 dave Exp $
 
 import sys
 import os.path
@@ -128,9 +128,8 @@ Usage:
 
     # --- Get the list of variables and subroutine from the var file
     vlist,hidden_vlist,typelist = processfile(self.pname,self.ifile,
-                                              self.otherinterfacefiles,self.timeroutines)
-    if not vlist and not hidden_vlist and not typelist:
-      return
+                                              self.otherinterfacefiles,
+                                              self.timeroutines)
 
     # --- Get a list of all of the group names which have variables in it
     # --- (only used when writing fortran files but done here while complete
