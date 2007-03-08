@@ -1,7 +1,7 @@
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 19, 1998
 # Parse the interface description file
-# $Id: interfaceparser.py,v 1.14 2007/03/01 01:18:27 dave Exp $
+# $Id: interfaceparser.py,v 1.15 2007/03/08 17:30:08 dave Exp $
 
 # This reads in the entire variable description file and extracts all of
 # the variable and subroutine information needed to create an interface
@@ -49,7 +49,7 @@ def processfile(packname,filename,othermacros=[],timeroutines=0):
   text = re.sub('\\\\','',text)
 
   # Get rid of any initial comments and blank lines
-  while text[0] ==  '#':
+  while len(text) > 0 and text[0] ==  '#':
     text = string.strip(text[re.search('\n',text).start()+1:])
 
   # Get macros (everthing between curly braces) from other files and
@@ -64,7 +64,7 @@ def processfile(packname,filename,othermacros=[],timeroutines=0):
 
   # Deal with statements in between initial curly braces
   # (Only macro statements are used, everything else is ignored.)
-  if text[0] == '{':
+  if len(text) > 0 and text[0] == '{':
     while text[0] != '}':
       if 'a' <= text[0] and text[0] <= 'z' or 'A' <= text[0] and text[0] <= 'Z':
         macro = string.strip(text[0:re.search('=',text).start()])
@@ -80,7 +80,7 @@ def processfile(packname,filename,othermacros=[],timeroutines=0):
     text = string.strip(text[re.search('\n',text).start()+1:])
 
   # Get rid of any comments and blank lines
-  while text[0] ==  '#':
+  while len(text) > 0 and text[0] ==  '#':
     text = string.strip(text[re.search('\n',text).start()+1:])
 
   # Parse rest of file, gathering variables
