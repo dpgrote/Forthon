@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.43 2007/03/08 17:30:59 dave Exp $
+# $Id: wrappergenerator.py,v 1.44 2007/03/20 00:21:01 dave Exp $
 
 import sys
 import os.path
@@ -35,7 +35,7 @@ Usage:
   """
 
   def __init__(self,ifile,pname,f90=1,initialgallot=1,writemodules=1,
-               otherinterfacefiles=[],other_scalar_dicts=[],timeroutines=0,
+               otherinterfacefiles=[],other_scalar_vars=[],timeroutines=0,
                otherfortranfiles=[],fcompname=None):
     self.ifile = ifile
     self.pname = pname
@@ -44,7 +44,7 @@ Usage:
     self.writemodules = writemodules
     self.timeroutines = timeroutines
     self.otherinterfacefiles = otherinterfacefiles
-    self.other_scalar_dicts = other_scalar_dicts
+    self.other_scalar_vars = other_scalar_vars
     self.otherfortranfiles = otherfortranfiles
     self.fcompname = fcompname
     self.isz = isz # isz defined in cfinterface
@@ -80,7 +80,8 @@ Usage:
                    '*(long *)'+self.pname+'_fscalars['+repr(sdict[ss])+'].data',
                    dim,count=1)
         else:
-          for other_dict in self.other_scalar_dicts:
+          for other_vars in self.other_scalar_vars:
+            other_dict = other_vars[0]
             if other_dict.has_key (ss):
               dim = re.sub(ss,'*(long *)'+other_dict['_module_name_']+
                         '_fscalars['+repr(other_dict[ss])+'].data',dim,count=1)
@@ -106,10 +107,17 @@ Usage:
     sl=re.split('[ (),:/\*\+\-]',dim)
     for ss in sl:
       if re.search('[a-zA-Z]',ss) != None:
-        if sdict.has_key (ss):
+        if sdict.has_key(ss):
           groups.append(slist[sdict[ss]].group)
         else:
-          raise ss + ' is not declared in the interface file'
+          for other_vars in self.other_scalar_vars:
+            other_dict = other_vars[0]
+            other_list = other_vars[1]
+            if other_dict.has_key(ss):
+              groups.append(other_list[other_dict[ss]].group)
+              break
+          else:
+            raise ss + ' is not declared in the interface file'
     return groups
 
   def cw(self,text,noreturn=0):
@@ -236,9 +244,10 @@ Usage:
     # --- Write declarations of c pointers to fortran variables
 
     # --- Declare scalars from other modules
-    for other_dict in self.other_scalar_dicts:
-        self.cw('extern Fortranscalar '+other_dict['_module_name_']+
-                '_fscalars[];')
+    for other_vars in self.other_scalar_vars:
+      other_dict = other_vars[0]
+      self.cw('extern Fortranscalar '+other_dict['_module_name_']+
+              '_fscalars[];')
 
     # --- Scalars
     self.cw('int '+self.pname+'nscalars = '+repr(len(slist))+';')
@@ -1044,6 +1053,7 @@ Usage:
     scalar_pickle_file = open(self.pname + '.scalars','w')
     sdict ['_module_name_'] = self.pname
     pickle.dump (sdict, scalar_pickle_file)
+    pickle.dump (slist, scalar_pickle_file)
     scalar_pickle_file.close()
 
 ###############################################################################
@@ -1052,11 +1062,14 @@ Usage:
 ###############################################################################
 
 module_prefix_pat = re.compile ('([a-zA-Z_]+)\.scalars')
-def get_another_scalar_dict(file_name):
-  m = module_prefix_pat.search (file_name)
-  if m.start() == -1: raise 'expection a .scalars file'
-  f = open (file_name, 'r')
-  other_scalar_dicts.append (pickle.load(f))
+def get_another_scalar_dict(file_name,other_scalar_vars):
+  m = module_prefix_pat.search(file_name)
+  if m.start() == -1: raise 'expect a .scalars file'
+  f = open(file_name,'r')
+  vars = []
+  vars.append(pickle.load(f))
+  vars.append(pickle.load(f))
+  other_scalar_vars.append(vars)
   f.close()
 
 def wrappergenerator_main(argv=None):
@@ -1085,20 +1098,20 @@ def wrappergenerator_main(argv=None):
   otherinterfacefiles = []
 
   # --- a list of scalar dictionaries from other modules.
-  other_scalar_dicts = []
+  other_scalar_vars = []
 
   for o in optlist:
     if o[0]=='-a': initialgallot = 1
     elif o[0]=='-t': machine = o[1]
     elif o[0]=='-F': fcompname = o[1]
     elif o[0]=='--f90': f90 = 1
-    elif o[0]=='-d': get_another_scalar_dict (o[1])
+    elif o[0]=='-d': get_another_scalar_dict (o[1],other_scalar_vars)
     elif o[0]=='--nowritemodules': writemodules = 0
     elif o[0]=='--timeroutines': timeroutines = 1
     elif o[0]=='--macros': otherinterfacefiles.append(o[1])
 
   cc = PyWrap(ifile,pname,f90,initialgallot,writemodules,
-              otherinterfacefiles,other_scalar_dicts,timeroutines,
+              otherinterfacefiles,other_scalar_vars,timeroutines,
               otherfortranfiles,fcompname)
 
 # --- This might make some of the write statements cleaner.
