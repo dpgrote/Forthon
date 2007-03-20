@@ -358,7 +358,7 @@ Forthon.c:%(forthonhome)s%(pathsep)sForthon.c
 %(pkg)spymodule.c %(pkg)s_p.%(free_suffix)s:%(interfacefile)s
 	%(python)s -c "from Forthon.wrappergenerator import wrappergenerator_main;wrappergenerator_main()" \\
 	%(f90)s -t %(machine)s %(forthonargs)s %(initialgallot)s \\
-        %(othermacstr)s %(pkg)s %(interfacefile)s %(dep)s
+        %(othermacstr)s %(dep)s %(pkg)s %(interfacefile)s
 clean:
 	rm -rf *%(osuffix)s *_p.%(free_suffix)s *.mod *module.c *.scalars *.so Forthon.c Forthon.h forthonf2c.h build
 """%(locals())
