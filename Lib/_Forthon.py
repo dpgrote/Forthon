@@ -36,7 +36,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.32 2007/02/28 00:32:35 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.33 2007/03/21 23:58:15 dave Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling
@@ -674,6 +674,9 @@ Dump data into a pdb file
     if varsuffix is None: pkgsuffix = '@' + pname
     pydumpforthonobject(ff,attr,pname,pkg,pkgsuffix,writtenvars,fobjlist,
                         serial,verbose,lonlymakespace)
+    # --- Make sure that pname does not appear in vars
+    try: vars.remove(pname)
+    except ValueError: pass
 
   # --- Now, write out the python variables (that can be written out).
   # --- If supplied, the varsuffix is append to the names here too.
