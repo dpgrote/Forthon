@@ -36,24 +36,31 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.33 2007/03/21 23:58:15 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.34 2007/03/29 21:33:53 dave Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling
 def forthonobject_constructor(typename,dict):
   import __main__
   typecreator = __main__.__dict__[typename]
-  obj = typecreator()
-  obj.setdict(dict)
- #for k,v in dict.items():
- #  if type(v) != ArrayType:
- #    setattr(obj,k,v)
- #for k,v in dict.items():
- #  if type(v) == ArrayType:
- #    setattr(obj,k,v)
-  return obj
+  if callable(typecreator):
+    obj = typecreator()
+    obj.setdict(dict)
+    return obj
+  else:
+    # --- When typecreator is not callable, this means that it is a top
+    # --- level package. In this case, just return it since is should
+    # --- be restored elsewhere.
+    return typecreator
 def pickle_forthonobject(o):
-  return (forthonobject_constructor, (o.gettypename(),o.getdict()))
+  if o.getfobject() == 0:
+    # --- For top level Forthon objects (which are package objects
+    # --- as opposed to derived type objects) only save the typename.
+    # --- This assumes that the package will be written out directly
+    # --- elsewhere.
+    return (forthonobject_constructor, (o.gettypename(),{}))
+  else:
+    return (forthonobject_constructor, (o.gettypename(),o.getdict()))
 
 
 # --- The following routines deal with multiple packages. The ones setting
