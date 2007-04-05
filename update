@@ -1,0 +1,9 @@
+#!/bin/env tcsh
+cvs update
+(cd .. ; tar --exclude update --exclude build --exclude \*.so --exclude CVS -czf Forthon.tgz Forthon)
+set ttt=`python -c "import time;t = time.localtime(time.time());print '%s%02d%02d'%(t[0],int(t[1]),int(t[2]))"`
+scp ../Forthon.tgz dave@hifweb:/web/html/Forthon/Forthon$ttt.tgz
+ssh hifweb "ln -sf /web/html/Forthon/Forthon$ttt.tgz /web/html/Forthon/Forthon.tgz"
+ssh hifweb "chmod -R go+rX /web/html/Forthon"
+rm -f ../Forthon.tgz
+
