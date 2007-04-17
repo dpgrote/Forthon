@@ -36,7 +36,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.34 2007/03/29 21:33:53 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.35 2007/04/17 22:59:36 dave Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling
@@ -700,12 +700,30 @@ Dump data into a pdb file
     # --- typed in interactively is not retrieveable - inspect.getsource
     # --- returns an IOError.
     if type(vval) in [FunctionType]:
+      source = None
       try:
-        source = inspect.getsource(vval)
-        #if verbose:
+        # --- Check if the source had been saved as an attribute of itself.
+        # --- This allows functions to be saved that would otherwise
+        # --- not be because inspect.getsource can't find them.
+        source = vval.__source__
+      except AttributeError:
+        pass
+      if source is None:
+        try:
+          source = inspect.getsource(vval)
+        except (IOError,NameError):
+          pass
+      if source is not None:
         if verbose: print "writing python function "+vname+" as "+vname+varsuffix+'@function'
+        # --- Clean up any indentation in case the function was defined in
+        # --- an indented block of code
+        while source[0] == ' ': source = source[1:]
+        # --- Now write it out
         ff.write(vname+varsuffix+'@function',source)
-      except (IOError,NameError):
+        # --- Save the source of a function as an attribute of itself to make
+        # --- retreival easier the next time.
+        setattr(vval,'__source__',source)
+      else:
         if verbose: print "could not write python function "+vname
       continue
     # --- Zero length arrays cannot by written out.
@@ -870,6 +888,11 @@ Note that it will automatically detect whether the file is PDB or HDF.
           if verbose: print "reading in python function"+vname
           source = ff.__getattr__(vname+'@function')
           exec(source,__main__.__dict__)
+          # --- Save the source of the function as an attribute of itself
+          # --- so that it can be latter saved in a dump file again.
+          # --- This is needed since for any functions defined here,
+          # --- inspect.getsource cannot get the source.
+          setattr(__main__.__dict__[vname],'__source__',source)
         except:
           if verbose: print "error with function "+vname
 
