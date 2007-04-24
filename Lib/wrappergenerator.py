@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.44 2007/03/20 00:21:01 dave Exp $
+# $Id: wrappergenerator.py,v 1.45 2007/04/24 21:13:55 dave Exp $
 
 import sys
 import os.path
@@ -189,9 +189,11 @@ Usage:
     # --- Create the module file
     self.cfile = open(self.pname+'pymodule.c','w')
     self.cw('#include "Forthon.h"')
+    self.cw('#include <setjmp.h>')
     self.cw('ForthonObject *'+self.pname+'Object;')
 
     # --- Print out the external commands
+    self.cw('extern jmp_buf stackenvironment;')
     self.cw('extern void '+fname(self.fsub('passpointers'))+'(void);')
     self.cw('extern void '+fname(self.fsub('nullifypointers'))+'(void);')
     if not self.f90:
@@ -369,7 +371,8 @@ Usage:
         self.cw('  PyObject * pyobj['+lv+'];')
         self.cw('  PyArrayObject * ax['+lv+'];')
         self.cw('  int i,argno=0;')
-        self.cw('  char e[80];')
+
+      self.cw('  char e[256];')
 
       if self.timeroutines:
         # --- Setup for the timer, getting time routine started.
@@ -492,6 +495,10 @@ Usage:
               self.cw('    goto err;}')
         self.cw('  }')
 
+      # --- Make a call to setjmp to save the state in case an error happens.
+      # --- If there was an error, setjmp returns 1, so exit out.
+      self.cw('  if (setjmp(stackenvironment)) goto err;')
+
       # --- Write the actual call to the fortran routine.
       if f.type == 'void':
         self.cw('  ')
@@ -543,15 +550,21 @@ Usage:
         self.cw('  ret_val = Py_BuildValue ("'+fvars.fto1[f.type]+'", r);')
         self.cw('  return ret_val;')
 
-      # --- Error section, only needed if there were arguments.
-      if len(f.args) > 0:
-        self.cw('err:') 
+      # --- Error section, in case there was an error above or in the
+      # --- fortran call
+      self.cw('err:') 
 
+      # --- Before setting the erro string, check if an error was raised
+      # --- somewhere else.
+      self.cw('  if (!PyErr_Occurred())')
+      self.cw('    PyErr_SetString(ErrorObject,e);')
+
+      if len(f.args) > 0:
         # --- Decrement reference counts of array objects created.
-        self.cw('  PyErr_SetString(ErrorObject,e);')
         self.cw('  for (i=0;i<'+repr(len(f.args))+';i++)')
         self.cw('    if (ax[i] != NULL) {Py_XDECREF(ax[i]);}')
-        self.cw('  return NULL;')
+
+      self.cw('  return NULL;')
 
       self.cw('}')
 

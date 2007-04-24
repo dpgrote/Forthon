@@ -198,13 +198,6 @@ int
 }
 
 void
-%fname('kaboom')+'(long *e)'
-{
-printf("KABOOM! Something bad happened\n");
-exit(1);
-}
-
-void
 %fname('glbheadi')+'(long dum1,long dum2,long runtime,long rundate,long dum3,long dum4)'
 {}
 
@@ -301,3 +294,33 @@ void
 {
 /* place holder for now - this should probably be written */
 }
+
+/* ----------------------------------------------------------------------- */
+/* ----------------------------------------------------------------------- */
+/* This routine is for error handling. setjmp is called from               */
+/* the wrappers of the fortran routines, just before the fortran routines  */
+/* are called. kaboom is called by the fortran routines if there is an     */
+/* error. It raises a python exception and calls longjmp so that it        */
+/* returns to the point where setjmp was called. setjmp will then return   */
+/* an error value which the wrapper checks. It there was an exception,     */
+/* the the wrapper returns.                                                */
+/* Note that stackenvironment is used as a global and is what is passed */
+/* into the calls to setjmp. */
+
+#include <setjmp.h>
+jmp_buf stackenvironment;
+char *errormessage;
+
+void
+%fname('kaboom')+'(FSTRING message SL1)'
+{
+  errormessage = cstrfromfstr(FSTRPTR(message),FSTRLEN1(message));
+  PyErr_SetString(PyExc_RuntimeError,errormessage);
+  free(errormessage);
+  longjmp(stackenvironment,1);
+  /* exit(1); */
+}
+
+/* ----------------------------------------------------------------------- */
+/* ----------------------------------------------------------------------- */
+
