@@ -84,6 +84,9 @@ One or more of the following options can be specified.
  --builddir path
     Location where the temporary compilation files (such as object files)
     should be placed. This defaults to build/temp-osname.
+ --build-temp path
+    Location where the *pymodule.o files should be placed. This is relative
+    to the builddir. This defaults to the builddir.
  --noimplicitnone
     When specified, the implicitnone is not enforced
 """
@@ -110,7 +113,8 @@ optlist,args = getopt.getopt(sys.argv[1:],'agd:t:F:D:L:l:I:i:f:',
                           'fopt=','fargs=','static',
                           '2underscores',
                           'free_suffix=','fixed_suffix=',
-                          'compile_first=','builddir=','noimplicitnone'])
+                          'compile_first=','builddir=','noimplicitnone',
+                          'build-temp='])
 
 # --- Get the package name and any other extra files
 pkg = args[0]
@@ -141,6 +145,7 @@ fixed_suffix   = 'F'
 compile_first  = ''
 builddir       = None
 implicitnone   = 1
+build_temp     = ''
 
 for o in optlist:
   if o[0]=='-a': initialgallot = '-a'
@@ -168,6 +173,7 @@ for o in optlist:
   elif o[0] == '--compile_first': compile_first = o[1]
   elif o[0] == '--builddir': builddir = o[1]
   elif o[0] == '--noimplicitnone': implicitnone = 0
+  elif o[0] == '--build-temp': build_temp = o[1]
 
 if fortranfile is None: fortranfile = pkg + '.' + fixed_suffix
 
@@ -392,7 +398,7 @@ addbuilddir = lambda p:os.path.join(builddir,p)
 cfiles = map(addbuilddir,[pkg+'pymodule.c','Forthon.c'])
 ofiles = map(addbuilddir,[fortranroot+osuffix,pkg+'_p'+osuffix]+
              extraobjectslist)
-sys.argv = ['Forthon','build','--build-platlib','.']
+sys.argv = ['Forthon','build','--build-platlib','.','--build-temp',build_temp]
 
 # --- DOS requires an extra argument and include directory to build properly
 if machine == 'win32': sys.argv.append('--compiler=mingw32')
