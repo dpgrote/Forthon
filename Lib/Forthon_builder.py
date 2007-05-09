@@ -160,7 +160,7 @@ for o in optlist:
   elif o[0] == '-i': interfacefile = o[1]
   elif o[0] == '-f': fortranfile = o[1]
   elif o[0] == '--f90': f90 = '--f90'
-  elif o[0] == '--f77': f90 = ''
+  elif o[0] == '--f77': f90 = '--f77'
   elif o[0] == '--2underscores': twounderscores = 1
   elif o[0] == '--fopt': fopt = o[1]
   elif o[0] == '--fargs': fargs = fargs + ' ' + o[1]

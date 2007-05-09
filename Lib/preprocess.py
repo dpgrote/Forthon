@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Created by David P. Grote, March 6, 1998
-# $Id: preprocess.py,v 1.4 2006/03/01 00:37:53 dave Exp $
+# $Id: preprocess.py,v 1.5 2007/05/09 22:59:38 dave Exp $
 
 from cfinterface import *
 import sys
@@ -13,8 +13,8 @@ def py_ifelse(m,v,t,f=''):
     return f
 
 def main():
-  optlist,args=getopt.getopt(sys.argv[1:],"at:F:",
-                             ["f90","2underscores","nowritemodules"])
+  optlist,args=getopt.getopt(sys.argv[1:],'at:F:',
+                             ['f90',',f77','2underscores','nowritemodules'])
 
   file = open(args[0],'r')
   text = file.readlines()
@@ -26,5 +26,5 @@ def main():
     else:
       print line[:-1]
 
-if __name__ == "__main__":
+if __name__ == '__main__':
   main()

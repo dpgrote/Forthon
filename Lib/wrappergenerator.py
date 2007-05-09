@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.46 2007/05/09 22:49:02 dave Exp $
+# $Id: wrappergenerator.py,v 1.47 2007/05/09 22:59:38 dave Exp $
 
 import sys
 import os.path
@@ -1114,7 +1114,7 @@ def get_another_scalar_dict(file_name,other_scalar_vars):
 def wrappergenerator_main(argv=None,writef90modulesonly=0):
   if argv is None: argv = sys.argv[1:]
   optlist,args=getopt.getopt(argv,'at:d:F:',
-                     ['f90','2underscores','nowritemodules',
+                     ['f90','f77','2underscores','nowritemodules',
                       'timeroutines','macros='])
 
   # --- Get package name from argument list
@@ -1131,7 +1131,7 @@ def wrappergenerator_main(argv=None,writef90modulesonly=0):
   # --- get other command line options and default actions
   initialgallot = 0
   fcompname = None
-  f90 = 0
+  f90 = 1
   writemodules = 1
   timeroutines = 0
   otherinterfacefiles = []
@@ -1144,6 +1144,7 @@ def wrappergenerator_main(argv=None,writef90modulesonly=0):
     elif o[0]=='-t': machine = o[1]
     elif o[0]=='-F': fcompname = o[1]
     elif o[0]=='--f90': f90 = 1
+    elif o[0]=='--f77': f90 = 0
     elif o[0]=='-d': get_another_scalar_dict (o[1],other_scalar_vars)
     elif o[0]=='--nowritemodules': writemodules = 0
     elif o[0]=='--timeroutines': timeroutines = 1
