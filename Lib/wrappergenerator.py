@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.45 2007/04/24 21:13:55 dave Exp $
+# $Id: wrappergenerator.py,v 1.46 2007/05/09 22:49:02 dave Exp $
 
 import sys
 import os.path
@@ -49,7 +49,7 @@ Usage:
     self.fcompname = fcompname
     self.isz = isz # isz defined in cfinterface
 
-    self.createmodulefile()
+    self.processvariabledescriptionfile()
 
   def cname(self,n):
     # --- Standard name of the C interface to a Fortran routine
@@ -131,8 +131,24 @@ Usage:
     else:
       self.ffile.write(text+'\n')
 
-  def createmodulefile(self):
-    # --- This is the routine that does all of the work
+  def setffile(self):
+    """Set the ffile attribute, which is the fortran file object.
+It the attribute hasn't been created, then open the file with write status.
+If it has, and the file is closed, then open it with append status.
+    """
+    if 'ffile' in self.__dict__: status = 'a'
+    else:                        status = 'w'
+    if (status == 'w' or
+        (status == 'a' and self.ffile.closed)):
+      if self.f90:
+        self.ffile = open(self.pname+'_p.F90',status)
+      else:
+        self.ffile = open(self.pname+'_p.m',status)
+
+  def processvariabledescriptionfile(self):
+    """Read in and parse the variable description file and create the lists
+of scalars and arrays.
+    """
 
     # --- Get the list of variables and subroutine from the var file
     vlist,hidden_vlist,typelist = processfile(self.pname,self.ifile,
@@ -185,7 +201,18 @@ Usage:
     # --- The remaining elements should all be functions
     flist = vlist
 
-    ############################################################################
+    self.typelist = typelist
+    self.slist = slist
+    self.sdict = sdict
+    self.alist = alist
+    self.flist = flist
+    self.groups = groups
+    self.hidden_groups = hidden_groups
+
+  ###########################################################################
+  def createmodulefile(self):
+    # --- This is the routine that does all of the work
+
     # --- Create the module file
     self.cfile = open(self.pname+'pymodule.c','w')
     self.cw('#include "Forthon.h"')
@@ -200,7 +227,7 @@ Usage:
       self.cw('extern void '+self.pname+'data();')
 
     # --- fortran routine prototypes
-    for f in flist:
+    for f in self.flist:
       # --- Functions
       self.cw('extern '+fvars.ftoc(f.type)+' '+fnameofobj(f)+'(',noreturn=1)
       i = 0
@@ -220,7 +247,7 @@ Usage:
         for i in range(istr):
           self.cw(',int sl'+repr(i),noreturn=1)
       self.cw(');')
-    for t in typelist:
+    for t in self.typelist:
       self.cw('extern PyObject *'+self.cname(t.name)+'New(PyObject *self, PyObject *args);')
     self.cw('')
 
@@ -228,14 +255,14 @@ Usage:
     # --- Note that setpointers get written out for all derived types -
     # --- for non-dynamic derived types, the setpointer routine does a copy.
     if self.f90:
-      for s in slist:
+      for s in self.slist:
         if s.dynamic or s.derivedtype:
           self.cw('extern void '+fname(self.fsub('setpointer',s.name))+
                   '(char *p,long *cobj__);')
         if s.dynamic:
           self.cw('extern void '+fname(self.fsub('getpointer',s.name))+
                   '(ForthonObject **cobj__,long *obj,long *createnew);')
-      for a in alist:
+      for a in self.alist:
         self.cw('extern void '+fname(self.fsub('setpointer',a.name))+
                 '(char *p,long *cobj__,int *dims__);')
         if re.search('fassign',a.attr):
@@ -252,11 +279,11 @@ Usage:
               '_fscalars[];')
 
     # --- Scalars
-    self.cw('int '+self.pname+'nscalars = '+repr(len(slist))+';')
-    if len(slist) > 0:
-      self.cw('Fortranscalar '+self.pname+'_fscalars['+repr(len(slist))+']={')
-      for i in range(len(slist)):
-        s = slist[i]
+    self.cw('int '+self.pname+'nscalars = '+repr(len(self.slist))+';')
+    if len(self.slist) > 0:
+      self.cw('Fortranscalar '+self.pname+'_fscalars['+repr(len(self.slist))+']={')
+      for i in range(len(self.slist)):
+        s = self.slist[i]
         if (self.f90) and s.derivedtype:
           setpointer = '*'+fname(self.fsub('setpointer',s.name))
           if s.dynamic:
@@ -276,18 +303,18 @@ Usage:
                  '%i,'%s.dynamic + 
                  '%s,'%setpointer + 
                  '%s}'%getpointer,noreturn=1)
-        if i < len(slist)-1: self.cw(',')
+        if i < len(self.slist)-1: self.cw(',')
       self.cw('};')
     else:
       self.cw('Fortranscalar *'+self.pname+'_fscalars=NULL;')
 
     # --- Arrays
-    self.cw('int '+self.pname+'narrays = '+repr(len(alist))+';')
-    if len(alist) > 0:
+    self.cw('int '+self.pname+'narrays = '+repr(len(self.alist))+';')
+    if len(self.alist) > 0:
       self.cw('static Fortranarray '+
-              self.pname+'_farrays['+repr(len(alist))+']={')
-      for i in range(len(alist)):
-        a = alist[i]
+              self.pname+'_farrays['+repr(len(self.alist))+']={')
+      for i in range(len(self.alist)):
+        a = self.alist[i]
         if (self.f90) and a.dynamic:
           setpointer = '*'+fname(self.fsub('setpointer',a.name))
         else:
@@ -314,7 +341,7 @@ Usage:
                   '"%s",'%a.attr +
                   '"%s",'%string.replace(repr(a.comment)[1:-1],'"','\\"') +
                   '"%s"}'%a.dimstring,noreturn=1)
-        if i < len(alist)-1: self.cw(',')
+        if i < len(self.alist)-1: self.cw(',')
       self.cw('};')
     else:
       self.cw('static Fortranarray *'+self.pname+'_farrays=NULL;')
@@ -323,8 +350,8 @@ Usage:
 #   # --- Write out the table of getset routines
 #   self.cw('')
 #   self.cw('static PyGetSetDef '+self.pname+'_getseters[] = {')
-#   for i in range(len(slist)):
-#     s = slist[i]
+#   for i in range(len(self.slist)):
+#     s = self.slist[i]
 #     if s.type == 'real': gstype = 'double'
 #     elif s.type == 'integer': gstype = 'integer'
 #     elif s.type == 'complex': gstype = 'cdouble'
@@ -333,8 +360,8 @@ Usage:
 #                          ',(setter)Forthon_setscalar'+gstype+
 #                    ',"%s"'%string.replace(repr(s.comment)[1:-1],'"','\\"') +
 #                         ',(void *)'+repr(i)+'},')
-#   for i in range(len(alist)):
-#     a = alist[i]
+#   for i in range(len(self.alist)):
+#     a = self.alist[i]
 #     self.cw('{"'+a.name+'",(getter)Forthon_getarray'+
 #                          ',(setter)Forthon_setarray'+
 #                    ',"%s"'%string.replace(repr(a.comment)[1:-1],'"','\\"') +
@@ -351,7 +378,7 @@ Usage:
     ###########################################################################
     # --- Now, the fun part, writing out the wrapper for the subroutine and
     # --- function calls.
-    for f in flist:
+    for f in self.flist:
       # --- Write out the documentation first.
       docstring = ('static char doc_'+self.cname(f.name)+'[] = "'+f.name+
                    f.dimstring+repr(f.comment)[1:-1]+'";')
@@ -541,7 +568,7 @@ Usage:
         # --- Now get ending time and add to timer variable
         self.cw('  time2 = cputime();')
         self.cw('  *(double *)'+self.pname+'_fscalars['+
-                     repr(sdict[f.name+'runtime'])+'].data += (time2-time1);')
+                     repr(self.sdict[f.name+'runtime'])+'].data += (time2-time1);')
 
       # --- Write return sequence
       if f.type == 'void':
@@ -574,11 +601,11 @@ Usage:
     ###########################################################################
     # --- Write out method list
     self.cw('static struct PyMethodDef '+self.pname+'_methods[] = {')
-    for f in flist:
+    for f in self.flist:
       if f.function:
         self.cw('{"'+f.name+'",(PyCFunction)'+self.cname(f.name)+',1,'+
                 'doc_'+self.cname(f.name)+'},')
-    for t in typelist:
+    for t in self.typelist:
       self.cw('{"'+t.name+'",(PyCFunction)'+self.cname(t.name)+'New,1,'+
               '"Creates a new instance of fortran derived type '+t.name+'"},')
     self.cw('{NULL,NULL}};')
@@ -590,7 +617,7 @@ Usage:
     self.cw('{')
   
     i = -1
-    for a in alist:
+    for a in self.alist:
       i = i + 1
       vname = self.pname+'_farrays['+repr(i)+']'
       if a.dims and not a.dynamic:
@@ -616,13 +643,13 @@ Usage:
     i = -1
     currentgroup = ''
     dyngroups = []
-    for a in alist:
+    for a in self.alist:
       if a.group != currentgroup and a.dynamic:
         if currentgroup != '':
           self.cw('  }}')
         currentgroup = a.group
         if len(dyngroups) > 0: dyngroups[-1][2] = i
-        dyngroups.append([currentgroup,i+1,len(alist)])
+        dyngroups.append([currentgroup,i+1,len(self.alist)])
         self.cw('static void '+self.pname+'setdims'+currentgroup+'(char *name,long i)')
         self.cw('{')
         self.cw('  if (strcmp(name,"'+a.group+'") || strcmp(name,"*")) {')
@@ -641,11 +668,11 @@ Usage:
           if re.search('[a-zA-Z]',d.high) == None:
             self.cw('('+d.high+')-',noreturn=1)
           else:
-            self.cw('('+self.prefixdimsc(d.high,sdict)+')-',noreturn=1)
+            self.cw('('+self.prefixdimsc(d.high,self.sdict)+')-',noreturn=1)
           if re.search('[a-zA-Z]',d.low) == None:
             self.cw('('+d.low+')+1;')
           else:
-            self.cw('('+self.prefixdimsc(d.low,sdict)+')+1;',noreturn=1)
+            self.cw('('+self.prefixdimsc(d.low,self.sdict)+')+1;',noreturn=1)
         self.cw('  }')
 
     if currentgroup != '':
@@ -824,92 +851,39 @@ Usage:
     ###########################################################################
     ###########################################################################
     # --- Write out fortran initialization routines
-    if self.f90:
-      self.ffile = open(self.pname+'_p.F90','w')
-    else:
-      self.ffile = open(self.pname+'_p.m','w')
+    self.setffile()
     self.ffile.close()
 
     ###########################################################################
     ###########################################################################
     # --- Process any derived types
-    wrappergen_derivedtypes.ForthonDerivedType(typelist,self.pname,
+    wrappergen_derivedtypes.ForthonDerivedType(self.typelist,self.pname,
                                self.pname+'pymodule.c',
                                self.pname+'_p.F90',self.f90,self.isz,
                                self.writemodules,self.fcompname)
     ###########################################################################
     ###########################################################################
 
-    if self.f90:
-      self.ffile = open(self.pname+'_p.F90','a')
-    else:
-      self.ffile = open(self.pname+'_p.m','a')
+    self.setffile()
 
     ###########################################################################
     # --- Write out f90 modules, including any data statements
     if self.f90 and self.writemodules:
-      if   self.f90 : dyntype = 'pointer'
-      if   self.fcompname == 'xlf': save = ',SAVE'
-      else:                         save = ''
-      for g in groups+hidden_groups:
-        self.fw('MODULE '+g)
-        # --- Check if any variables are derived types. If so, the module
-        # --- containing the type must be used.
-        printedtypes = []
-        for v in slist + alist:
-          if v.group == g and v.derivedtype:
-            if v.type not in printedtypes:
-              self.fw('  USE '+v.type+'module')
-              printedtypes.append(v.type)
-        self.fw('  SAVE')
-        # --- Declerations for scalars and arrays
-        for s in slist:
-          if s.group == g:
-            self.fw('  '+fvars.ftof(s.type),noreturn=1)
-            if s.dynamic: self.fw(',POINTER',noreturn=1)
-            self.fw(save+'::'+s.name,noreturn=1)
-            if s.data: self.fw('='+s.data[1:-1],noreturn=1)
-            self.fw('')
-        for a in alist:
-          if a.group == g:
-            if a.dynamic:
-              if a.type == 'character':
-                self.fw('  character(len='+a.dims[0].high+'),'+dyntype+save+'::'+
-                        a.name,noreturn=1)
-                ndims = len(a.dims) - 1
-              else:
-                self.fw('  '+fvars.ftof(a.type)+','+dyntype+save+'::'+a.name,
-                        noreturn=1)
-                ndims = len(a.dims)
-              if ndims > 0:
-                self.fw('('+(ndims*':,')[:-1]+')',noreturn=1)
-              self.fw('')
-            else:
-              if a.type == 'character':
-                self.fw('  character(len='+a.dims[0].high+')'+save+'::'+a.name+
-                        a.dimstring)
-              else:
-                self.fw('  '+fvars.ftof(a.type)+save+'::'+a.name+a.dimstring)
-              if a.data:
-                # --- Add line continuation marks if the data line extends over
-                # --- multiple lines.
-                dd = re.sub(r'\n','&\n',a.data)
-                self.fw('  data '+a.name+dd)
-        self.fw('END MODULE '+g)
+      self.writef90modules()
 
     ###########################################################################
     self.fw('SUBROUTINE '+self.fsub('passpointers')+'()')
 
     # --- Write out the Use statements
-    for g in groups+hidden_groups:
+    for g in self.groups+self.hidden_groups:
       if self.f90:
        self.fw('  USE '+g)
       else:
        self.fw('  Use('+g+')')
  
     # --- Write out calls to c routine passing down pointers to scalars
-    for i in range(len(slist)):
-      s = slist[i]
+    for i in range(len(self.slist)):
+      s = self.slist[i]
       if s.dynamic: continue
       if s.derivedtype:
         # --- This is only called for static instances, so deallocatable is
@@ -938,8 +912,8 @@ Usage:
         str = ',int(0,'+self.isz+'))'
     else:
       str = ')'
-    for i in range(len(alist)):
-      a = alist[i]
+    for i in range(len(self.alist)):
+      a = self.alist[i]
       if a.dynamic:
         if not self.f90:
           self.fw('  call '+self.fsub('setarraypointers')+'(int('+repr(i)+','+self.isz+'),'+
@@ -960,14 +934,14 @@ Usage:
     self.fw('SUBROUTINE '+self.fsub('nullifypointers')+'()')
 
     # --- Write out the Use statements
-    for g in groups+hidden_groups:
+    for g in self.groups+self.hidden_groups:
       self.fw('  USE '+g)
  
-    for i in range(len(slist)):
-      s = slist[i]
+    for i in range(len(self.slist)):
+      s = self.slist[i]
       if s.dynamic: self.fw('  NULLIFY('+s.name+')')
-    for i in range(len(alist)):
-      a = alist[i]
+    for i in range(len(self.alist)):
+      a = self.alist[i]
       if a.dynamic: self.fw('  NULLIFY('+a.name+')')
 
     self.fw('  return')
@@ -976,7 +950,7 @@ Usage:
     # --- Write routine for each dynamic variable which gets the pointer from the
     # --- wrapper
     if self.f90:
-      for s in slist:
+      for s in self.slist:
         self.fw('SUBROUTINE '+self.fsub('setpointer',s.name)+'(p__,cobj__)')
         self.fw('  USE '+s.group)
         self.fw('  integer('+self.isz+'):: cobj__')
@@ -1006,10 +980,10 @@ Usage:
           self.fw('  RETURN')
           self.fw('END')
 
-      for a in alist:
+      for a in self.alist:
         if a.dynamic:
           self.fw('SUBROUTINE '+self.fsub('setpointer',a.name)+'(p__,cobj__,dims__)')
-          groups = self.dimsgroups(a.dimstring,sdict,slist)
+          groups = self.dimsgroups(a.dimstring,self.sdict,self.slist)
           groupsprinted = [a.group]
           for g in groups:
             if g not in groupsprinted:
@@ -1041,19 +1015,19 @@ Usage:
       self.fw('      SUBROUTINE '+self.fsub('data')+'()')
 
       # --- Write out the Use statements
-      for g in groups:
+      for g in self.groups:
         self.fw('Use('+g+')')
      
-      for hg in hidden_groups:
+      for hg in self.hidden_groups:
         self.fw('Use('+hg+')')
 
       self.fw('      integer iyiyiy')
 
       # --- Write out data statements
-      for s in slist:
+      for s in self.slist:
         if s.data:
           self.fw('      data '+s.name+s.data)
-      for a in alist:
+      for a in self.alist:
         if a.data and not a.dynamic:
           self.fw('      data '+a.name+a.data)
 
@@ -1064,10 +1038,62 @@ Usage:
     # --- --- Close fortran file
     self.ffile.close()
     scalar_pickle_file = open(self.pname + '.scalars','w')
-    sdict ['_module_name_'] = self.pname
-    pickle.dump (sdict, scalar_pickle_file)
-    pickle.dump (slist, scalar_pickle_file)
+    self.sdict ['_module_name_'] = self.pname
+    pickle.dump (self.sdict, scalar_pickle_file)
+    pickle.dump (self.slist, scalar_pickle_file)
     scalar_pickle_file.close()
+
+  def writef90modules(self):
+    """Write the fortran90 modules"""
+    self.setffile()
+    if   self.f90 : dyntype = 'pointer'
+    if   self.fcompname == 'xlf': save = ',SAVE'
+    else:                         save = ''
+    for g in self.groups+self.hidden_groups:
+      self.fw('MODULE '+g)
+      # --- Check if any variables are derived types. If so, the module
+      # --- containing the type must be used.
+      printedtypes = []
+      for v in self.slist + self.alist:
+        if v.group == g and v.derivedtype:
+          if v.type not in printedtypes:
+            self.fw('  USE '+v.type+'module')
+            printedtypes.append(v.type)
+      self.fw('  SAVE')
+      # --- Declerations for scalars and arrays
+      for s in self.slist:
+        if s.group == g:
+          self.fw('  '+fvars.ftof(s.type),noreturn=1)
+          if s.dynamic: self.fw(',POINTER',noreturn=1)
+          self.fw(save+'::'+s.name,noreturn=1)
+          if s.data: self.fw('='+s.data[1:-1],noreturn=1)
+          self.fw('')
+      for a in self.alist:
+        if a.group == g:
+          if a.dynamic:
+            if a.type == 'character':
+              self.fw('  character(len='+a.dims[0].high+'),'+dyntype+save+'::'+
+                      a.name,noreturn=1)
+              ndims = len(a.dims) - 1
+            else:
+              self.fw('  '+fvars.ftof(a.type)+','+dyntype+save+'::'+a.name,
+                      noreturn=1)
+              ndims = len(a.dims)
+            if ndims > 0:
+              self.fw('('+(ndims*':,')[:-1]+')',noreturn=1)
+            self.fw('')
+          else:
+            if a.type == 'character':
+              self.fw('  character(len='+a.dims[0].high+')'+save+'::'+a.name+
+                      a.dimstring)
+            else:
+              self.fw('  '+fvars.ftof(a.type)+save+'::'+a.name+a.dimstring)
+            if a.data:
+              # --- Add line continuation marks if the data line extends over
+              # --- multiple lines.
+              dd = re.sub(r'\n','&\n',a.data)
+              self.fw('  data '+a.name+dd)
+      self.fw('END MODULE '+g)
 
 ###############################################################################
 ###############################################################################
@@ -1085,7 +1111,7 @@ def get_another_scalar_dict(file_name,other_scalar_vars):
   other_scalar_vars.append(vars)
   f.close()
 
-def wrappergenerator_main(argv=None):
+def wrappergenerator_main(argv=None,writef90modulesonly=0):
   if argv is None: argv = sys.argv[1:]
   optlist,args=getopt.getopt(argv,'at:d:F:',
                      ['f90','2underscores','nowritemodules',
@@ -1126,6 +1152,11 @@ def wrappergenerator_main(argv=None):
   cc = PyWrap(ifile,pname,f90,initialgallot,writemodules,
               otherinterfacefiles,other_scalar_vars,timeroutines,
               otherfortranfiles,fcompname)
+  if writef90modulesonly:
+    cc.writef90modules()
+  else:
+    cc.createmodulefile()
+
 
 # --- This might make some of the write statements cleaner.
 # --- From http://aspn.activestate.com/ASPN/Python/Cookbook/
