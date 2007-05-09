@@ -36,7 +36,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.35 2007/04/17 22:59:36 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.36 2007/05/09 16:34:42 dave Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling
@@ -771,7 +771,7 @@ Dump data into a pdb file
 # More fancy foot work is done to get new variables read in into the
 # global dictionary.
 def pyrestore(filename=None,fname=None,verbose=0,skip=[],ff=None,
-              varsuffix=None,ls=0,lreturnfobjdict=0):
+              varsuffix=None,ls=0,lreturnfobjdict=0,lreturnff=0):
   """
 Restores all of the variables in the specified file.
   - filename: file to read in from (assumes PDB format)
@@ -805,6 +805,7 @@ Note that it will automatically detect whether the file is PDB or HDF.
     closefile = 1
   else:
     closefile = 0
+  if lreturnff: closefile = 0
   # --- Make sure the file has a file_type. Older versions of the pdb
   # --- wrapper did not define a file type.
   try:
@@ -908,7 +909,11 @@ Note that it will automatically detect whether the file is PDB or HDF.
                            verbose,doarrays=1)
 
   if closefile: ff.close()
-  if lreturnfobjdict: return fobjdict
+  resultlist = []
+  if lreturnfobjdict: resultlist.append(fobjdict)
+  if lreturnff:       resultlist.append(ff)
+  if len(resultlist) == 1: return resultlist[0]
+  elif len(resultlist) > 1: return resultlist
 
 def sortrestorevarsbysuffix(vlist,skip):
   # --- Sort the variables, collecting them in groups based on their suffix.
@@ -1006,7 +1011,7 @@ def pyrestoreforthonobject(ff,gname,vlist,fobjdict,varsuffix,verbose,doarrays,
       if type(ff.__getattr__(vpdbname)) != ArrayType and not doarrays:
         # --- Simple assignment is done for scalars, using the exec command
         if verbose: print "reading in "+fullname
-        exec(fullname+'=ff.__getattr__(vpdbname)',__main__.__dict__,locals())
+        exec(fullname+'=ff.__getattr__(vpdbname)',locals(),__main__.__dict__)
       elif type(ff.__getattr__(vpdbname)) == ArrayType and doarrays:
         pkg = eval(gname,__main__.__dict__)
         # --- forceassign is used, allowing the array read in to have a
@@ -1017,7 +1022,12 @@ def pyrestoreforthonobject(ff,gname,vlist,fobjdict,varsuffix,verbose,doarrays,
         # --- Newer version using convenient setattr routine. This can be
         # --- done this way since now all scalars are read in first so
         # --- the arrays will be of the correct size.
-        setattr(pkg,vname,ff.__getattr__(vpdbname))
+        if varsuffix is None:
+          setattr(pkg,vname,ff.__getattr__(vpdbname))
+        else:
+          # --- If varsuffix is specified, then put the variable directly into
+          # --- the main dictionary.
+          exec(fullname+'=ff.__getattr__(vpdbname)',locals(),__main__.__dict__)
         # --- This does the same thing but is more sensitive to some types
         # --- of array sizing errors.
         #v = ff.__getattr__(vpdbname)
