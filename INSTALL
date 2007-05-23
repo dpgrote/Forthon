@@ -1,5 +1,5 @@
 
-Requires python versions 2.2 or higher and the Numeric (numpy) package, which
+Requires python versions 2.2 or higher and the Numeric or numpy package, which
 can be obtained from sourceforge.net.
 
 To install,
