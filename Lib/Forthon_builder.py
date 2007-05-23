@@ -89,6 +89,8 @@ One or more of the following options can be specified.
     to the builddir. This defaults to the builddir.
  --noimplicitnone
     When specified, the implicitnone is not enforced
+ --with-numpy
+    When specified, numpy is used instead of Numeric
 """
 
 import sys,os,re
@@ -114,7 +116,7 @@ optlist,args = getopt.getopt(sys.argv[1:],'agd:t:F:D:L:l:I:i:f:',
                           '2underscores',
                           'free_suffix=','fixed_suffix=',
                           'compile_first=','builddir=','noimplicitnone',
-                          'build-temp='])
+                          'build-temp=','with-numpy'])
 
 # --- Get the package name and any other extra files
 pkg = args[0]
@@ -146,6 +148,7 @@ compile_first  = ''
 builddir       = None
 implicitnone   = 1
 build_temp     = ''
+with_numpy     = 0
 
 for o in optlist:
   if o[0]=='-a': initialgallot = '-a'
@@ -174,6 +177,7 @@ for o in optlist:
   elif o[0] == '--builddir': builddir = o[1]
   elif o[0] == '--noimplicitnone': implicitnone = 0
   elif o[0] == '--build-temp': build_temp = o[1]
+  elif o[0] == '--with-numpy': with_numpy = 1
 
 if fortranfile is None: fortranfile = pkg + '.' + fixed_suffix
 
@@ -182,6 +186,11 @@ forthonargs = []
 if twounderscores: forthonargs.append('--2underscores')
 if not writemodules: forthonargs.append('--nowritemodules')
 if timeroutines: forthonargs.append('--timeroutines')
+if with_numpy:
+  # --- This is a nifty way to get the python installation directory
+  dd = os.path.dirname(os.__file__)
+  includedirs.append(dd+'/site-packages/numpy/core/include')
+  del dd
 
 # --- Fix path - needed for Cygwin
 def fixpath(path,dos=1):
