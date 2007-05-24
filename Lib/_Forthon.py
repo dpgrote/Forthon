@@ -4,7 +4,17 @@
 But flies an eagle flight, bold, and forthon, Leaving no tract behind.
 """
 # import all of the neccesary packages
-from Numeric import *
+if 1:
+  with_numpy = 0
+  from Numeric import *
+  def gettypecode(x):
+    return x.typecode()
+else:
+  with_numpy = 1
+  from numpy import *
+  ArrayType = ndarray
+  def gettypecode(x):
+    return x.dtype.char
 from types import *
 import string
 import re
@@ -36,7 +46,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.36 2007/05/09 16:34:42 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.37 2007/05/24 23:57:35 dave Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling
@@ -236,14 +246,14 @@ def arraytostr(a,strip=true):
 # --- Allows int operation on arrrays
 builtinint = int
 def int(x):
-  if type(x) == ArrayType:
-    return x.astype(Int)
+  if isinstance(x,ArrayType):
+    return x.astype('l')
   else:
     return builtinint(x)
 
 # --- Return the nearest integer
 def nint(x):
-  if type(x) == ArrayType:
+  if isinstance(x,ArrayType):
     return where(greater(x,0),int(x+0.5),-int(abs(x)+0.5))
   else:
     if x >= 0: return int(x+0.5)
@@ -253,20 +263,26 @@ def nint(x):
 # --- arrays which have the proper ordering for fortran. When arrays created
 # --- with these commands are passed to a fortran subroutine, no copies are
 # --- needed to get the data into the proper order for fortran.
-def fones(shape,typecode=Int):
-  try:
-    s = list(shape)
-  except TypeError:
-    s = list([shape])
-  s.reverse()
-  return transpose(ones(s,typecode))
-def fzeros(shape,typecode=Int):
-  try:
-    s = list(shape)
-  except TypeError:
-    s = list([shape])
-  s.reverse()
-  return transpose(zeros(s,typecode))
+def fones(shape,typecode='l'):
+  if with_numpy:
+    return ones(shape,dtype=typecode,order='FORTRAN')
+  else:
+    try:
+      s = list(shape)
+    except TypeError:
+      s = list([shape])
+    s.reverse()
+    return transpose(ones(s,typecode))
+def fzeros(shape,typecode='l'):
+  if with_numpy:
+    return zeros(shape,dtype=typecode,order='FORTRAN')
+  else:
+    try:
+      s = list(shape)
+    except TypeError:
+      s = list([shape])
+    s.reverse()
+    return transpose(zeros(s,typecode))
 
 def doc(f,printit=1):
   """
@@ -398,7 +414,7 @@ Gets the total size of a package or dictionary.
   # --- Return sizes of shallow objects
   if type(pkg) in [IntType,FloatType]:
     result = 1
-  elif type(pkg) is ArrayType:
+  elif isinstance(pkg,ArrayType):
     result = product(array(shape(pkg)))
   else:
     result = 0
@@ -446,6 +462,70 @@ Gets the total size of a package or dictionary.
 # --- Keep the old name around
 getgroupsize = getobjectsize
 
+# --- Get size of an object, recursively including anything inside of it.
+# --- New improved version, though should be tested more
+def newgetobjectsize(pkg,grp='',recursive=1,grouplist=None):
+  """
+Gets the total size of a package or dictionary.
+  - pkg: Either a Forthon object, dictionary, or a class instance
+  - grp='': For a Forthon object, only include the variables in the specified
+            group
+  - recursive=1: When true, include the size of sub objects.
+  """
+
+  if grouplist is None: grouplist = []
+
+  # --- Keep track of objects already accounted for.
+  if id(pkg) in grouplist:
+    # --- Even the the item has already been counted, add the
+    # --- approximate size of the reference
+    return 1
+  grouplist.append(id(pkg))
+
+  # --- Return sizes of shallow objects
+  if type(pkg) in [IntType,FloatType,bool]:
+    return 1
+  elif isinstance(pkg,ArrayType):
+    return product(array(shape(pkg)))
+
+  # --- The object itself gets count of 1
+  result = 1
+
+  # --- Get the list of variables to check. Note that the grp option only
+  # --- affects Forthon objects.
+  import operator
+  if IsForthonType(pkg):
+    ll = pkg.varlist(grp)
+  elif type(pkg) == DictType:
+    ll = pkg.keys()
+  elif operator.isSequenceType(pkg):
+    ll = pkg
+  else:
+    try:
+      ll = pkg.__dict__.keys()
+    except AttributeError:
+      ll = []
+
+  if not recursive and len(grouplist) > 1:
+    ll = []
+
+  # --- Now, add up the sizes.
+  for v in ll:
+    if IsForthonType(pkg):
+      # --- This is needed so unallocated arrays will only return None
+      vv = pkg.getpyobject(v)
+    elif type(pkg) == DictType:
+      result += 1 # --- Add one for the key
+      vv = pkg[v]
+    elif operator.isSequenceType(pkg):
+      vv = v
+    else:
+      vv = getattr(pkg,v)
+    result = result + newgetobjectsize(vv,'',recursive=recursive,grouplist=grouplist)
+
+  # --- Return the result
+  return result
+
 # --- Print out all variables in a group
 def printgroup(pkg,group='',maxelements=10,sumarrays=0):
   """
@@ -471,10 +551,10 @@ Print out all variables in a group or with an attribute
       v = pkg.__dict__[vname]
     if v is None:
       print vname+' is not allocated'
-    elif type(v) != ArrayType:
+    elif not isinstance(v,ArrayType):
       print vname+' = '+str(v)
     else:
-      if v.typecode() == 'c':
+      if gettypecode(v) == 'c':
         print vname+' = "'+str(arraytostr(v))+'"'
       elif sumarrays:
         sumv = sum(reshape(v,tuple([product(array(v.shape))])))
@@ -544,7 +624,7 @@ def pydumpforthonobject(ff,attr,objname,obj,varsuffix,writtenvars,fobjlist,
         continue
     # --- Check if variable is a complex array. Currently, these
     # --- can not be written out.
-    if type(v) == ArrayType and v.typecode() == Complex:
+    if isinstance(v,ArrayType) and gettypecode(v) == Complex:
       if verbose: print "variable "+vname+varsuffix+" skipped since it is a complex array"
       continue
     # --- Check if variable with same name has already been written out.
@@ -677,6 +757,17 @@ Dump data into a pdb file
       # --- and included in the package list without being imported into main.
       # --- Do the import here.
       pkg = __import__(pname,globals(),locals())
+      try:
+        # --- Check if it is the right kind of object
+        pkg.getfobject
+      except AttributeError:
+        # --- There is a module with the same name as the package. See if it
+        # --- contains the package. Note that if it doesn't, skip this package
+        # --- since it can't be found. Or should an exception be raised?
+        try:
+          pkg = getattr(pkg,pname)
+        except AttributeError:
+          continue
     if isinstance(pkg,PackageBase): continue
     if varsuffix is None: pkgsuffix = '@' + pname
     pydumpforthonobject(ff,attr,pname,pkg,pkgsuffix,writtenvars,fobjlist,
@@ -727,7 +818,7 @@ Dump data into a pdb file
         if verbose: print "could not write python function "+vname
       continue
     # --- Zero length arrays cannot by written out.
-    if type(vval) == ArrayType and product(array(shape(vval))) == 0:
+    if isinstance(vval,ArrayType) and product(array(shape(vval))) == 0:
       continue
     # --- Check if variable is a Forthon object.
    #if IsForthonType(vval):
@@ -1008,11 +1099,11 @@ def pyrestoreforthonobject(ff,gname,vlist,fobjdict,varsuffix,verbose,doarrays,
     if varsuffix is not None: fullname = vname + str(varsuffix)
 
     try:
-      if type(ff.__getattr__(vpdbname)) != ArrayType and not doarrays:
+      if not isinstance(ff.__getattr__(vpdbname),ArrayType) and not doarrays:
         # --- Simple assignment is done for scalars, using the exec command
         if verbose: print "reading in "+fullname
         exec(fullname+'=ff.__getattr__(vpdbname)',locals(),__main__.__dict__)
-      elif type(ff.__getattr__(vpdbname)) == ArrayType and doarrays:
+      elif isinstance(ff.__getattr__(vpdbname),ArrayType) and doarrays:
         pkg = eval(gname,__main__.__dict__)
         # --- forceassign is used, allowing the array read in to have a
         # --- different size than the current size of the warp array.
@@ -1031,7 +1122,7 @@ def pyrestoreforthonobject(ff,gname,vlist,fobjdict,varsuffix,verbose,doarrays,
         # --- This does the same thing but is more sensitive to some types
         # --- of array sizing errors.
         #v = ff.__getattr__(vpdbname)
-        #setattr(pkg,vname,fzeros(shape(v),v.typecode()))
+        #setattr(pkg,vname,fzeros(shape(v),gettypecode(v)))
         #getattr(pkg,vname)[...] = v
     except:
       # --- The catches errors in cases where the variable is not an
