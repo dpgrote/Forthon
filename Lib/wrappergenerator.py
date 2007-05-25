@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.47 2007/05/09 22:59:38 dave Exp $
+# $Id: wrappergenerator.py,v 1.48 2007/05/25 15:24:34 dave Exp $
 
 import sys
 import os.path
@@ -264,7 +264,7 @@ of scalars and arrays.
                   '(ForthonObject **cobj__,long *obj,long *createnew);')
       for a in self.alist:
         self.cw('extern void '+fname(self.fsub('setpointer',a.name))+
-                '(char *p,long *cobj__,int *dims__);')
+                '(char *p,long *cobj__,npy_intp *dims__);')
         if re.search('fassign',a.attr):
           self.cw('extern void '+fname(self.fsub('getpointer',a.name))+
                   '(long *i,long *cobj__);')
@@ -437,12 +437,12 @@ of scalars and arrays.
         self.cw('  argno++;')
         if not fvars.isderivedtype(f.args[i]):
           self.cw('  if (!Forthon_checksubroutineargtype(pyobj['+repr(i)+'],'+
-              'PyArray_'+fvars.ftop(f.args[i].type)+','+repr(i)+')) {')
+              'PyArray_'+fvars.ftop(f.args[i].type,1)+','+repr(i)+')) {')
           self.cw('    sprintf(e,"Argument '+repr(i+1)+ ' in '+f.name+
                                ' has the wrong type");')
           self.cw('    goto err;}')
           if f.function == 'fsub':
-            self.cw('  FARRAY_FROMOBJECT(ax['+repr(i)+'],'+
+            self.cw('  ax['+repr(i)+'] = FARRAY_FROMOBJECT('+
                   'pyobj['+repr(i)+'], PyArray_'+fvars.ftop(f.args[i].type)+');')
           elif f.function == 'csub':
             self.cw('  ax['+repr(i)+']=(PyArrayObject *)PyArray_ContiguousFromObject('+
@@ -452,7 +452,7 @@ of scalars and arrays.
                                ' in '+f.name+'");')
           self.cw('    goto err;}')
           if f.args[i].type == 'string' or f.args[i].type == 'character':
-            self.cw('  FSETSTRING(fstr[%d],ax[%d]->data,PyArray_SIZE(ax[%d]));'
+            self.cw('  FSETSTRING(fstr[%d],PyArray_BYTES(ax[%d]),PyArray_SIZE(ax[%d]));'
                     %(istr,i,i))
             istr = istr + 1
         else:
@@ -483,7 +483,7 @@ of scalars and arrays.
         # --- Declare the dimension variables.
         for var,i in f.dimvars:
           self.cw('  '+fvars.ftoc(var.type)+' '+var.name+'=*'+
-                  '('+fvars.ftoc(var.type)+' *)(ax['+repr(i)+']->data);')
+                  '('+fvars.ftoc(var.type)+' *)(PyArray_BYTES(ax['+repr(i)+']));')
         # --- Loop over the arguments, looking for dimensioned arrays
         i = -1
         for arg in f.args:
@@ -494,9 +494,9 @@ of scalars and arrays.
             # --- Check the rank of the input argument
             # --- For a 1-D argument, allow a scaler to be passed, which has
             # --- a number of dimensions (nd) == 0.
-            self.cw('  if (!(ax[%d]->nd == %d'%(i,len(arg.dims)),noreturn=1)
+            self.cw('  if (!(PyArray_NDIM(ax[%d]) == %d'%(i,len(arg.dims)),noreturn=1)
             if len(arg.dims) == 1:
-              self.cw('      ||ax[%d]->nd == 0)) {'%i)
+              self.cw('      ||PyArray_NDIM(ax[%d]) == 0)) {'%i)
             else:
               self.cw('      )) {')
             self.cw('    sprintf(e,"Argument %d in %s '%(i+1,f.name) +
@@ -511,11 +511,11 @@ of scalars and arrays.
               # --- argument needs to have a length of 0 or 1.
               self.cw('  _n = ('+dim.high+')-('+dim.low+')+1;')
               if len(arg.dims) == 1:
-                self.cw('  if (!((_n==0||_n==1)||(ax[%d]->nd > 0 &&'%i,
+                self.cw('  if (!((_n==0||_n==1)||(PyArray_NDIM(ax[%d]) > 0 &&'%i,
                         noreturn=1)
               else:
                 self.cw('  if (!((',noreturn=1)
-              self.cw('_n == ax[%d]->dimensions[%d]))) {'%(i,j))
+              self.cw('_n == (int)(PyArray_DIMS(ax[%d])[%d])))) {'%(i,j))
               self.cw('    sprintf(e,"Dimension '+repr(j+1)+' of argument '+
                                repr(i+1)+ ' in '+f.name+
                                ' has the wrong size");')
@@ -543,7 +543,7 @@ of scalars and arrays.
           self.cw('fstr[%d]'%(istr),noreturn=1)
           istr = istr + 1
         else:
-          self.cw('('+fvars.ftoc(a.type)+' *)(ax['+repr(i)+']->data)',noreturn=1)
+          self.cw('('+fvars.ftoc(a.type)+' *)(PyArray_BYTES(ax['+repr(i)+']))',noreturn=1)
         i = i + 1
       if charlen_at_end:
         i = 0
@@ -623,8 +623,8 @@ of scalars and arrays.
       if a.dims and not a.dynamic:
         j = 0
         for d in a.dims:
-          self.cw('  '+vname+'.dimensions['+repr(len(a.dims)-1-j)+'] = ('+
-                  d.high+') - ('+d.low+') + 1;')
+          self.cw('  '+vname+'.dimensions['+repr(len(a.dims)-1-j)+'] = (npy_intp)(('+
+                  d.high+') - ('+d.low+') + 1);')
           j = j + 1
 
     self.cw('}')
@@ -662,7 +662,7 @@ of scalars and arrays.
         # --- create lines of the form dims[1] = high-low+1, in reverse order
         for d in a.dims:
           if d.high == '': continue
-          self.cw('   '+vname+'.dimensions['+repr(len(a.dims)-1-j)+']=(int)',
+          self.cw('   '+vname+'.dimensions['+repr(len(a.dims)-1-j)+']=(npy_intp)((int)',
                   noreturn=1)
           j = j + 1
           if re.search('[a-zA-Z]',d.high) == None:
@@ -670,9 +670,9 @@ of scalars and arrays.
           else:
             self.cw('('+self.prefixdimsc(d.high,self.sdict)+')-',noreturn=1)
           if re.search('[a-zA-Z]',d.low) == None:
-            self.cw('('+d.low+')+1;')
+            self.cw('('+d.low+')+1);')
           else:
-            self.cw('('+self.prefixdimsc(d.low,self.sdict)+')+1;',noreturn=1)
+            self.cw('('+self.prefixdimsc(d.low,self.sdict)+')+1);',noreturn=1)
         self.cw('  }')
 
     if currentgroup != '':
@@ -755,7 +755,7 @@ of scalars and arrays.
     if self.f90:
       self.cw('  int id;')
       self.cw('  for (id=0;id<farray->nd;id++)')
-      self.cw('    farray->dimensions[farray->nd-1-id] = dims[id];')
+      self.cw('    farray->dimensions[farray->nd-1-id] = (npy_intp)(dims[id]);')
     self.cw('}')
 
     ###########################################################################
@@ -991,7 +991,10 @@ of scalars and arrays.
               groupsprinted.append(g)
           self.fw('  USE '+a.group)
           self.fw('  integer('+self.isz+'):: cobj__')
-          self.fw('  integer(4):: dims__('+repr(len(a.dims))+')')
+          if with_numpy:
+            self.fw('  integer('+self.isz+'):: dims__('+repr(len(a.dims))+')')
+          else:
+            self.fw('  integer(4):: dims__('+repr(len(a.dims))+')')
           self.fw('  '+fvars.ftof(a.type)+',target::p__'+
                     self.prefixdimsf(a.dimstring))
           self.fw('  '+a.name+' => p__')

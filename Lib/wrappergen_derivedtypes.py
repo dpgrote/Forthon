@@ -138,7 +138,7 @@ class ForthonDerivedType:
                   '(ForthonObject **cobj__,char *obj,long *createnew__);')
       for a in alist:
         self.cw('extern void '+fname(self.fsub(t,'setpointer',a.name))+
-                  '(char *p,char *fobj,int *dims__);')
+                  '(char *p,char *fobj,npy_intp *dims__);')
         if a.dynamic or re.search('fassign',a.attr):
           self.cw('extern void '+fname(self.fsub(t,'getpointer',a.name))+
                   '(long *i,char* fobj);')
@@ -192,7 +192,7 @@ class ForthonDerivedType:
         self.cw('obj->farrays[%d].type = PyArray_%s;'%(i,fvars.ftop(a.type)))
         self.cw('obj->farrays[%d].dynamic = %d;'%(i,a.dynamic))
         self.cw('obj->farrays[%d].nd = %d;'%(i,len(a.dims)))
-        self.cw('obj->farrays[%d].dimensions = NULL;'%i)
+        self.cw('obj->farrays[%d].dimensions = (npy_intp)NULL;'%i)
         self.cw('obj->farrays[%d].name = "%s";'%(i,a.name))
         self.cw('obj->farrays[%d].data.s = (char *)NULL;'%i)
         self.cw('obj->farrays[%d].setpointer = %s;'%(i,setpointer))
@@ -245,8 +245,8 @@ class ForthonDerivedType:
         if a.dims and not a.dynamic:
           j = 0
           for d in a.dims:
-            self.cw('  '+vname+'.dimensions['+repr(len(a.dims)-1-j)+'] = ('+
-                    d.high+') - ('+d.low+') + 1;')
+            self.cw('  '+vname+'.dimensions['+repr(len(a.dims)-1-j)+'] = (npy_intp)(('+
+                    d.high+') - ('+d.low+') + 1);')
             j = j + 1
       self.cw('}')
 
@@ -274,7 +274,7 @@ class ForthonDerivedType:
           # --- reverse order
           for d in a.dims:
             if d.high == '': continue
-            self.cw('   '+vname+'.dimensions['+repr(len(a.dims)-1-j)+']=(int)',
+            self.cw('   '+vname+'.dimensions['+repr(len(a.dims)-1-j)+']=(npy_intp)((int)',
                     noreturn=1)
             j = j + 1
             if re.search('[a-zA-Z]',d.high) == None:
@@ -282,9 +282,9 @@ class ForthonDerivedType:
             else:
               self.cw('('+self.prefixdimsc(d.high,sdict)+')-',noreturn=1)
             if re.search('[a-zA-Z]',d.low) == None:
-              self.cw('('+d.low+')+1;')
+              self.cw('('+d.low+')+1);')
             else:
-              self.cw('('+self.prefixdimsc(d.low,sdict)+')+1;')
+              self.cw('('+self.prefixdimsc(d.low,sdict)+')+1);')
           self.cw('  }')
       self.cw('}')
 
@@ -436,7 +436,7 @@ class ForthonDerivedType:
       if f90:
         self.cw('  int id;')
         self.cw('  for (id=0;id<farray->nd;id++)')
-        self.cw('    farray->dimensions[farray->nd-1-id] = dims[id];')
+        self.cw('    farray->dimensions[farray->nd-1-id] = (npy_intp)(dims[id]);')
       self.cw('}')
 
       #########################################################################
@@ -821,7 +821,10 @@ class ForthonDerivedType:
           self.fw('SUBROUTINE '+self.fsub(t,'setpointer',a.name)+'(p__,obj__,dims__)')
           self.fw('  USE '+t.name+'module')
           self.fw('  TYPE('+t.name+'):: obj__')
-          self.fw('  integer(4):: dims__('+repr(len(a.dims))+')')
+          if with_numpy:
+            self.fw('  integer('+isz+'):: dims__('+repr(len(a.dims))+')')
+          else:
+            self.fw('  integer(4):: dims__('+repr(len(a.dims))+')')
           self.fw('  '+fvars.ftof(a.type)+',target:: '+
                   'p__'+self.prefixdimsf(a.dimstring,sdict)+'')
           self.fw('  obj__%'+a.name+' => p__')

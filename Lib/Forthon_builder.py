@@ -91,6 +91,9 @@ One or more of the following options can be specified.
     When specified, the implicitnone is not enforced
  --with-numpy
     When specified, numpy is used instead of Numeric
+ --with-Numeric
+    When specified, Numeric is used instead of numpy
+
 """
 
 import sys,os,re
@@ -116,7 +119,7 @@ optlist,args = getopt.getopt(sys.argv[1:],'agd:t:F:D:L:l:I:i:f:',
                           '2underscores',
                           'free_suffix=','fixed_suffix=',
                           'compile_first=','builddir=','noimplicitnone',
-                          'build-temp=','with-numpy'])
+                          'build-temp=','with-numpy','with-Numeric'])
 
 # --- Get the package name and any other extra files
 pkg = args[0]
@@ -178,6 +181,7 @@ for o in optlist:
   elif o[0] == '--noimplicitnone': implicitnone = 0
   elif o[0] == '--build-temp': build_temp = o[1]
   elif o[0] == '--with-numpy': with_numpy = 1
+  elif o[0] == '--with-Numeric': with_numpy = 0
 
 if fortranfile is None: fortranfile = pkg + '.' + fixed_suffix
 
@@ -191,6 +195,11 @@ if with_numpy:
   dd = os.path.dirname(os.__file__)
   includedirs.append(dd+'/site-packages/numpy/core/include')
   del dd
+
+# --- The macro WITH_NUMERIC must be defined when using Numeric
+define_macros = []
+if not with_numpy:
+  define_macros.append(('WITH_NUMERIC','1'))
 
 # --- Fix path - needed for Cygwin
 def fixpath(path,dos=1):
@@ -248,6 +257,7 @@ forthonargs = forthonargs + fcompiler.forthonargs
 if fopt is None: fopt = fcompiler.fopt
 extra_link_args = fcompiler.extra_link_args
 extra_compile_args = fcompiler.extra_compile_args
+define_macros += fcompiler.define_macros
 
 # --- Create path to fortran files for the Makefile since they will be
 # --- referenced from the build directory.
@@ -420,7 +430,7 @@ setup(name = pkg,
                                extra_objects=ofiles,
                                library_dirs=fcompiler.libdirs+libdirs,
                                libraries=fcompiler.libs+libs,
-                               define_macros=fcompiler.define_macros,
+                               define_macros=define_macros,
                                extra_compile_args=extra_compile_args,
                                extra_link_args=extra_link_args)]
      )

@@ -1,5 +1,5 @@
 # Created by David P. Grote, March 6, 1998
-# $Id: fvars.py,v 1.4 2006/01/24 22:40:40 dave Exp $
+# $Id: fvars.py,v 1.5 2007/05/25 15:24:34 dave Exp $
 
 import cfinterface
 
@@ -69,9 +69,15 @@ def ftoc(type):
   if type in ftoc_dict.keys(): return ftoc_dict[type]
   else: return 'char'
 
-def ftop(type):
-  if type in ftop_dict.keys(): return ftop_dict[type]
-  else: return 'OBJECT'
+def ftop(type,replacechar=0):
+  # --- Returns the numpy type associated with the fortran type.
+  # --- In some special cases, a CHAR is converted to a STRING.
+  if type in ftop_dict.keys():
+    result = ftop_dict[type]
+    if cfinterface.with_numpy and replacechar and result=='CHAR': result = 'STRING'
+    return result
+  else:
+    return 'OBJECT'
 
 def ftof(type):
   if type in ftof_dict.keys(): return ftof_dict[type]
