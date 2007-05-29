@@ -96,14 +96,38 @@ appropriate block for the machine.
     # --- Add the compiler name to the forthon arguments
     self.forthonargs += ['-F '+self.fcompname]
 
-  def findfile(self,file):
+  def findfile(self,file,followlinks=1):
     if self.machine == 'win32': file = file + '.exe'
     for path in self.paths:
       try:
-        if file in os.listdir(path): return path
+        if file in os.listdir(path):
+          # --- Check if the path is a link
+          if followlinks:
+            try:
+              path = os.path.dirname(os.readlink(os.path.join(path,file)))
+            except OSError:
+              pass
+          return path
       except:
         pass
     return None
+
+  #----------------------------------------------------------------------------
+  # --- Machine generic utilities
+
+  # --- For g95
+  def findg95libroot(self):
+    # --- Find the lib root for g95
+    # --- Get the full name of the g95 executable
+    g95 = os.path.join(self.findfile('g95',followlinks=0),'g95')
+    # --- Run it with the appropriate option to return the library path name
+    ff = os.popen(g95+' -print-libgcc-file-name')
+    gcclib = ff.readline()[:-1]
+    ff.close()
+    # --- Strip off the gcc library name
+    libroot = os.path.dirname(gcclib)
+    # --- That's it!
+    return libroot
 
   #-----------------------------------------------------------------------------
   # --- LINUX
@@ -167,7 +191,6 @@ appropriate block for the machine.
     if (self.findfile('g95') and
         (self.fcompname=='g95' or self.fcompname is None)):
       self.fcompname = 'g95'
-      # --- Intel
       self.f90free  = 'g95 -ffree-form -r8 -fPIC -Wno=155 -fshort-circuit'
       self.f90fixed = 'g95 -ffixed-line-length-132 -r8 -fPIC -fshort-circuit'
       if self.implicitnone:
@@ -175,8 +198,8 @@ appropriate block for the machine.
         self.f90fixed += ' -fimplicit-none'
       self.popt = '-O'
       self.forthonargs = ['--2underscores']
-      flibroot,b = os.path.split(self.findfile('g95'))
-      self.libdirs = [flibroot+'/lib']
+      flibroot = self.findg95libroot()
+      self.libdirs = [flibroot]
       self.libs = ['f95']
       cpuinfo = open('/proc/cpuinfo','r').read()
       if re.search('Pentium III',cpuinfo):
@@ -184,7 +207,7 @@ appropriate block for the machine.
       elif re.search('AMD Athlon',cpuinfo):
         self.fopt = '-O3'
       elif struct.calcsize('l') == 8:
-        self.fopt = '-O3 -mfpmath=sse -ftree-vectorize -ftree-vectorizer-verbose=5'
+        self.fopt = '-O3 -mfpmath=sse -ftree-vectorize -ftree-vectorizer-verbose=5 -funroll-loops -fstrict-aliasing -fsched-interblock -falign-loops=16 -falign-jumps=16 -falign-functions=16 -ffast-math -fstrict-aliasing'
         self.f90free = self.f90free + ' -DISZ=8 -i8'
         self.f90fixed = self.f90fixed + ' -DISZ=8 -i8'
       else:
@@ -279,12 +302,10 @@ appropriate block for the machine.
     if (self.findfile('g95') and
         (self.fcompname=='g95' or self.fcompname is None)):
       self.fcompname = 'g95'
-#      print "WARNING: This compiler might cause a bus error."
       # --- g95
       self.f90free  = 'g95 -r8'
       self.f90fixed = 'g95 -r8 -ffixed-line-length-132'
       self.forthonargs = ['--2underscores']
-#      flibroot,b = os.path.split(self.findfile('g95'))
       self.fopt = '-O3 -ftree-vectorize -ftree-vectorizer-verbose=5'
 #      self.fopt = '-O3 -funroll-loops -fstrict-aliasing -fsched-interblock  \
 #           -falign-loops=16 -falign-jumps=16 -falign-functions=16 \
@@ -293,7 +314,8 @@ appropriate block for the machine.
 #           -fstrict-aliasing'
 #      self.extra_link_args = ['-flat_namespace','-undefined suppress','-lg2c']
       self.extra_link_args = ['-flat_namespace','--allow-shlib-undefined','-Wl,--export-all-symbols','-Wl,-export-dynamic','-Wl,--unresolved-symbols=ignore-all','-lg2c']
-      self.libdirs = ['/usr/local/lib/gcc-lib/i686-pc-cygwin/4.0.2','/lib/w32api']
+      flibroot = self.findg95libroot()
+      self.libdirs = [flibroot,'/lib/w32api']
       self.libs = ['f95']
       return 1
 
@@ -303,7 +325,6 @@ appropriate block for the machine.
     if (self.findfile('g95') and
         (self.fcompname=='g95' or self.fcompname is None)):
       self.fcompname = 'g95'
-#      print "WARNING: This compiler might cause a bus error."
       # --- g95
       self.f90free  = 'g95 -r8 -fzero -ffree-form -Wno=155'
       self.f90fixed = 'g95 -r8 -fzero -ffixed-line-length-132'
@@ -311,11 +332,6 @@ appropriate block for the machine.
         self.f90free  += ' -fimplicit-none'
         self.f90fixed += ' -fimplicit-none'
       self.forthonargs = ['--2underscores']
-      compilerpath = self.findfile('g95')
-      # bullet-proof against an extra final slash:
-      if compilerpath[-1] == "/":
-        compilerpath=compilerpath[0:-1]
-      flibroot,b = os.path.split(compilerpath)
       self.fopt = '-O3 -funroll-loops -fstrict-aliasing -fsched-interblock  \
            -falign-loops=16 -falign-jumps=16 -falign-functions=16 \
            -malign-natural -ftree-vectorize -ftree-vectorizer-verbose=5 \
@@ -323,7 +339,8 @@ appropriate block for the machine.
            -fstrict-aliasing -mtune=G5 -mcpu=G5 -mpowerpc64'
 #      self.fopt = '-O3  -mtune=G5 -mcpu=G5 -mpowerpc64'
       self.extra_link_args = ['-flat_namespace']
-      self.libdirs = [flibroot+'/lib']
+      flibroot = self.findg95libroot()
+      self.libdirs = [flibroot]
       self.libs = ['f95']
       return 1
 
