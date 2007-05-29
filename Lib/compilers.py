@@ -271,14 +271,15 @@ appropriate block for the machine.
       return 1
 
   def linux_pathscale(self):
-    if (self.findfile('pathf90') and
-        (self.fcompname=='pathf90' or self.fcompname is None)):
-      self.fcompname = 'pathf90'
+    if ((self.findfile('pathf90') or self.findfile('pathf95')) and
+        self.fcompname in [None,'pathf90','pathf95','pathscale']):
+      if self.findfile('pathf95')): self.fcompname = 'pathf95'
+      else:                         self.fcompname = 'pathf90'
       # --- Intel8
-      self.f90free  = 'pathf90 -freeform -r8 -DPATHF90 -ftpp -fPIC -woff1615'
-      self.f90fixed = 'pathf90 -fixedform -extend_source -r8 -DPATHF90 -ftpp -fPIC -woff1615'
+      self.f90free  = self.fcompname + ' -freeform -r8 -DPATHF90 -ftpp -fPIC -woff1615 -fno-second-underscore'
+      self.f90fixed = self.fcompname + ' -fixedform -extend_source -r8 -DPATHF90 -ftpp -fPIC -woff1615 -fno-second-underscore'
       self.popt = '-O'
-      flibroot,b = os.path.split(self.findfile('pathf90'))
+      flibroot,b = os.path.split(self.findfile(self.fcompname))
       self.libdirs = [flibroot+'/lib/2.1']
       self.libs = ['pathfortran']
       cpuinfo = open('/proc/cpuinfo','r').read()
