@@ -46,7 +46,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.38 2007/05/30 20:19:23 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.39 2007/05/30 20:21:58 dave Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling
@@ -518,7 +518,7 @@ Gets the total size of a package or dictionary.
       vv = v
     else:
       vv = getattr(pkg,v)
-    result = result + newgetobjectsize(vv,'',recursive=recursive,grouplist=grouplist)
+    result = result + getobjectsize(vv,'',recursive=recursive,grouplist=grouplist)
 
   # --- Return the result
   return result
