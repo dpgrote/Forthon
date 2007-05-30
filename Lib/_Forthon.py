@@ -46,7 +46,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.37 2007/05/24 23:57:35 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.38 2007/05/30 20:19:23 dave Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling
@@ -389,7 +389,7 @@ where the file name can not be determined - None is returned.
     return determineoriginatingfile(o.__module__)
 
 # --- Get size of an object, recursively including anything inside of it.
-def getobjectsize(pkg,grp='',recursive=1):
+def oldgetobjectsize(pkg,grp='',recursive=1):
   """
 Gets the total size of a package or dictionary.
   - pkg: Either a Forthon object, dictionary, or a class instance
@@ -459,12 +459,9 @@ Gets the total size of a package or dictionary.
   # --- Return the result
   return result
 
-# --- Keep the old name around
-getgroupsize = getobjectsize
-
 # --- Get size of an object, recursively including anything inside of it.
 # --- New improved version, though should be tested more
-def newgetobjectsize(pkg,grp='',recursive=1,grouplist=None):
+def getobjectsize(pkg,grp='',recursive=1,grouplist=None):
   """
 Gets the total size of a package or dictionary.
   - pkg: Either a Forthon object, dictionary, or a class instance
@@ -525,6 +522,9 @@ Gets the total size of a package or dictionary.
 
   # --- Return the result
   return result
+
+# --- Keep the old name around
+getgroupsize = getobjectsize
 
 # --- Print out all variables in a group
 def printgroup(pkg,group='',maxelements=10,sumarrays=0):
