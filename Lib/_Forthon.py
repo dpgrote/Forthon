@@ -46,7 +46,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.39 2007/05/30 20:21:58 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.40 2007/05/30 22:01:42 dave Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling
@@ -495,7 +495,7 @@ Gets the total size of a package or dictionary.
     ll = pkg.varlist(grp)
   elif type(pkg) == DictType:
     ll = pkg.keys()
-  elif operator.isSequenceType(pkg):
+  elif type(pkg) in [ListType,TupleType]:
     ll = pkg
   else:
     try:
