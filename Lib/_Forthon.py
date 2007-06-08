@@ -4,17 +4,25 @@
 But flies an eagle flight, bold, and forthon, Leaving no tract behind.
 """
 # import all of the neccesary packages
-if 1:
-  with_numpy = 0
-  from Numeric import *
-  def gettypecode(x):
-    return x.typecode()
-else:
-  with_numpy = 1
+import sys
+import __main__
+
+try:
+  with_numpy = __main__.__dict__['with_numpy']
+except KeyError:
+  with_numpy = ('--with-numpy' in sys.argv)
+  __main__.__dict__['with_numpy'] = with_numpy
+  
+if with_numpy:
   from numpy import *
   ArrayType = ndarray
   def gettypecode(x):
     return x.dtype.char
+else:
+  from Numeric import *
+  def gettypecode(x):
+    return x.typecode()
+
 from types import *
 import string
 import re
@@ -30,8 +38,6 @@ try:
   import PRpyt
 except ImportError:
   pass
-import __main__
-import sys
 import cPickle
 try:
   import inspect
@@ -46,7 +52,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.40 2007/05/30 22:01:42 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.41 2007/06/08 18:19:38 dave Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling
