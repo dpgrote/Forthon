@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.55 2007/05/25 15:24:35 dave Exp $ */
+/* $Id: Forthon.h,v 1.56 2007/06/08 18:18:48 dave Exp $ */
 
 #include <Python.h>
 
@@ -21,7 +21,7 @@
 #define PyArray_CopyInto PyArray_CopyArray
 #else
 #include <numpy/arrayobject.h>
-#define ISNOTCONTIGUOUS(a) PyArray_UpdateFlags(A,NPY_CONTIGUOUS)
+#define ISNOTCONTIGUOUS(a) PyArray_UpdateFlags(a,NPY_CONTIGUOUS)
 #define MAKECONTIGUOUS(a) PyArray_UpdateFlags(a,(NPY_CONTIGUOUS | NPY_FORTRAN))
 #endif
 
@@ -33,6 +33,11 @@
 #include <unistd.h>
 
 static PyObject *ErrorObject;
+#define onError(message)                                      \
+   { PyErr_SetString(ErrorObject,message); return NULL;}
+
+#define returnnone {Py_INCREF(Py_None);return Py_None;}
+#define MYSTRCMP(S1,L1,S2,L2) (L1==L2?strncmp(S1,S2,L1)==0:0)
 
 #define ARRAY_REVERSE_STRIDE(A) {                             \
   int _i,_n=PyArray_NDIM(A);                                  \
@@ -88,12 +93,6 @@ static PyArrayObject* FARRAY_FROMOBJECT(PyObject *A2, int ARRAY_TYPE) {
     }
   return A1;
 }
-
-#define onError(message)                                      \
-   { PyErr_SetString(ErrorObject,message); return NULL;}
-
-#define returnnone {Py_INCREF(Py_None);return Py_None;}
-#define MYSTRCMP(S1,L1,S2,L2) (L1==L2?strncmp(S1,S2,L1)==0:0)
 
 /* ####################################################################### */
 /* # Write definition of scalar and array structures. Note that if these   */
