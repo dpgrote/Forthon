@@ -52,7 +52,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.41 2007/06/08 18:19:38 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.42 2007/07/12 00:27:41 dave Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling
@@ -1081,7 +1081,11 @@ def pyrestoreforthonobject(ff,gname,vlist,fobjdict,varsuffix,verbose,doarrays,
       # --- Otherwise, create a new instance of the appropriate type,
       # --- and add it to the list of objects.
       typename = ff.__getattr__("TYPENAME@"+gpdbname)
-      exec("%s = %s()"%(gname,typename),__main__.__dict__)
+      try:
+        exec("%s = %s()"%(gname,typename),__main__.__dict__)
+      except:
+        # --- If it gets here, it might mean that the name no longer exists.
+        return
       fobjdict[fobj] = gname
 
   # --- Sort out the list of variables
