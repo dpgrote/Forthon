@@ -209,8 +209,8 @@ appropriate block for the machine.
         self.fopt = '-O3'
       elif struct.calcsize('l') == 8:
         self.fopt = '-O3 -mfpmath=sse -ftree-vectorize -ftree-vectorizer-verbose=5 -funroll-loops -fstrict-aliasing -fsched-interblock -falign-loops=16 -falign-jumps=16 -falign-functions=16 -ffast-math -fstrict-aliasing'
-        self.f90free = self.f90free + ' -DISZ=8 -i8'
-        self.f90fixed = self.f90fixed + ' -DISZ=8 -i8'
+        self.f90free += ' -DISZ=8 -i8'
+        self.f90fixed += ' -DISZ=8 -i8'
       else:
         self.fopt = '-O3'
       return 1
@@ -219,14 +219,19 @@ appropriate block for the machine.
     if (self.findfile('gfortran') and
         (self.fcompname=='gfortran' or self.fcompname is None)):
       self.fcompname = 'gfortran'
-      self.f90free  = 'gfortran -fdefault-real-8 -fdefault-double-8'
-      self.f90fixed = 'gfortran -fdefault-real-8 -fdefault-double-8 -ffixed-line-length-132'
-      self.forthonargs = ['--2underscores']
+      self.f90free  = 'gfortran -fPIC -fdefault-real-8 -fdefault-double-8 -fsecond-underscore'
+      self.f90fixed = 'gfortran -fPIC -fdefault-real-8 -fdefault-double-8 -fsecond-underscore -ffixed-line-length-132'
+      if self.implicitnone:
+        self.f90free  += ' -fimplicit-none'
+        self.f90fixed += ' -fimplicit-none'
       flibroot = self.findgcclibroot('gfortran')
       self.libdirs = [flibroot]
+      self.forthonargs = ['--2underscores']
       self.libs = ['gfortran']
-      #self.extra_link_args = ['-lg2c']
       self.fopt = '-O3'
+      if struct.calcsize('l') == 8:
+        self.f90free += ' -DISZ=8 -fdefault-integer-8'
+        self.f90fixed += ' -DISZ=8 -fdefault-integer-8'
       return 1
 
   def linux_pg(self):
@@ -368,6 +373,9 @@ appropriate block for the machine.
       # --- gfortran
       self.f90free  = 'gfortran -fdefault-real-8 -fdefault-double-8'
       self.f90fixed = 'gfortran -fdefault-real-8 -fdefault-double-8 -ffixed-line-length-132'
+      if self.implicitnone:
+        self.f90free  += ' -fimplicit-none'
+        self.f90fixed += ' -fimplicit-none'
       self.forthonargs = ['--2underscores']
       flibroot,b = os.path.split(self.findfile('gfortran'))
       self.fopt = '-O3 -funroll-loops -fstrict-aliasing -fsched-interblock  \
