@@ -53,6 +53,7 @@ appropriate block for the machine.
         if self.linux_intel8() is not None: break
         if self.linux_intel() is not None: break
         if self.linux_g95() is not None: break
+        if self.linux_gfortran() is not None: break
         if self.linux_pg() is not None: break
         if self.linux_absoft() is not None: break
         if self.linux_lahey() is not None: break
@@ -115,13 +116,13 @@ appropriate block for the machine.
   #----------------------------------------------------------------------------
   # --- Machine generic utilities
 
-  # --- For g95
-  def findg95libroot(self):
-    # --- Find the lib root for g95
-    # --- Get the full name of the g95 executable
-    g95 = os.path.join(self.findfile('g95',followlinks=0),'g95')
+  # --- For g95 and gfortran
+  def findgcclibroot(self,fcompname):
+    # --- Find the lib root for gcc libraries
+    # --- Get the full name of the compiler executable
+    fcomp = os.path.join(self.findfile(fcompname,followlinks=0),fcompname)
     # --- Run it with the appropriate option to return the library path name
-    ff = os.popen(g95+' -print-libgcc-file-name')
+    ff = os.popen(fcomp+' -print-libgcc-file-name')
     gcclib = ff.readline()[:-1]
     ff.close()
     # --- Strip off the gcc library name
@@ -198,7 +199,7 @@ appropriate block for the machine.
         self.f90fixed += ' -fimplicit-none'
       self.popt = '-O'
       self.forthonargs = ['--2underscores']
-      flibroot = self.findg95libroot()
+      flibroot = self.findgcclibroot('g95')
       self.libdirs = [flibroot]
       self.libs = ['f95']
       cpuinfo = open('/proc/cpuinfo','r').read()
@@ -212,6 +213,20 @@ appropriate block for the machine.
         self.f90fixed = self.f90fixed + ' -DISZ=8 -i8'
       else:
         self.fopt = '-O3'
+      return 1
+
+  def linux_gfortran(self):
+    if (self.findfile('gfortran') and
+        (self.fcompname=='gfortran' or self.fcompname is None)):
+      self.fcompname = 'gfortran'
+      self.f90free  = 'gfortran -fdefault-real-8 -fdefault-double-8'
+      self.f90fixed = 'gfortran -fdefault-real-8 -fdefault-double-8 -ffixed-line-length-132'
+      self.forthonargs = ['--2underscores']
+      flibroot = self.findgcclibroot('gfortran')
+      self.libdirs = [flibroot]
+      self.libs = ['gfortran']
+      #self.extra_link_args = ['-lg2c']
+      self.fopt = '-O3'
       return 1
 
   def linux_pg(self):
@@ -315,7 +330,7 @@ appropriate block for the machine.
 #           -fstrict-aliasing'
 #      self.extra_link_args = ['-flat_namespace','-undefined suppress','-lg2c']
       self.extra_link_args = ['-flat_namespace','--allow-shlib-undefined','-Wl,--export-all-symbols','-Wl,-export-dynamic','-Wl,--unresolved-symbols=ignore-all','-lg2c']
-      flibroot = self.findg95libroot()
+      flibroot = self.findgcclibroot('g95')
       self.libdirs = [flibroot,'/lib/w32api']
       self.libs = ['f95']
       return 1
@@ -340,7 +355,7 @@ appropriate block for the machine.
            -fstrict-aliasing -mtune=G5 -mcpu=G5 -mpowerpc64'
 #      self.fopt = '-O3  -mtune=G5 -mcpu=G5 -mpowerpc64'
       self.extra_link_args = ['-flat_namespace']
-      flibroot = self.findg95libroot()
+      flibroot = self.findgcclibroot('g95')
       self.libdirs = [flibroot]
       self.libs = ['f95']
       return 1
@@ -363,7 +378,8 @@ appropriate block for the machine.
 #      self.fopt = '-O3  -mtune=G5 -mcpu=G5 -mpowerpc64'
       self.fopt = '-O3'
       self.extra_link_args = ['-flat_namespace','-lg2c']
-      self.libdirs = [flibroot+'/lib','/usr/local/gfortran/lib']
+      flibroot = self.findgcclibroot('gfortran')
+      self.libdirs = [flibroot]
       self.libs = ['gfortran']
       return 1
 
