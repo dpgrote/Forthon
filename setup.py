@@ -66,12 +66,15 @@ Numpy are available.""",
        scripts = [Forthon]
        )
 
-# --- This is probably the worst possible way to do this, but here goes...
-if sys.platform in ["linux2","hp","darwin","SP"]:
-  os.system('chmod -R go+r '+data_files_home)
-# os.system('chmod go+x '+os.path.join(data_files_home,'preprocess.py'))
-# os.system('chmod go+x '+os.path.join(data_files_home,'wrappergenerator.py'))
+# --- Only do a chmod when installing.
+if sys.argv[1] == 'install':
+  # --- This is probably the worst possible way to do this, but here goes...
+  if sys.platform in ["linux2","hp","darwin","SP"]:
+    os.system('chmod -R go+r '+data_files_home)
+  # os.system('chmod go+x '+os.path.join(data_files_home,'preprocess.py'))
+  # os.system('chmod go+x '+os.path.join(data_files_home,'wrappergenerator.py'))
 
 # --- Clean up the extra file created on win32.
 if sys.platform == 'win32':
   os.system("rm -f Forthon.py")
+
