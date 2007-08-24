@@ -1,7 +1,7 @@
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 19, 1998
 # Parse the interface description file
-# $Id: interfaceparser.py,v 1.15 2007/03/08 17:30:08 dave Exp $
+# $Id: interfaceparser.py,v 1.16 2007/08/24 17:34:19 dave Exp $
 
 # This reads in the entire variable description file and extracts all of
 # the variable and subroutine information needed to create an interface
@@ -212,8 +212,8 @@ def processfile(packname,filename,othermacros=[],timeroutines=0):
         timerv.data = '/0./'
         timerv.unit = 'seconds'
         timerv.comment = 'Run time for function %s'%v.name
-        timerv.group = packname+'timers'
-        timerv.attr = ' timer dump '
+        timerv.group = group
+        timerv.attr = attributes
         vlist.append(timerv)
 
     # Check if variable is a subroutine
@@ -231,8 +231,8 @@ def processfile(packname,filename,othermacros=[],timeroutines=0):
         timerv.data = '/0./'
         timerv.unit = 'seconds'
         timerv.comment = 'Run time for subroutine %s'%v.name
-        timerv.group = packname+'timers'
-        timerv.attr = ' timer dump '
+        timerv.group = group
+        timerv.attr = attributes
         vlist.append(timerv)
 
     # Check if variable is a C subroutine (takes C ordered arrays)
@@ -250,8 +250,8 @@ def processfile(packname,filename,othermacros=[],timeroutines=0):
         timerv.data = '/0./'
         timerv.unit = 'seconds'
         timerv.comment = 'Run time for C subroutine %s'%v.name
-        timerv.group = packname+'timers'
-        timerv.attr = ' timer dump '
+        timerv.group = group
+        timerv.attr = attributes
         vlist.append(timerv)
 
     # Check if there are any dimensions
