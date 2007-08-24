@@ -1,5 +1,5 @@
 # Created by David P. Grote, March 6, 1998
-# $Id: cfinterface.py,v 1.9 2007/05/25 15:24:34 dave Exp $
+# $Id: cfinterface.py,v 1.10 2007/08/24 17:33:32 dave Exp $
 
 # Routines which allows c functions to be callable by fortran
 import sys
@@ -18,7 +18,8 @@ with_numpy = 0
 # Get system name from the command line
 try:
   optlist,args = getopt.getopt(sys.argv[1:],'ad:t:F:',
-                     ['f90','f77','2underscores','nowritemodules','macros=',
+                     ['f90','f77','2underscores','nowritemodules',
+                      'timeroutines','macros=',
                       'noimplicitnone','with-numpy','with-Numeric'])
   for o in optlist:
     if o[0] == '-t': machine = o[1]
