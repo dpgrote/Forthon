@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.49 2007/11/01 18:59:10 dave Exp $
+# $Id: wrappergenerator.py,v 1.50 2007/11/01 19:11:14 dave Exp $
 
 import sys
 import os.path
@@ -503,23 +503,34 @@ of scalars and arrays.
                              'has the wrong number of dimensions");')
             self.cw('    goto err;}')
             j = -1
+
+            # --- Skip the check of dimension sizes if the total size of
+            # --- the array should be zero. This gets around an issue with
+            # --- numpy that zero length arrays seem to be always in
+            # --- C ordering.
+            self.cw('  if (1',noreturn=1)
+            for dim in arg.dims:
+              self.cw('*(('+dim.high+')-('+dim.low+')+1)',noreturn=1)
+            self.cw(' != 0) {')
+
             for dim in arg.dims:
               j += 1
               # --- Compare each dimension with its specified value
-              # --- For a 1-D argument, allow a scaler to be passed, which has
+              # --- For a 1-D argument, allow a scalar to be passed, which has
               # --- a number of dimensions (nd) == 0, but only if the
               # --- argument needs to have a length of 0 or 1.
-              self.cw('  _n = ('+dim.high+')-('+dim.low+')+1;')
+              self.cw('    _n = ('+dim.high+')-('+dim.low+')+1;')
               if len(arg.dims) == 1:
-                self.cw('  if (!((_n==0||_n==1)||(PyArray_NDIM(ax[%d]) > 0 &&'%i,
+                self.cw('    if (!((_n==0||_n==1)||(PyArray_NDIM(ax[%d]) > 0 &&'%i,
                         noreturn=1)
               else:
-                self.cw('  if (!((',noreturn=1)
+                self.cw('    if (!((',noreturn=1)
               self.cw('_n == (int)(PyArray_DIMS(ax[%d])[%d])))) {'%(i,j))
-              self.cw('    sprintf(e,"Dimension '+repr(j+1)+' of argument '+
+              self.cw('      sprintf(e,"Dimension '+repr(j+1)+' of argument '+
                                repr(i+1)+ ' in '+f.name+
                                ' has the wrong size");')
-              self.cw('    goto err;}')
+              self.cw('      goto err;}')
+            self.cw('  }')
         self.cw('  }')
 
       # --- Make a call to setjmp to save the state in case an error happens.
@@ -1124,7 +1135,7 @@ def wrappergenerator_main(argv=None,writef90modulesonly=0):
   if argv is None: argv = sys.argv[1:]
   optlist,args=getopt.getopt(argv,'at:d:F:',
                      ['f90','f77','2underscores','nowritemodules',
-                      'timeroutines','macros='])
+                      'timeroutines','with-numpy','macros='])
 
   # --- Get package name from argument list
   try:
