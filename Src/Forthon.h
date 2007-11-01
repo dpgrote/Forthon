@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.56 2007/06/08 18:18:48 dave Exp $ */
+/* $Id: Forthon.h,v 1.57 2007/11/01 19:13:41 dave Exp $ */
 
 #include <Python.h>
 
@@ -1153,7 +1153,7 @@ static PyObject *ForthonPackage_gallot(PyObject *_self_,PyObject *args)
         /* Add the array size to totmembytes. */
         totmembytes += (long)PyArray_NBYTES(self->farrays[i].pya);
         if (iverbose) printf("%s.%s %d\n",self->name,self->farrays[i].name,
-                                       PyArray_SIZE(self->farrays[i].pya));
+                                       (int)PyArray_SIZE(self->farrays[i].pya));
         }
       }
     }
@@ -1297,7 +1297,7 @@ static PyObject *ForthonPackage_gchange(PyObject *_self_,PyObject *args)
         /* Add the array size to totmembytes. */
         totmembytes += (long)PyArray_NBYTES(self->farrays[i].pya);
         if (iverbose) printf("%s.%s %d\n",self->name,self->farrays[i].name,
-                                       PyArray_SIZE(self->farrays[i].pya));
+                                       (int)PyArray_SIZE(self->farrays[i].pya));
         }
       }
     }
