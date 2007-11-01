@@ -191,10 +191,10 @@ if twounderscores: forthonargs.append('--2underscores')
 if not writemodules: forthonargs.append('--nowritemodules')
 if timeroutines: forthonargs.append('--timeroutines')
 if with_numpy:
-  # --- This is a nifty way to get the python installation directory
-  dd = os.path.dirname(os.__file__)
-  includedirs.append(dd+'/site-packages/numpy/core/include')
-  del dd
+  forthonargs.append('--with-numpy')
+  # --- Get the numpy headers path
+  import numpy
+  includedirs.append(numpy.get_include())
 
 # --- The macro WITH_NUMERIC must be defined when using Numeric
 define_macros = []
