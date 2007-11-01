@@ -52,7 +52,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.42 2007/07/12 00:27:41 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.43 2007/11/01 19:05:01 dave Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling
@@ -228,6 +228,10 @@ class PackageBase(object):
   def totmembytes(self): return getobjectsize(self)
 
 # --- Some platforms have a different value of .true. in fortran.
+# --- Note that this is not necessarily correct. The most robust
+# --- solution would be to get the value directly from a fortran
+# --- routine. As of now though, there are no fortran routines
+# --- built into Forthon, only those from the users code.
 if sys.platform in ['sn960510']:
   true = -1
   false = 0
@@ -391,7 +395,7 @@ where the file name can not be determined - None is returned.
     return o.co_filename
   if type(o) is InstanceType:
     return determineoriginatingfile(o.__class__)
-  if type(o) is ClassType:
+  if type(o) in [ClassType,TypeType]:
     return determineoriginatingfile(o.__module__)
 
 # --- Get size of an object, recursively including anything inside of it.
@@ -628,11 +632,12 @@ def pydumpforthonobject(ff,attr,objname,obj,varsuffix,writtenvars,fobjlist,
       if re.search('parallel',a):
         if verbose: print "variable "+vname+varsuffix+" skipped since it is a parallel variable"
         continue
-    # --- Check if variable is a complex array. Currently, these
-    # --- can not be written out.
-    if isinstance(v,ArrayType) and gettypecode(v) == Complex:
-      if verbose: print "variable "+vname+varsuffix+" skipped since it is a complex array"
-      continue
+    if not with_numpy:
+      # --- Check if variable is a complex array. Currently, these
+      # --- can not be written out with Numeric.
+      if isinstance(v,ArrayType) and gettypecode(v) == Complex:
+        if verbose: print "variable "+vname+varsuffix+" skipped since it is a complex array"
+        continue
     # --- Check if variable with same name has already been written out.
     # --- This only matters when the variable is being written out as
     # --- a plane python variable.
