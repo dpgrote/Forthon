@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.48 2007/05/25 15:24:34 dave Exp $
+# $Id: wrappergenerator.py,v 1.49 2007/11/01 18:59:10 dave Exp $
 
 import sys
 import os.path
@@ -581,7 +581,7 @@ of scalars and arrays.
       # --- fortran call
       self.cw('err:') 
 
-      # --- Before setting the erro string, check if an error was raised
+      # --- Before setting the error string, check if an error was raised
       # --- somewhere else.
       self.cw('  if (!PyErr_Occurred())')
       self.cw('    PyErr_SetString(ErrorObject,e);')
@@ -802,8 +802,10 @@ of scalars and arrays.
     self.cw('  PyModule_AddObject(m,"'+self.pname+'error", ErrorObject);')
     self.cw('  PyModule_AddObject(m,"fcompname",'+
                'PyString_FromString("'+self.fcompname+'"));')
-    self.cw('  if (PyErr_Occurred())')
+    self.cw('  if (PyErr_Occurred()) {')
+    self.cw('    PyErr_Print();')
     self.cw('    Py_FatalError("can not initialize module '+self.pname+'");')
+    self.cw('    }')
     self.cw('  import_array();')
     self.cw('  Forthon_BuildDicts('+self.pname+'Object);')
     self.cw('  ForthonPackage_allotdims('+self.pname+'Object);')
@@ -832,6 +834,10 @@ of scalars and arrays.
     self.cw('        r = PyObject_CallFunction(f,"Os",(PyObject *)'+
                 self.pname+'Object,"'+self.pname+'");')
     self.cw('  }}}')
+    self.cw('  if (NULL == r) {')
+    self.cw('    if (PyErr_Occurred()) PyErr_Print();')
+    self.cw('    Py_FatalError("unable to find a compatible Forthon module in which to register module ' + self.pname + '");')
+    self.cw('  }')
     self.cw('  Py_XDECREF(m);')
     self.cw('  Py_XDECREF(r);')
     self.cw('  }')
