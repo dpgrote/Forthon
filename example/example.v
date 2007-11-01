@@ -156,3 +156,6 @@ testsub10(ii:integer,aa(1:nn,3):real,nn:integer) subroutine
 a1() subroutine
 a2() subroutine
 a3() subroutine
+
+****** Stringtest:
+tstring character*4 /"////"/ # test "/" in strings
