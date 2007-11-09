@@ -353,10 +353,10 @@ appropriate block for the machine.
         self.f90free  += ' -fimplicit-none'
         self.f90fixed += ' -fimplicit-none'
       self.forthonargs = ['--2underscores']
-      self.fopt = '''-O3 -funroll-loops -fstrict-aliasing -fsched-interblock
-           -falign-loops=16 -falign-jumps=16 -falign-functions=16
-           -ftree-vectorize -ftree-vectorizer-verbose=5
-           -ffast-math -fstrict-aliasing'''
+      self.fopt = '-O3 -funroll-loops -fstrict-aliasing -fsched-interblock \
+           -falign-loops=16 -falign-jumps=16 -falign-functions=16 \
+           -ftree-vectorize -ftree-vectorizer-verbose=5 \
+           -ffast-math -fstrict-aliasing'
 #      self.fopt = '-O3  -mtune=G5 -mcpu=G5 -mpowerpc64'
       self.extra_link_args = ['-flat_namespace']
       flibroot = self.findgcclibroot('g95')
