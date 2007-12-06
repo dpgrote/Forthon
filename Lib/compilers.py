@@ -375,7 +375,7 @@ appropriate block for the machine.
       if self.implicitnone:
         self.f90free  += ' -fimplicit-none'
         self.f90fixed += ' -fimplicit-none'
-      self.forthonargs = ['--2underscores']
+#      self.forthonargs = ['--2underscores']
       flibroot,b = os.path.split(self.findfile('gfortran'))
       self.fopt = '-O3 -funroll-loops -fstrict-aliasing -fsched-interblock  \
            -falign-loops=16 -falign-jumps=16 -falign-functions=16 \
@@ -384,7 +384,8 @@ appropriate block for the machine.
            -fstrict-aliasing -mtune=G5 -mcpu=G5 -mpowerpc64'
 #      self.fopt = '-O3  -mtune=G5 -mcpu=G5 -mpowerpc64'
       self.fopt = '-O3'
-      self.extra_link_args = ['-flat_namespace','-lg2c']
+#      self.extra_link_args = ['-flat_namespace','-lg2c']
+      self.extra_link_args = ['-flat_namespace']
       flibroot = self.findgcclibroot('gfortran')
       self.libdirs = [flibroot]
       self.libs = ['gfortran']
