@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.57 2007/11/01 19:13:41 dave Exp $ */
+/* $Id: Forthon.h,v 1.58 2007/12/11 01:08:10 dave Exp $ */
 
 #include <Python.h>
 
@@ -330,7 +330,7 @@ static void ForthonPackage_allotdims(ForthonObject *self)
       }
     /* Fill the dimensions with zeros. This is only needed for arrays with */
     /* unspecified shape, since setdims won't fill the dimensions. */
-    memset(self->farrays[i].dimensions,0,self->farrays[i].nd*sizeof(int));
+    memset(self->farrays[i].dimensions,0,self->farrays[i].nd*sizeof(npy_intp));
     }
 }
 
