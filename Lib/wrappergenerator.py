@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.50 2007/11/01 19:11:14 dave Exp $
+# $Id: wrappergenerator.py,v 1.51 2007/12/12 23:02:58 dave Exp $
 
 import sys
 import os.path
@@ -1120,7 +1120,7 @@ of scalars and arrays.
 ###############################################################################
 ###############################################################################
 
-module_prefix_pat = re.compile ('([a-zA-Z_]+)\.scalars')
+module_prefix_pat = re.compile ('([a-zA-Z_][a-zA-Z0-9_]*)\.scalars')
 def get_another_scalar_dict(file_name,other_scalar_vars):
   m = module_prefix_pat.search(file_name)
   if m.start() == -1: raise 'expect a .scalars file'
