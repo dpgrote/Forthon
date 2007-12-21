@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.58 2007/12/11 01:08:10 dave Exp $ */
+/* $Id: Forthon.h,v 1.59 2007/12/21 23:51:35 dave Exp $ */
 
 #include <Python.h>
 
@@ -1902,7 +1902,7 @@ static PyObject *ForthonPackage_reprefix(PyObject *_self_,PyObject *args)
   ForthonObject *self = (ForthonObject *)_self_;
   PyObject *m,*d;
   PyObject *key, *value;
-  int pos=0;
+  long pos=0; /* should be Py_ssize_t */
   int e;
   if (!PyArg_ParseTuple(args,"")) return NULL;
   m = PyImport_AddModule("__main__");
@@ -1923,7 +1923,7 @@ static PyObject *ForthonPackage_setdict(PyObject *_self_,PyObject *args)
   ForthonObject *self = (ForthonObject *)_self_;
   PyObject *dict;
   PyObject *key, *value, *pyi;
-  int pos=0;
+  long pos=0; /* should be Py_ssize_t */
   int e;
   if (!PyArg_ParseTuple(args,"O",&dict)) return NULL;
   /* There is something wrong with this code XXX */
@@ -2033,6 +2033,7 @@ static struct PyMethodDef ForthonPackage_methods[] = {
   {"name"        ,(PyCFunction)ForthonPackage_name,1,name_doc},
   {"reprefix"    ,(PyCFunction)ForthonPackage_reprefix,1,reprefix_doc},
   {"setdict"     ,(PyCFunction)ForthonPackage_setdict,1,setdict_doc},
+  {"__setstate__",(PyCFunction)ForthonPackage_setdict,1,setdict_doc},
   {"totmembytes" ,(PyCFunction)ForthonPackage_totmembytes,1,totmembytes_doc},
   {"varlist"     ,(PyCFunction)ForthonPackage_varlist,1,varlist_doc},
   {"getstrides"  ,(PyCFunction)ForthonPackage_getstrides,1,getstrides_doc},
