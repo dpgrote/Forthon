@@ -52,16 +52,19 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.43 2007/11/01 19:05:01 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.44 2007/12/21 23:50:48 dave Exp $"
 
 ##############################################################################
-# --- Functions needed for object pickling
-def forthonobject_constructor(typename,dict):
+# --- Functions needed for object pickling. These should be moved to C.
+# --- The dict argument is kept for legacy.
+def forthonobject_constructor(typename,dict=None):
   import __main__
   typecreator = __main__.__dict__[typename]
   if callable(typecreator):
     obj = typecreator()
-    obj.setdict(dict)
+    # --- For old pickle files, a dict will still be passed in, relying on
+    # --- this rather than setstate.
+    if dict is not None: obj.setdict(dict)
     return obj
   else:
     # --- When typecreator is not callable, this means that it is a top
@@ -74,9 +77,11 @@ def pickle_forthonobject(o):
     # --- as opposed to derived type objects) only save the typename.
     # --- This assumes that the package will be written out directly
     # --- elsewhere.
-    return (forthonobject_constructor, (o.gettypename(),{}))
+    return (forthonobject_constructor, (o.gettypename(),))
   else:
-    return (forthonobject_constructor, (o.gettypename(),o.getdict()))
+    # --- The dictionary from getdict will be passed into the __setstate__
+    # --- method upon unpickling.
+    return (forthonobject_constructor, (o.gettypename(),),o.getdict())
 
 
 # --- The following routines deal with multiple packages. The ones setting
