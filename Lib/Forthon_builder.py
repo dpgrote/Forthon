@@ -342,7 +342,7 @@ forthonargs = string.join(forthonargs,' ')
 
 # --- Add any includedirs to fargs
 for i in includedirs:
-  fargs = fargs + '-I'+i+' '
+  fargs = fargs + ' -I'+i+' '
 
 # --- Add build rules for fortran files with suffices other than the
 # --- basic fixed and free ones. Those first two suffices are included
