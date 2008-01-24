@@ -5,7 +5,8 @@ cvs update
 python -c "import version;version.update()"
 set vvv=`python version.py`
 scp ../Forthon.tgz dave@hifweb:/web/html/Forthon/Forthon-$vvv.tgz
-ssh hifweb "ln -sf /web/html/Forthon/Forthon-$vvv.tgz /web/html/Forthon/Forthon.tgz"
+scp docs/index.html dave@hifweb:/web/html/Forthon
+#ssh hifweb "ln -sf /web/html/Forthon/Forthon-$vvv.tgz /web/html/Forthon/Forthon.tgz"
 ssh hifweb "chmod -R go+rX /web/html/Forthon"
 rm -f ../Forthon.tgz version.pyc
 
