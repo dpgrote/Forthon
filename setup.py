@@ -10,13 +10,21 @@ try:
     from distutils.command.install import install
     from distutils.core import setup, Extension
     from distutils.sysconfig import get_python_lib
+    from distutils.util import change_root
 except:
     raise SystemExit, "Distutils problem"
 
-data_files_home = os.path.join(get_python_lib(),'Forthon')
+# --- data_files_home needs to refer to the same place where the rest of
+# --- the package is to be installed. This is one way of getting that path
+# --- relative to prefix, but may not be general. It gets the full library
+# --- path and strips off the prefix based on its length.
+prefix = distutils.sysconfig.PREFIX
+lenprefix = len(prefix)
+data_files_home = os.path.join(get_python_lib(),'Forthon')[lenprefix+1:]
 
-# --- Get around a "bug" in disutils on 64 big systems. When there is no extension to be installed, distutils
-# --- will put the scripts in /usr/lib/... instead of /usr/lib64. This fixes it.
+# --- Get around a "bug" in disutils on 64 bit systems. When there is no
+# --- extension to be installed, distutils will put the scripts in
+# --- /usr/lib/... instead of /usr/lib64. This fixes it.
 if get_python_lib().find('lib64') != -1:
   import distutils.command.install
   distutils.command.install.INSTALL_SCHEMES['unix_prefix']['purelib'] = '$base/lib64/python$py_version_short/site-packages'
@@ -68,11 +76,13 @@ Numpy are available.""",
 
 # --- Only do a chmod when installing.
 if sys.argv[1] == 'install':
+  # --- Make sure that all of the data files are world readable. Distutils
+  # --- sometimes doesn't set the permissions correctly.
   # --- This is probably the worst possible way to do this, but here goes...
-  if sys.platform in ["linux2","hp","darwin","SP"]:
-    os.system('chmod -R go+r '+data_files_home)
-  # os.system('chmod go+x '+os.path.join(data_files_home,'preprocess.py'))
-  # os.system('chmod go+x '+os.path.join(data_files_home,'wrappergenerator.py'))
+    if sys.platform in ["linux2","hp","darwin","SP"]:
+      # --- Make sure that the path is writable before doing the chmod.
+      if os.access(change_root(prefix,data_files_home),os.W_OK):
+        os.system('chmod -R go+r '+change_root(prefix,data_files_home))
 
 # --- Clean up the extra file created on win32.
 if sys.platform == 'win32':
