@@ -2,7 +2,7 @@
 # To use:
 #       python setup.py install
 #
-import os, sys, string, re
+import os, sys, stat, string, re
 from glob import glob
 
 try:
@@ -11,21 +11,47 @@ try:
     from distutils.core import setup, Extension
     from distutils.sysconfig import get_python_lib
     from distutils.util import change_root
+    from distutils.command.install_data import install_data
 except:
     raise SystemExit, "Distutils problem"
+
+# --- Create an alternate installation command that will set the
+# --- perms correctly.
+perm644 = stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH | stat.S_IWUSR
+class install_data_fixperms(distutils.command.install_data.install_data):
+  """need to change self.install_dir to the actual library dir"""
+  def run(self):
+    install_cmd = self.get_finalized_command('install')
+    self.install_dir = getattr(install_cmd, 'install_lib')
+    # print "Installing into", self.install_dir
+    res = distutils.command.install_data.install_data.run(self)
+    subfiles = os.listdir(self.install_dir)
+    # print "Files are", subfiles
+    for i in subfiles:
+      fullname = os.path.join(self.install_dir, i)
+      # print "Working on", fullname
+      os.chmod(fullname, perm644)
+# Now we fix the permissions
+    return res
 
 # --- data_files_home needs to refer to the same place where the rest of
 # --- the package is to be installed. This is one way of getting that path
 # --- relative to prefix, but may not be general. It gets the full library
 # --- path and strips off the prefix based on its length.
-prefix = distutils.sysconfig.PREFIX
-lenprefix = len(prefix)
-data_files_home = os.path.join(get_python_lib(),'Forthon')[lenprefix+1:]
+# prefix = distutils.sysconfig.PREFIX
+# lenprefix = len(prefix)
+# data_files_home = os.path.join(get_python_lib(),'Forthon')[lenprefix+1:]
+# --- JRC: the above gets the python installation prefix, not that
+# --- for Forthon.  The below puts the installation right under
+# wherever Forthon is installed.
+data_files_home = ""
 
 # --- Get around a "bug" in disutils on 64 bit systems. When there is no
 # --- extension to be installed, distutils will put the scripts in
 # --- /usr/lib/... instead of /usr/lib64. This fixes it.
-if get_python_lib().find('lib64') != -1:
+# if get_python_lib().find('lib64') != -1:
+# --- JRC: Does not fix for python-2.4 in any case.  This does.
+if distutils.sysconfig.get_config_vars()["LIBDEST"].find('lib64') != -1:
   import distutils.command.install
   distutils.command.install.INSTALL_SCHEMES['unix_prefix']['purelib'] = '$base/lib64/python$py_version_short/site-packages'
   distutils.command.install.INSTALL_SCHEMES['unix_home']['purelib'] = '$base/lib64/python$py_version_short/site-packages'
@@ -52,7 +78,7 @@ else:
   Forthon = 'Forthon'
 
 setup (name = "Forthon",
-       version = '0.7.6',
+       version = '0.7.7',
        author = 'David P. Grote',
        author_email = "DPGrote@lbl.gov",
        url = "http://hifweb.lbl.gov/Forthon",
@@ -70,19 +96,23 @@ Numpy are available.""",
        extra_path = 'Forthon',
        packages = [''],
        package_dir = {'': 'Lib'},
-       data_files = [(data_files_home,['Notice','Src/Forthon.h','Src/Forthon.c'])],
+       data_files = [("", ['Notice','Src/Forthon.h','Src/Forthon.c'])],
+       cmdclass = {'install_data': install_data_fixperms},
        scripts = [Forthon]
        )
 
 # --- Only do a chmod when installing.
-if sys.argv[1] == 'install':
-  # --- Make sure that all of the data files are world readable. Distutils
-  # --- sometimes doesn't set the permissions correctly.
-  # --- This is probably the worst possible way to do this, but here goes...
-    if sys.platform in ["linux2","hp","darwin","SP"]:
-      # --- Make sure that the path is writable before doing the chmod.
-      if os.access(change_root(prefix,data_files_home),os.W_OK):
-        os.system('chmod -R go+r '+change_root(prefix,data_files_home))
+# --- JRC: with the above override, this is no longer needed
+# if sys.argv[1] == 'install':
+#   # --- Make sure that all of the data files are world readable. Distutils
+#   # --- sometimes doesn't set the permissions correctly.
+#   # --- This is probably the worst possible way to do this, but here goes...
+#   if sys.platform in ["linux2","hp","darwin","SP"]:
+#       # --- Make sure that the path is writable before doing the chmod.
+#       # --- JRC: The below works only for installation into the Python tree,
+#       # --- not a different prefix
+#       if os.access(change_root(prefix, data_files_home), os.W_OK):
+#         os.system('chmod -R go+r '+change_root(prefix, data_files_home))
 
 # --- Clean up the extra file created on win32.
 if sys.platform == 'win32':
