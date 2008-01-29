@@ -7,6 +7,7 @@ But flies an eagle flight, bold, and forthon, Leaving no tract behind.
 import sys
 import __main__
 
+#__main__.__dict__['with_numpy'] = 1
 try:
   with_numpy = __main__.__dict__['with_numpy']
 except KeyError:
@@ -52,7 +53,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.44 2007/12/21 23:50:48 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.45 2008/01/29 01:19:10 dave Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling. These should be moved to C.
