@@ -53,7 +53,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.45 2008/01/29 01:19:10 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.46 2008/01/29 17:12:24 dave Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling. These should be moved to C.
@@ -767,24 +767,7 @@ Dump data into a pdb file
   writtenvars = []
   fobjlist = []
   for pname in packagelist:
-    try:
-      pkg = __main__.__dict__[pname]
-    except KeyError:
-      # --- In some cases, it is possible for a package to have been imported
-      # --- and included in the package list without being imported into main.
-      # --- Do the import here.
-      pkg = __import__(pname,globals(),locals())
-      try:
-        # --- Check if it is the right kind of object
-        pkg.getfobject
-      except AttributeError:
-        # --- There is a module with the same name as the package. See if it
-        # --- contains the package. Note that if it doesn't, skip this package
-        # --- since it can't be found. Or should an exception be raised?
-        try:
-          pkg = getattr(pkg,pname)
-        except AttributeError:
-          continue
+    pkg = packageobject(pname)
     if isinstance(pkg,PackageBase): continue
     if varsuffix is None: pkgsuffix = '@' + pname
     pydumpforthonobject(ff,attr,pname,pkg,pkgsuffix,writtenvars,fobjlist,
