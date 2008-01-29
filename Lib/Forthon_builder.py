@@ -220,10 +220,13 @@ def fixpath(path,dos=1):
 pathsep = os.sep
 if machine == 'win32': pathsep = r'\\'
 
-# --- Find place where packages are placed. Use the facility
-# --- from distutils to be robust.
-forthonhome = os.path.join(distutils.sysconfig.get_python_lib(),'Forthon')
+# --- Find place where packages are placed. This imports one of the
+# --- Forthon files and gets the path from that. It uses fvars.py since
+# --- that is a small file which doesn't have other dependencies.
+import fvars
+forthonhome = os.path.dirname(fvars.__file__)
 forthonhome = fixpath(forthonhome)
+del fvars
 
 # --- Find the location of the build directory. There must be a better way
 # --- of doing this.
