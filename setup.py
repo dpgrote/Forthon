@@ -4,6 +4,7 @@
 #
 import os, sys, stat, string, re
 from glob import glob
+import version
 
 try:
     import distutils
@@ -78,7 +79,7 @@ else:
   Forthon = 'Forthon'
 
 setup (name = "Forthon",
-       version = '0.7.7',
+       version = version.__doc__,
        author = 'David P. Grote',
        author_email = "DPGrote@lbl.gov",
        url = "http://hifweb.lbl.gov/Forthon",
