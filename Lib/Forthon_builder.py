@@ -89,6 +89,10 @@ One or more of the following options can be specified.
     to the builddir. This defaults to the builddir.
  --noimplicitnone
     When specified, the implicitnone is not enforced
+ --2underscores
+ --no2underscores
+    Specifies whether or not to use second underscores when doing fortran
+    name mangling.
  --with-numpy
     When specified, numpy is used instead of Numeric
  --with-Numeric
@@ -116,7 +120,7 @@ optlist,args = getopt.getopt(sys.argv[1:],'agd:t:F:D:L:l:I:i:f:',
                          ['f90','f77','nowritemodules',
                           'timeroutines','macros=',
                           'fopt=','fargs=','static',
-                          '2underscores',
+                          '2underscores','no2underscores',
                           'free_suffix=','fixed_suffix=',
                           'compile_first=','builddir=','noimplicitnone',
                           'build-temp=','with-numpy','with-Numeric'])
@@ -168,6 +172,7 @@ for o in optlist:
   elif o[0] == '--f90': f90 = '--f90'
   elif o[0] == '--f77': f90 = '--f77'
   elif o[0] == '--2underscores': twounderscores = 1
+  elif o[0] == '--no2underscores': twounderscores = 0
   elif o[0] == '--fopt': fopt = o[1]
   elif o[0] == '--fargs': fargs = fargs + ' ' + o[1]
   elif o[0] == '--static': static = 1
@@ -188,6 +193,7 @@ if fortranfile is None: fortranfile = pkg + '.' + fixed_suffix
 # --- Set arguments to Forthon, based on defaults and any inputs.
 forthonargs = []
 if twounderscores: forthonargs.append('--2underscores')
+else:              forthonargs.append('--no2underscores')
 if not writemodules: forthonargs.append('--nowritemodules')
 if timeroutines: forthonargs.append('--timeroutines')
 if with_numpy:
@@ -250,7 +256,8 @@ fcompiler = FCompiler(machine=machine,
                       debug=debug,
                       fcompname=fcomp,
                       static=static,
-                      implicitnone=implicitnone)
+                      implicitnone=implicitnone,
+                      twounderscores=twounderscores)
 
 # --- Create some locals which are needed for strings below.
 f90free = fcompiler.f90free
