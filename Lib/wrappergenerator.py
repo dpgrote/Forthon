@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.51 2007/12/12 23:02:58 dave Exp $
+# $Id: wrappergenerator.py,v 1.52 2008/01/31 00:36:01 dave Exp $
 
 import sys
 import os.path
@@ -1134,7 +1134,8 @@ def get_another_scalar_dict(file_name,other_scalar_vars):
 def wrappergenerator_main(argv=None,writef90modulesonly=0):
   if argv is None: argv = sys.argv[1:]
   optlist,args=getopt.getopt(argv,'at:d:F:',
-                     ['f90','f77','2underscores','nowritemodules',
+                     ['f90','f77','2underscores','no2underscores',
+                      'nowritemodules',
                       'timeroutines','with-numpy','macros='])
 
   # --- Get package name from argument list
