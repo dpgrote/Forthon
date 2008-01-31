@@ -119,15 +119,17 @@ appropriate block for the machine.
   # --- Machine generic utilities
 
   # --- For g95 and gfortran
-  def findgcclibroot(self,fcompname):
-    # --- Find the lib root for gcc libraries
-    # --- Get the full name of the compiler executable
+  def findgnulibroot(self,fcompname):
+    # --- Find the lib root for gnu based compilers.
+    # --- Get the full name of the compiler executable.
     fcomp = os.path.join(self.findfile(fcompname,followlinks=0),fcompname)
+    # --- Map the compiler name to the library needed.
+    flib = {'gfortran':'gfortran','g95':'f95'}[fcompname]
     # --- Run it with the appropriate option to return the library path name
-    ff = os.popen(fcomp+' -print-libgcc-file-name')
+    ff = os.popen(fcomp+' -print-file-name=lib'+flib+'.a')
     gcclib = ff.readline()[:-1]
     ff.close()
-    # --- Strip off the gcc library name
+    # --- Strip off the actual library name to get the path.
     libroot = os.path.dirname(gcclib)
     # --- That's it!
     return libroot
@@ -206,7 +208,7 @@ appropriate block for the machine.
         self.f90free  += ' -fno-second-underscore'
         self.f90fixed += ' -fno-second-underscore'
       self.popt = '-O'
-      flibroot = self.findgcclibroot('g95')
+      flibroot = self.findgnulibroot('g95')
       self.libdirs = [flibroot]
       self.libs = ['f95']
       cpuinfo = open('/proc/cpuinfo','r').read()
@@ -237,7 +239,7 @@ appropriate block for the machine.
       else:
         self.f90free  += ' -fno-second-underscore'
         self.f90fixed += ' -fno-second-underscore'
-      flibroot = self.findgcclibroot('gfortran')
+      flibroot = self.findgnulibroot('gfortran')
       self.libdirs = [flibroot]
       self.libs = ['gfortran']
       self.fopt = '-O3'
@@ -358,7 +360,7 @@ appropriate block for the machine.
 #           -fstrict-aliasing'
 #      self.extra_link_args = ['-flat_namespace','-undefined suppress','-lg2c']
       self.extra_link_args = ['-flat_namespace','--allow-shlib-undefined','-Wl,--export-all-symbols','-Wl,-export-dynamic','-Wl,--unresolved-symbols=ignore-all','-lg2c']
-      flibroot = self.findgcclibroot('g95')
+      flibroot = self.findgnulibroot('g95')
       self.libdirs = [flibroot,'/lib/w32api']
       self.libs = ['f95']
       return 1
@@ -387,7 +389,7 @@ appropriate block for the machine.
            -ffast-math -fstrict-aliasing'
 #      self.fopt = '-O3  -mtune=G5 -mcpu=G5 -mpowerpc64'
       self.extra_link_args = ['-flat_namespace']
-      flibroot = self.findgcclibroot('g95')
+      flibroot = self.findgnulibroot('g95')
       self.libdirs = [flibroot]
       self.libs = ['f95']
       return 1
@@ -419,7 +421,7 @@ appropriate block for the machine.
       self.fopt = '-O3'
 #      self.extra_link_args = ['-flat_namespace','-lg2c']
       self.extra_link_args = ['-flat_namespace']
-      flibroot = self.findgcclibroot('gfortran')
+      flibroot = self.findgnulibroot('gfortran')
       self.libdirs = [flibroot]
       self.libs = ['gfortran']
       return 1
