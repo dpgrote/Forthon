@@ -23,7 +23,8 @@ Also, the new function must be included in the while loop below in the
 appropriate block for the machine.
   """
 
-  def __init__(self,machine=None,debug=0,fcompname=None,static=0,implicitnone=1):
+  def __init__(self,machine=None,debug=0,fcompname=None,static=0,implicitnone=1,
+                    twounderscores=0):
     if machine is None: machine = sys.platform
     self.machine = machine
     if self.machine <> 'win32':
@@ -35,6 +36,7 @@ appropriate block for the machine.
     self.fcompname = fcompname
     self.static = static
     self.implicitnone = implicitnone
+    self.twounderscores = twounderscores
     self.defines = []
     self.fopt = ''
     self.popt = ''
@@ -197,8 +199,13 @@ appropriate block for the machine.
       if self.implicitnone:
         self.f90free  += ' -fimplicit-none'
         self.f90fixed += ' -fimplicit-none'
+      if self.twounderscores:
+        self.f90free  += ' -fsecond-underscore'
+        self.f90fixed += ' -fsecond-underscore'
+      else:
+        self.f90free  += ' -fno-second-underscore'
+        self.f90fixed += ' -fno-second-underscore'
       self.popt = '-O'
-      self.forthonargs = ['--2underscores']
       flibroot = self.findgcclibroot('g95')
       self.libdirs = [flibroot]
       self.libs = ['f95']
@@ -219,14 +226,19 @@ appropriate block for the machine.
     if (self.findfile('gfortran') and
         (self.fcompname=='gfortran' or self.fcompname is None)):
       self.fcompname = 'gfortran'
-      self.f90free  = 'gfortran -fPIC -fdefault-real-8 -fdefault-double-8 -fsecond-underscore'
-      self.f90fixed = 'gfortran -fPIC -fdefault-real-8 -fdefault-double-8 -fsecond-underscore -ffixed-line-length-132'
+      self.f90free  = 'gfortran -fPIC -fdefault-real-8 -fdefault-double-8'
+      self.f90fixed = 'gfortran -fPIC -fdefault-real-8 -fdefault-double-8 -ffixed-line-length-132'
       if self.implicitnone:
         self.f90free  += ' -fimplicit-none'
         self.f90fixed += ' -fimplicit-none'
+      if self.twounderscores:
+        self.f90free  += ' -fsecond-underscore'
+        self.f90fixed += ' -fsecond-underscore'
+      else:
+        self.f90free  += ' -fno-second-underscore'
+        self.f90fixed += ' -fno-second-underscore'
       flibroot = self.findgcclibroot('gfortran')
       self.libdirs = [flibroot]
-      self.forthonargs = ['--2underscores']
       self.libs = ['gfortran']
       self.fopt = '-O3'
       if struct.calcsize('l') == 8:
@@ -255,7 +267,7 @@ appropriate block for the machine.
       # --- Absoft
       self.f90free  = 'f90 -B108 -N113 -W132 -YCFRL=1 -YEXT_NAMES=ASIS'
       self.f90fixed = 'f90 -B108 -N113 -W132 -YCFRL=1 -YEXT_NAMES=ASIS'
-      self.forthonargs = ['--2underscores']
+      self.forthonargs = ['--2underscores'] # --- This needs to be fixed XXX
       flibroot,b = os.path.split(self.findfile('f90'))
       self.libdirs = [flibroot+'/lib']
       self.libs = ['U77','V77','f77math','f90math','fio']
@@ -296,8 +308,14 @@ appropriate block for the machine.
       if self.findfile('pathf95'): self.fcompname = 'pathf95'
       else:                        self.fcompname = 'pathf90'
       # --- Intel8
-      self.f90free  = self.fcompname + ' -freeform -r8 -DPATHF90 -ftpp -fPIC -woff1615 -fno-second-underscore'
-      self.f90fixed = self.fcompname + ' -fixedform -extend_source -r8 -DPATHF90 -ftpp -fPIC -woff1615 -fno-second-underscore'
+      self.f90free  = self.fcompname + ' -freeform -r8 -DPATHF90 -ftpp -fPIC -woff1615'
+      self.f90fixed = self.fcompname + ' -fixedform -extend_source -r8 -DPATHF90 -ftpp -fPIC -woff1615'
+      if self.twounderscores:
+        self.f90free  += ' -fsecond-underscore'
+        self.f90fixed += ' -fsecond-underscore'
+      else:
+        self.f90free  += ' -fno-second-underscore'
+        self.f90fixed += ' -fno-second-underscore'
       self.popt = '-O'
       flibroot,b = os.path.split(self.findfile(self.fcompname))
       self.libdirs = [flibroot+'/lib/2.1']
@@ -326,7 +344,12 @@ appropriate block for the machine.
       # --- g95
       self.f90free  = 'g95 -r8'
       self.f90fixed = 'g95 -r8 -ffixed-line-length-132'
-      self.forthonargs = ['--2underscores']
+      if self.twounderscores:
+        self.f90free  += ' -fsecond-underscore'
+        self.f90fixed += ' -fsecond-underscore'
+      else:
+        self.f90free  += ' -fno-second-underscore'
+        self.f90fixed += ' -fno-second-underscore'
       self.fopt = '-O3 -ftree-vectorize -ftree-vectorizer-verbose=5'
 #      self.fopt = '-O3 -funroll-loops -fstrict-aliasing -fsched-interblock  \
 #           -falign-loops=16 -falign-jumps=16 -falign-functions=16 \
@@ -352,7 +375,12 @@ appropriate block for the machine.
       if self.implicitnone:
         self.f90free  += ' -fimplicit-none'
         self.f90fixed += ' -fimplicit-none'
-      self.forthonargs = ['--2underscores']
+      if self.twounderscores:
+        self.f90free  += ' -fsecond-underscore'
+        self.f90fixed += ' -fsecond-underscore'
+      else:
+        self.f90free  += ' -fno-second-underscore'
+        self.f90fixed += ' -fno-second-underscore'
       self.fopt = '-O3 -funroll-loops -fstrict-aliasing -fsched-interblock \
            -falign-loops=16 -falign-jumps=16 -falign-functions=16 \
            -ftree-vectorize -ftree-vectorizer-verbose=5 \
@@ -375,7 +403,12 @@ appropriate block for the machine.
       if self.implicitnone:
         self.f90free  += ' -fimplicit-none'
         self.f90fixed += ' -fimplicit-none'
-#      self.forthonargs = ['--2underscores']
+      if self.twounderscores:
+        self.f90free  += ' -fsecond-underscore'
+        self.f90fixed += ' -fsecond-underscore'
+      else:
+        self.f90free  += ' -fno-second-underscore'
+        self.f90fixed += ' -fno-second-underscore'
       flibroot,b = os.path.split(self.findfile('gfortran'))
       self.fopt = '-O3 -funroll-loops -fstrict-aliasing -fsched-interblock  \
            -falign-loops=16 -falign-jumps=16 -falign-functions=16 \
