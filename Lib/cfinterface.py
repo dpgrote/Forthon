@@ -1,5 +1,5 @@
 # Created by David P. Grote, March 6, 1998
-# $Id: cfinterface.py,v 1.11 2008/01/31 00:37:48 dave Exp $
+# $Id: cfinterface.py,v 1.12 2008/02/01 00:54:41 dave Exp $
 
 # Routines which allows c functions to be callable by fortran
 import sys
@@ -13,7 +13,7 @@ machine = sys.platform
 f90 = 1
 twounderscores = 0 # When true, names with underscores in them have an extra
                    # underscore appedend to the fortran name
-with_numpy = 0
+with_numpy = 1
 
 # Get system name from the command line
 try:

@@ -94,7 +94,7 @@ One or more of the following options can be specified.
     Specifies whether or not to use second underscores when doing fortran
     name mangling.
  --with-numpy
-    When specified, numpy is used instead of Numeric
+    When specified, numpy is used instead of Numeric. This is now the default.
  --with-Numeric
     When specified, Numeric is used instead of numpy
 
@@ -155,7 +155,7 @@ compile_first  = ''
 builddir       = None
 implicitnone   = 1
 build_temp     = ''
-with_numpy     = 0
+with_numpy     = 1
 
 for o in optlist:
   if o[0]=='-a': initialgallot = '-a'
