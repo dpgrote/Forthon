@@ -324,3 +324,33 @@ void
 /* ----------------------------------------------------------------------- */
 /* ----------------------------------------------------------------------- */
 
+void
+%fname('callpythonfunc')+'(FSTRING fname,FSTRING mname SL1 SL2)'
+{
+  char *cfname,*cmname;
+  PyObject *m,*d,*f,*r;
+  cfname = (char *) malloc((FSTRLEN1(fname)+1)*sizeof(char));
+  cmname = (char *) malloc((FSTRLEN2(mname)+1)*sizeof(char));
+  memcpy(cfname,FSTRPTR(fname),FSTRLEN1(fname));
+  memcpy(cmname,FSTRPTR(mname),FSTRLEN2(mname));
+  cfname[FSTRLEN1(fname)] = (char)0;
+  cmname[FSTRLEN2(mname)] = (char)0;
+  m = PyImport_ImportModule(cmname);
+  if (m != NULL) {
+    d = PyModule_GetDict(m);
+    if (d != NULL) {
+      f = PyDict_GetItemString(d,cfname);
+      if (f != NULL) {
+        r = PyObject_CallFunction(f,NULL);
+  }}}
+  free(cfname);
+  free(cmname);
+  Py_XDECREF(m);
+  if (r == NULL) {
+    longjmp(stackenvironment,1);
+  }
+  else {
+    Py_XDECREF(r);
+  }
+}
+
