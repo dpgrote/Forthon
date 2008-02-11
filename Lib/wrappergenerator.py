@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.52 2008/01/31 00:36:01 dave Exp $
+# $Id: wrappergenerator.py,v 1.53 2008/02/11 17:40:35 dave Exp $
 
 import sys
 import os.path
@@ -802,6 +802,8 @@ of scalars and arrays.
     self.cw('  '+self.pname+'Object->setstaticdims = *'+
                 self.pname+'setstaticdims;')
     self.cw('  '+self.pname+'Object->fmethods = '+self.pname+'_methods;')
+    self.cw('  '+self.pname+'Object->__module__ = Py_BuildValue("s","'+
+                 self.pname+'py");')
     self.cw('  '+self.pname+'Object->fobj = NULL;')
     self.cw('  '+self.pname+'Object->fobjdeallocate = NULL;')
     self.cw('  '+self.pname+'Object->nullifycobj = NULL;')

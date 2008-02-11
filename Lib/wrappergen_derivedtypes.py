@@ -323,6 +323,7 @@ class ForthonDerivedType:
       self.cw('  obj->setdims = *'+t.name+'setdims;')
       self.cw('  obj->setstaticdims = *'+t.name+'setstaticdims;')
       self.cw('  obj->fmethods = '+t.name+'_methods;')
+      self.cw('  obj->__module__ = Py_BuildValue("s","'+pname+'py");')
       self.cw('  obj->fobj = fobj;')
       self.cw('  if (*deallocatable==1)')
       self.cw('    obj->fobjdeallocate=*'+fname(self.fsub(t,'deallocatef'))+';')
