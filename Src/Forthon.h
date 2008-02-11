@@ -1,7 +1,13 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.59 2007/12/21 23:51:35 dave Exp $ */
+/* $Id: Forthon.h,v 1.60 2008/02/11 17:39:50 dave Exp $ */
 
 #include <Python.h>
+
+#if PY_VERSION_HEX < 0x02050000 && !defined(PY_SSIZE_T_MIN)
+typedef int Py_ssize_t;
+#define PY_SSIZE_T_MAX INT_MAX
+#define PY_SSIZE_T_MIN INT_MIN
+#endif
 
 #ifdef WITH_NUMERIC
 #include <Numeric/arrayobject.h>
@@ -142,6 +148,7 @@ typedef struct {
   void (*setstaticdims)();
   PyMethodDef *fmethods;
   PyObject *scalardict,*arraydict;
+  PyObject *__module__;
   char *fobj;
   void (*fobjdeallocate)();
   void (*nullifycobj)();
@@ -937,6 +944,7 @@ static PyObject *ForthonPackage_getdict(PyObject *_self_,PyObject *args)
     else {
       PyErr_Clear();}
     }
+
   return dict;
 }
 
@@ -1902,7 +1910,7 @@ static PyObject *ForthonPackage_reprefix(PyObject *_self_,PyObject *args)
   ForthonObject *self = (ForthonObject *)_self_;
   PyObject *m,*d;
   PyObject *key, *value;
-  long pos=0; /* should be Py_ssize_t */
+  Py_ssize_t pos=0;
   int e;
   if (!PyArg_ParseTuple(args,"")) return NULL;
   m = PyImport_AddModule("__main__");
@@ -1923,7 +1931,7 @@ static PyObject *ForthonPackage_setdict(PyObject *_self_,PyObject *args)
   ForthonObject *self = (ForthonObject *)_self_;
   PyObject *dict;
   PyObject *key, *value, *pyi;
-  long pos=0; /* should be Py_ssize_t */
+  Py_ssize_t pos=0;
   int e;
   if (!PyArg_ParseTuple(args,"O",&dict)) return NULL;
   /* There is something wrong with this code XXX */
@@ -2088,10 +2096,20 @@ static PyObject *Forthon_getattro(ForthonObject *self,PyObject *oname)
   name = PyString_AsString(oname);
   if (name == NULL) return NULL;
 
-  /* Check if asking for one of the dictionaries */
+  /* Check if asking for one of the dictionaries or other names*/
   /* Note that these should probably not be accessable */
-  if (strcmp(name,"scalardict") == 0) return self->scalardict;
-  if (strcmp(name,"arraydict") == 0) return self->arraydict;
+  if (strcmp(name,"scalardict") == 0) {
+    Py_INCREF(self->scalardict);
+    return self->scalardict;
+    }
+  if (strcmp(name,"arraydict") == 0) {
+    Py_INCREF(self->arraydict);
+    return self->arraydict;
+    }
+  if (strcmp(name,"__module__") == 0) {
+    Py_INCREF(self->__module__);
+    return self->__module__;
+    }
 
   /* # Look through the method lists */
   meth = Py_FindMethod(self->fmethods,(PyObject *)self,name);
