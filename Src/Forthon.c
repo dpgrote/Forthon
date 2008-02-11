@@ -336,6 +336,7 @@ void
   cfname[FSTRLEN1(fname)] = (char)0;
   cmname[FSTRLEN2(mname)] = (char)0;
   m = PyImport_ImportModule(cmname);
+  r = NULL;
   if (m != NULL) {
     d = PyModule_GetDict(m);
     if (d != NULL) {
