@@ -53,19 +53,24 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.47 2008/02/01 00:54:40 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.48 2008/02/13 01:11:43 dave Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling. These should be moved to C.
-# --- The dict argument is kept for legacy.
-def forthonobject_constructor(typename,dict=None):
-  import __main__
-  typecreator = __main__.__dict__[typename]
+def forthonobject_constructor(typename,arg=None):
+  if isinstance(arg,StringType):
+    mname = arg
+  else:
+    # --- In old versions, second arg was None or a dict.
+    # --- In those cases, use main as the module.
+    mname = "__main__"
+  m = __import__(mname)
+  typecreator = getattr(m,typename)
   if callable(typecreator):
     obj = typecreator()
     # --- For old pickle files, a dict will still be passed in, relying on
     # --- this rather than setstate.
-    if dict is not None: obj.setdict(dict)
+    if isinstance(arg,DictType): obj.setdict(arg)
     return obj
   else:
     # --- When typecreator is not callable, this means that it is a top
@@ -78,12 +83,12 @@ def pickle_forthonobject(o):
     # --- as opposed to derived type objects) only save the typename.
     # --- This assumes that the package will be written out directly
     # --- elsewhere.
-    return (forthonobject_constructor, (o.gettypename(),))
+    return (forthonobject_constructor, (o.gettypename(),o.__module__))
   else:
     # --- The dictionary from getdict will be passed into the __setstate__
     # --- method upon unpickling.
-    return (forthonobject_constructor, (o.gettypename(),),o.getdict())
-
+    return (forthonobject_constructor, (o.gettypename(),o.__module__),
+            o.getdict())
 
 # --- The following routines deal with multiple packages. The ones setting
 # --- up or changing the allocation of groups will be called from fortran.
