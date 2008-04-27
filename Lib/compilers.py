@@ -549,7 +549,7 @@ appropriate block for the machine.
         self.f90free  += ' -u'
         self.f90fixed += ' -u'
       self.libs = ['xlf90','xlopt','xlf','xlomp_ser','pthread','essl']
-      self.fopt = '-O3 -qstrict -qarch=pwr3 -qtune=pwr3'
+      self.fopt = '-O3 -qstrict -qarch=auto -qtune=auto'
       return 1
 
   def aix_mpxlf(self):
@@ -569,7 +569,7 @@ appropriate block for the machine.
       self.libs = ['xlf90','xlopt','xlf','xlomp_ser','pthread','essl']
      #self.libs = ' $(PYMPI)/driver.o $(PYMPI)/patchedmain.o -L$(PYMPI) -lpympi -lpthread'
       self.defines = ['PYMPI=/usr/common/homes/g/grote/pyMPI']
-      self.fopt = '-O3 -qstrict -qarch=pwr3 -qtune=pwr3'
+      self.fopt = '-O3 -qstrict -qarch=auto -qtune=auto'
       return 1
 
   def aix_xlf_r(self):
@@ -588,7 +588,7 @@ appropriate block for the machine.
       self.ld = 'xlf95_r -bmaxdata:0x70000000 -bmaxstack:0x10000000 -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp'
       #self.libs = ['pthread','xlf90','xlopt','xlf','xlsmp']
       self.libs = ['xlf90','xlopt','xlf','xlsmp','pthreads','essl']
-      self.fopt = '-O3 -qstrict -qarch=pwr3 -qtune=pwr3 -qsmp=omp'
+      self.fopt = '-O3 -qstrict -qarch=auto -qtune=auto -qsmp=omp'
       return 1
 
   def aix_mpxlf64(self):
@@ -608,7 +608,7 @@ appropriate block for the machine.
       self.libs = ['xlf90','xlopt','xlf','xlomp_ser','pthread','essl']
      #self.libs = ' $(PYMPI)/driver.o $(PYMPI)/patchedmain.o -L$(PYMPI) -lpympi -lpthread'
       self.defines = ['PYMPI=/usr/common/homes/g/grote/pyMPI']
-      self.fopt = '-O3 -qstrict -qarch=pwr3 -qtune=pwr3'
+      self.fopt = '-O3 -qstrict -qarch=auto -qtune=auto'
       return 1
 
   def aix_pghpf(self):
