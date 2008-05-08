@@ -74,6 +74,15 @@ class ForthonDerivedType:
     else:
       self.cfile.write(text+'\n')
   def fw(self,text,noreturn=0):
+    if len(text) > 132:
+      # --- If the line is too long, then break it up, adding line
+      # --- continuation marks in between any variable names.
+      for i in range(132,len(text),132):
+        # --- \W matches anything but a letter or number.
+        ss = re.search('\W',text[i::-1])
+        assert ss is not None,\
+               "Forthon can't find a place to break up this line:\n"+text
+        text = text[:i-ss.start()] + '&\n' + text[i-ss.start():]
     if noreturn:
       self.ffile.write(text)
     else:
