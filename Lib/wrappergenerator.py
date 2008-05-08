@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.54 2008/05/08 21:20:54 dave Exp $
+# $Id: wrappergenerator.py,v 1.55 2008/05/08 21:59:40 dave Exp $
 
 import sys
 import os.path
@@ -126,7 +126,7 @@ Usage:
     else:
       self.cfile.write(text+'\n')
   def fw(self,text,noreturn=0):
-    if len(text) > 132:
+    if len(text) > 132 and text.find('&') == -1:
       # --- If the line is too long, then break it up, adding line
       # --- continuation marks in between any variable names.
       for i in range(132,len(text),132):

@@ -74,7 +74,7 @@ class ForthonDerivedType:
     else:
       self.cfile.write(text+'\n')
   def fw(self,text,noreturn=0):
-    if len(text) > 132:
+    if len(text) > 132 and text.find('&') == -1:
       # --- If the line is too long, then break it up, adding line
       # --- continuation marks in between any variable names.
       for i in range(132,len(text),132):
