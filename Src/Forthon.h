@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.60 2008/02/11 17:39:50 dave Exp $ */
+/* $Id: Forthon.h,v 1.61 2008/07/23 23:13:30 dave Exp $ */
 
 #include <Python.h>
 
@@ -345,7 +345,8 @@ static void ForthonPackage_allotdims(ForthonObject *self)
 /* # Static array initialization routines */
 static void ForthonPackage_staticarrays(ForthonObject *self)
 {
-  int i;
+  int i,nd,itemsize;
+  npy_intp *dimensions;
   char *c;
 
   /* Call the routine which sets the dimensions */
@@ -355,9 +356,47 @@ static void ForthonPackage_staticarrays(ForthonObject *self)
     if (!self->farrays[i].dynamic) {
       /* Allocate the space */
       Py_XDECREF(self->farrays[i].pya);
-      self->farrays[i].pya = (PyArrayObject *)PyArray_SimpleNewFromData(
-                              self->farrays[i].nd,self->farrays[i].dimensions,
-                              self->farrays[i].type,self->farrays[i].data.s);
+
+      /* Strings need special treatment. */
+      if (self->farrays[i].type == PyArray_STRING) {
+        /* First, note that strings are always treated as arrays. */
+        /* The numpy array type is set so that the element size is the */
+        /* length of the associated fortran character variable. If the */
+        /* string is not an array, then it is made into a 1-D array of */
+        /* length 1. */
+        /* The dimension[0] holds the character length. */
+        itemsize = self->farrays[i].dimensions[0];
+        /* If this is really an array, remove the first dimension, which */
+        /* is the character length. Otherwise, make it a 1-D array. */
+        if (self->farrays[i].nd > 1) {nd = self->farrays[i].nd - 1;}
+        else                         {nd = 1;}
+        /* Allocate the appropriate amount of space for the dimensions. */
+        dimensions = (npy_intp*)malloc(sizeof(npy_intp)*nd);
+        if (self->farrays[i].nd == 1) {
+          /* This is really a scalar, so make its length 1. */
+          dimensions[0] = 1;
+          }
+        else {
+          /* Copy over the rest of the dimensions. */
+          for (i=0;i<self->farrays[i].nd;i++)
+            dimensions[i] = self->farrays[i].dimensions[i+1];
+          }
+        }
+      else {
+        /* Set the appropriate variables that have different values */
+        /* for strings. */
+        nd = self->farrays[i].nd;
+        itemsize = 0;
+        dimensions = self->farrays[i].dimensions;
+        }
+
+      self->farrays[i].pya = (PyArrayObject *)PyArray_New(&PyArray_Type,
+                              nd,dimensions,
+                              self->farrays[i].type,NULL,
+                              self->farrays[i].data.s,itemsize,NPY_CARRAY,NULL);
+
+      if (self->farrays[i].type == PyArray_STRING) free(dimensions);
+
       /* Check if the allocation was unsuccessful. */
       if (self->farrays[i].pya==NULL) {
         PyErr_Print();
@@ -369,7 +408,7 @@ static void ForthonPackage_staticarrays(ForthonObject *self)
       ARRAY_REVERSE_STRIDE(self->farrays[i].pya);
       ARRAY_REVERSE_DIM(self->farrays[i].pya);
       /* For strings, replace nulls with blank spaces */
-      if (self->farrays[i].type == PyArray_CHAR)
+      if (self->farrays[i].type == PyArray_STRING)
         if ((c=memchr(self->farrays[i].data.s,0,
                      PyArray_SIZE(self->farrays[i].pya))))
           memset(c,(int)' ',
@@ -740,20 +779,22 @@ static int Forthon_setarray(ForthonObject *self,PyObject *value,
       Py_XDECREF(ax);
       PyErr_SetString(ErrorObject,"Array is unallocated");
       return -1;}
-    /* For strings, allow the length of the input to be   */
-    /* different than the array. Before the copy, force   */
-    /* first dimensions to be the same so the copy works. */
-    /* If the input is shorter than the variable, then    */
-    /* overwrite the rest of the array with spaces.       */
+    /* For strings, allow the length of the input to be different than
+     * variable. If the input is shorter, set the length of the variable
+     * to be the same. This prevents the Copy from filling in the rest
+     * of the variable with nulls - this must be done so that fortan
+     * comparisons of strings still work, since fortran does not seem
+     * to ignore nulls. If the length of the input is longer, the Copy
+     * will do the appropriate truncation. This also fills in the string
+     * with spaces to clear out any existing characters. */
     d = -1;
-    if (farray->type == PyArray_CHAR && PyArray_NDIM(ax) > 0) {
-      if (PyArray_DIMS(ax)[0] < PyArray_DIMS(farray->pya)[0]){
-        memset(PyArray_BYTES(farray->pya)+PyArray_DIMS(ax)[0],(int)' ',
-               PyArray_SIZE(farray->pya)-PyArray_DIMS(ax)[0]);
-        d = PyArray_DIMS(farray->pya)[0];
-        PyArray_DIMS(farray->pya)[0] = PyArray_DIMS(ax)[0];}
-      else
-        {PyArray_DIMS(ax)[0] = PyArray_DIMS(farray->pya)[0];}}
+    if (farray->type == PyArray_STRING) {
+      PyArray_FILLWBYTE(farray->pya,(int)' ');
+      if (PyArray_ITEMSIZE(ax) < PyArray_ITEMSIZE(farray->pya)){
+        d = PyArray_ITEMSIZE(farray->pya);
+        PyArray_ITEMSIZE(farray->pya) = PyArray_ITEMSIZE(ax);
+        }
+      }
     /* Copy input data into the array. This does the copy */
     /* for static arrays and also does any broadcasting   */
     /* when the dimensionality of the input is different  */
@@ -761,8 +802,9 @@ static int Forthon_setarray(ForthonObject *self,PyObject *value,
     r = PyArray_CopyInto(farray->pya,ax);
     /* Reset the value of the first dimension if it was   */
     /* changed to accomodate a string.                    */
-    if (d > -1) PyArray_DIMS(farray->pya)[0] = d;
-    Py_XDECREF(ax);}
+    if (d > -1) PyArray_ITEMSIZE(farray->pya) = d;
+    Py_XDECREF(ax);
+  }
   return r;
 }
 /* ------------------------------------------------------------------------- */
@@ -1147,7 +1189,7 @@ static PyObject *ForthonPackage_gallot(PyObject *_self_,PyObject *args)
         /* of whether the initial value is zero since the initialization */
         /* doesn't need to be done then. Not having the check gaurantees */
         /* that it is set correctly, but is slower. */
-        if (self->farrays[i].type == PyArray_CHAR) {
+        if (self->farrays[i].type == PyArray_STRING) {
           PyArray_FILLWBYTE(self->farrays[i].pya,(int)' ');
           }
         else if (self->farrays[i].type == PyArray_LONG) {
@@ -1254,7 +1296,7 @@ static PyObject *ForthonPackage_gchange(PyObject *_self_,PyObject *args)
         /* of whether the initial value is zero since the initialization */
         /* doesn't need to be done then. Not having the check gaurantees */
         /* that it is set correctly, but is slower. */
-        if (self->farrays[i].type == PyArray_CHAR) {
+        if (self->farrays[i].type == PyArray_STRING) {
           PyArray_FILLWBYTE(ax,(int)' ');
           }
         else if (self->farrays[i].type == PyArray_LONG) {
@@ -1774,7 +1816,7 @@ static PyObject *ForthonPackage_getvartype(PyObject *_self_,PyObject *args)
   pyi = PyDict_GetItemString(self->scalardict,name);
   if (pyi != NULL) {
     PyArg_Parse(pyi,"i",&i);
-    if (self->fscalars[i].type == PyArray_CHAR) {
+    if (self->fscalars[i].type == PyArray_STRING) {
       return PyString_FromString("character");}
     else if (self->fscalars[i].type == PyArray_LONG) {
       return PyString_FromString("integer");}
@@ -1789,7 +1831,7 @@ static PyObject *ForthonPackage_getvartype(PyObject *_self_,PyObject *args)
   pyi = PyDict_GetItemString(self->arraydict,name);
   if (pyi != NULL) {
     PyArg_Parse(pyi,"i",&i);
-    if (self->farrays[i].type == PyArray_CHAR) {
+    if (self->farrays[i].type == PyArray_STRING) {
       return PyString_FromString("character");}
     else if (self->farrays[i].type == PyArray_LONG) {
       return PyString_FromString("integer");}
@@ -1831,8 +1873,8 @@ static PyObject *ForthonPackage_listvar(PyObject *_self_,PyObject *args)
     PyString_ConcatAndDel(&doc,PyString_FromString("\nAttributes:"));
     PyString_ConcatAndDel(&doc,PyString_FromString(self->fscalars[i].attributes));
     PyString_ConcatAndDel(&doc,PyString_FromString("\nType:       "));
-    if (self->fscalars[i].type == PyArray_CHAR) {
-      PyString_ConcatAndDel(&doc,PyString_FromString("char"));}
+    if (self->fscalars[i].type == PyArray_STRING) {
+      PyString_ConcatAndDel(&doc,PyString_FromString("character"));}
     else if (self->fscalars[i].type == PyArray_LONG) {
       PyString_ConcatAndDel(&doc,PyString_FromString("integer"));}
     else if (self->fscalars[i].type == PyArray_DOUBLE) {
@@ -1863,8 +1905,10 @@ static PyObject *ForthonPackage_listvar(PyObject *_self_,PyObject *args)
     PyString_ConcatAndDel(&doc,PyString_FromString("\nDimension:  "));
     PyString_ConcatAndDel(&doc,PyString_FromString(self->farrays[i].dimstring));
     PyString_ConcatAndDel(&doc,PyString_FromString("\nType:       "));
-    if (self->farrays[i].type == PyArray_CHAR) {
-      PyString_ConcatAndDel(&doc,PyString_FromString("char"));}
+    if (self->farrays[i].type == PyArray_STRING) {
+      PyString_ConcatAndDel(&doc,PyString_FromString("character*"));
+      PyString_ConcatAndDel(&doc,PyObject_Str(PyInt_FromLong((long)(self->farrays[i].dimensions[0]))));
+      }
     else if (self->farrays[i].type == PyArray_LONG) {
       PyString_ConcatAndDel(&doc,PyString_FromString("integer"));}
     else if (self->farrays[i].type == PyArray_DOUBLE) {

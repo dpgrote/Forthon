@@ -309,14 +309,16 @@ void
 
 #include <setjmp.h>
 jmp_buf stackenvironment;
-char *errormessage;
+int lstackenvironmentset;
 
 void
 %fname('kaboom')+'(FSTRING message SL1)'
 {
+  char *errormessage;
   errormessage = cstrfromfstr(FSTRPTR(message),FSTRLEN1(message));
   PyErr_SetString(PyExc_RuntimeError,errormessage);
   free(errormessage);
+  lstackenvironmentset = 0;
   longjmp(stackenvironment,1);
   /* exit(1); */
 }

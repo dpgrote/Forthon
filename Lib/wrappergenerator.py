@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.55 2008/05/08 21:59:40 dave Exp $
+# $Id: wrappergenerator.py,v 1.56 2008/07/23 23:13:30 dave Exp $
 
 import sys
 import os.path
@@ -228,8 +228,12 @@ of scalars and arrays.
     self.cw('#include <setjmp.h>')
     self.cw('ForthonObject *'+self.pname+'Object;')
 
-    # --- Print out the external commands
+    # --- See the kaboom command in Forthon.c for information on these two
+    # --- variables.
     self.cw('extern jmp_buf stackenvironment;')
+    self.cw('extern int lstackenvironmentset;')
+
+    # --- Print out the external commands
     self.cw('extern void '+fname(self.fsub('passpointers'))+'(void);')
     self.cw('extern void '+fname(self.fsub('nullifypointers'))+'(void);')
     if not self.f90:
@@ -407,8 +411,7 @@ of scalars and arrays.
         self.cw('  PyObject * pyobj['+lv+'];')
         self.cw('  PyArrayObject * ax['+lv+'];')
         self.cw('  int i,argno=0;')
-
-      self.cw('  char e[256];')
+        self.cw('  char e[256];')
 
       if self.timeroutines:
         # --- Setup for the timer, getting time routine started.
@@ -443,12 +446,13 @@ of scalars and arrays.
       # --- in what can be passed to fortran functions.
       istr = 0
       for i in range(len(f.args)):
-        self.cw('  argno++;')
+        self.cw('  argno = %d;'%(i+1))
         if not fvars.isderivedtype(f.args[i]):
           self.cw('  if (!Forthon_checksubroutineargtype(pyobj['+repr(i)+'],'+
-              'PyArray_'+fvars.ftop(f.args[i].type,1)+','+repr(i)+')) {')
+              'PyArray_'+fvars.ftop(f.args[i].type)+','+repr(i)+')) {')
           self.cw('    sprintf(e,"Argument '+repr(i+1)+ ' in '+f.name+
                                ' has the wrong type");')
+          self.cw('    PyErr_SetString(ErrorObject,e);')
           self.cw('    goto err;}')
           if f.function == 'fsub':
             self.cw('  ax['+repr(i)+'] = FARRAY_FROMOBJECT('+
@@ -459,9 +463,10 @@ of scalars and arrays.
           self.cw('  if (ax['+repr(i)+'] == NULL) {')
           self.cw('    sprintf(e,"There is an error in argument '+repr(i+1)+
                                ' in '+f.name+'");')
+          self.cw('    PyErr_SetString(ErrorObject,e);')
           self.cw('    goto err;}')
           if f.args[i].type == 'string' or f.args[i].type == 'character':
-            self.cw('  FSETSTRING(fstr[%d],PyArray_BYTES(ax[%d]),PyArray_SIZE(ax[%d]));'
+            self.cw(' FSETSTRING(fstr[%d],PyArray_BYTES(ax[%d]),PyArray_ITEMSIZE(ax[%d]));'
                     %(istr,i,i))
             istr = istr + 1
         else:
@@ -469,15 +474,17 @@ of scalars and arrays.
           self.cw('  PyObject *t;')
           self.cw('  t = PyObject_Type(pyobj['+repr(i)+']);')
           self.cw('  if (strcmp(((PyTypeObject *)t)->tp_name,"Forthon") != 0) {')
-          self.cw('     sprintf(e,"Argument '+repr(i+1)+ ' in '+f.name+
-                               ' has the wrong type");')
-          self.cw('     goto err;}')
+          self.cw('    sprintf(e,"Argument '+repr(i+1)+ ' in '+f.name+
+                              ' has the wrong type");')
+          self.cw('    PyErr_SetString(ErrorObject,e);')
+          self.cw('    goto err;}')
           self.cw('  Py_DECREF(t);')
           typename = '((ForthonObject *)pyobj['+repr(i)+'])->typename'
           self.cw('  if (strcmp('+typename+',"'+f.args[i].type+'") != 0) {')
-          self.cw('     sprintf(e,"Argument '+repr(i+1)+ ' in '+f.name+
-                               ' has the wrong type");')
-          self.cw('     goto err;}')
+          self.cw('    sprintf(e,"Argument '+repr(i+1)+ ' in '+f.name+
+                              ' has the wrong type");')
+          self.cw('    PyErr_SetString(ErrorObject,e);')
+          self.cw('    goto err;}')
           self.cw('  }')
 
       # --- Write the code checking dimensions of arrays
@@ -510,6 +517,7 @@ of scalars and arrays.
               self.cw('      )) {')
             self.cw('    sprintf(e,"Argument %d in %s '%(i+1,f.name) +
                              'has the wrong number of dimensions");')
+            self.cw('    PyErr_SetString(ErrorObject,e);')
             self.cw('    goto err;}')
             j = -1
 
@@ -538,13 +546,19 @@ of scalars and arrays.
               self.cw('      sprintf(e,"Dimension '+repr(j+1)+' of argument '+
                                repr(i+1)+ ' in '+f.name+
                                ' has the wrong size");')
+              self.cw('      PyErr_SetString(ErrorObject,e);')
               self.cw('      goto err;}')
             self.cw('  }')
         self.cw('  }')
 
-      # --- Make a call to setjmp to save the state in case an error happens.
+      # --- If the stackenvironment has not already been set, then make a call
+      # --- to setjmp to save the state in case an error happens.
       # --- If there was an error, setjmp returns 1, so exit out.
-      self.cw('  if (setjmp(stackenvironment)) goto err;')
+      # --- If this routine is called from a python routine that was called
+      # --- from another fortran routine, then the stackenvironment will
+      # --- already have been setup (from the calling fortran routine) so don't
+      # --- reset it.
+      self.cw('  if (!(lstackenvironmentset++) && setjmp(stackenvironment)) goto err;')
 
       # --- Write the actual call to the fortran routine.
       if f.type == 'void':
@@ -570,11 +584,16 @@ of scalars and arrays.
         istr = 0
         for a in f.args:
           if a.type == 'string' or a.type == 'character':
-            self.cw(',PyArray_SIZE(ax['+repr(i)+'])',noreturn=1)
+            self.cw(',PyArray_ITEMSIZE(ax['+repr(i)+'])',noreturn=1)
             istr = istr + 1
           i = i + 1
 
       self.cw(');') # --- Closing parenthesis on the call list
+
+      # --- Decrement the counter. This will reach zero when the top of the
+      # --- fortran call chain is reached and is about to return to the top
+      # --- level python.
+      self.cw('  lstackenvironmentset--;')
 
       # --- Copy the data that was sent to the routine back into the passed
       # --- in object if it is an PyArray.
@@ -600,11 +619,6 @@ of scalars and arrays.
       # --- Error section, in case there was an error above or in the
       # --- fortran call
       self.cw('err:') 
-
-      # --- Before setting the error string, check if an error was raised
-      # --- somewhere else.
-      self.cw('  if (!PyErr_Occurred())')
-      self.cw('    PyErr_SetString(ErrorObject,e);')
 
       if len(f.args) > 0:
         # --- Decrement reference counts of array objects created.

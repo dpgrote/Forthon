@@ -53,7 +53,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.48 2008/02/13 01:11:43 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.49 2008/07/23 23:13:30 dave Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling. These should be moved to C.
@@ -380,6 +380,7 @@ where the file name can not be determined - None is returned.
       # --- if module names are redundant and/or the sys.path has changed.
       try:
         o = __import__(o)
+        return determineoriginatingfile(o)
       except ImportError:
         # --- If that fails, just return None
         return None
@@ -1123,7 +1124,17 @@ def pyrestoreforthonobject(ff,gname,vlist,fobjdict,varsuffix,verbose,doarrays,
         # --- done this way since now all scalars are read in first so
         # --- the arrays will be of the correct size.
         if varsuffix is None:
-          setattr(pkg,vname,ff.__getattr__(vpdbname))
+          if (len(str(ff.__getattr__(vpdbname).dtype)) > 1 and
+              str(ff.__getattr__(vpdbname).dtype)[1] == 'S' and
+              getattr(pkg,vname).shape != ff.__getattr__(vpdbname).shape):
+            # --- This is a crude fix for backwards compatibility. The way
+            # --- strings are handled changed, so that they now have an
+            # --- element size > 1. This coding converts old style strings
+            # --- into a single string before doing the setattr. The change
+            # --- affects restart dumps make before July 2008.
+            setattr(pkg,vname,string.join(ff.__getattr__(vpdbname),sep=''))
+          else:
+            setattr(pkg,vname,ff.__getattr__(vpdbname))
         else:
           # --- If varsuffix is specified, then put the variable directly into
           # --- the main dictionary.

@@ -1,5 +1,5 @@
 # Created by David P. Grote, March 6, 1998
-# $Id: fvars.py,v 1.5 2007/05/25 15:24:34 dave Exp $
+# $Id: fvars.py,v 1.6 2008/07/23 23:13:30 dave Exp $
 
 import cfinterface
 
@@ -48,7 +48,7 @@ ftoc_dict = {'integer':'long', 'real':'double', 'logical':'long',
              'character':'FSTRING', 'string':'FSTRING',
              'void':'void','Filedes':'long','complex':'Py_complex'}
 ftop_dict = {'integer':'LONG', 'real':'DOUBLE', 'logical':'LONG',
-             'character':'CHAR','string':'CHAR','void':'VOID',
+             'character':'STRING','string':'STRING','void':'VOID',
              'Filedes':'LONG','complex':'CDOUBLE'}
 fto1 = {'integer':'l',   'real':'d',      'logical':'l',   'character':'s',
         'string':'s','Filedes':'l','complex':'D'}
@@ -69,15 +69,13 @@ def ftoc(type):
   if type in ftoc_dict.keys(): return ftoc_dict[type]
   else: return 'char'
 
-def ftop(type,replacechar=0):
+def ftop(type):
   # --- Returns the numpy type associated with the fortran type.
-  # --- In some special cases, a CHAR is converted to a STRING.
-  if type in ftop_dict.keys():
+  try:
     result = ftop_dict[type]
-    if cfinterface.with_numpy and replacechar and result=='CHAR': result = 'STRING'
-    return result
-  else:
-    return 'OBJECT'
+  except KeyError:
+    result = 'OBJECT'
+  return result
 
 def ftof(type):
   if type in ftof_dict.keys(): return ftof_dict[type]
