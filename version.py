@@ -1,4 +1,4 @@
-"0.7.9"
+"0.7.11"
 
 import string
 import version
@@ -22,6 +22,7 @@ def update():
     # --- Update the version number in the files.
     updatefile('version.py',vvold,vvnew)
     updatefile('docs/index.html',vvold,vvnew)
+    updatefile('Lib/__init__.py',vvold,vvnew)
 
 if __name__ == "__main__":
     print version.__doc__
