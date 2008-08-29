@@ -200,7 +200,22 @@ if with_numpy:
   forthonargs.append('--with-numpy')
   # --- Get the numpy headers path
   import numpy
-  includedirs.append(numpy.get_include())
+  if numpy.__version__ < '1.1.0':
+    # --- Older versions of numpy hacked into distutils, changing things
+    # --- in such a way to mangle things like object file names. To avoid
+    # --- this, the code from get_include is included here explicitly,
+    # --- avoiding the importing of numpy.distutils.
+    import os
+    if numpy.show_config is None:
+        # running from numpy source directory
+        d = os.path.join(os.path.dirname(numpy.__file__), 'core', 'include')
+    else:
+        # using installed numpy core headers
+        import numpy.core as core
+        d = os.path.join(os.path.dirname(core.__file__), 'include')
+    includedirs.append(d)
+  else:
+    includedirs.append(numpy.get_include())
 
 # --- The macro WITH_NUMERIC must be defined when using Numeric
 define_macros = []
