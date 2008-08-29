@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.61 2008/07/23 23:13:30 dave Exp $ */
+/* $Id: Forthon.h,v 1.62 2008/08/29 17:31:51 dave Exp $ */
 
 #include <Python.h>
 
@@ -345,7 +345,7 @@ static void ForthonPackage_allotdims(ForthonObject *self)
 /* # Static array initialization routines */
 static void ForthonPackage_staticarrays(ForthonObject *self)
 {
-  int i,nd,itemsize;
+  int i,j,nd,itemsize;
   npy_intp *dimensions;
   char *c;
 
@@ -378,8 +378,8 @@ static void ForthonPackage_staticarrays(ForthonObject *self)
           }
         else {
           /* Copy over the rest of the dimensions. */
-          for (i=0;i<self->farrays[i].nd;i++)
-            dimensions[i] = self->farrays[i].dimensions[i+1];
+          for (j=0;j<nd;j++)
+            dimensions[j] = self->farrays[i].dimensions[j+1];
           }
         }
       else {
@@ -400,7 +400,8 @@ static void ForthonPackage_staticarrays(ForthonObject *self)
       /* Check if the allocation was unsuccessful. */
       if (self->farrays[i].pya==NULL) {
         PyErr_Print();
-        printf("Failure creating python object for static array.\n");
+        printf("Failure creating python object for static array %s\n",
+               (self->farrays[i].name);
         exit(EXIT_FAILURE);}
       /* Reverse the order of the dims and strides so indices */
       /* can be refered to in the correct (fortran) order in */
