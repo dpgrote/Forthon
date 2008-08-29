@@ -1,0 +1,23 @@
+
+Forthon generates links between Fortran(90 and 95) and Python. Python is a
+high level, object oriented, interactive and scripting language that allows a
+flexible and versatile interface to computational tools. The Forthon package
+generates the necessary wrapping code which allows access to the Fortran
+database and to the Fortran subroutines and functions.  This provides a
+development package where the computationally intensive parts of a code can
+be written in efficient Fortran, and the high level controlling code can be
+written in the much more versatile Python language.
+
+
+Release Notes:
+
+0.7.12: August 29, 2008
+
+ - Added the __version__ attribute
+ - In Forthon_builder, added a fix to handle a problem with older versions of
+   numpy. numpy would monkey path some of distutils routines and these would
+   get imported when get_include was called. So, for older versions of numpy,
+   the code from get_include is included explicitly rather than calling it
+   from numpy. This only affects numpy versions older than 1.1.0.
+ - Fixed ForthonPackage_staticarrays for multi-dimensional strings
+
