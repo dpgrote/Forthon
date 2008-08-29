@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.62 2008/08/29 17:31:51 dave Exp $ */
+/* $Id: Forthon.h,v 1.63 2008/08/29 17:42:17 dave Exp $ */
 
 #include <Python.h>
 
@@ -401,7 +401,7 @@ static void ForthonPackage_staticarrays(ForthonObject *self)
       if (self->farrays[i].pya==NULL) {
         PyErr_Print();
         printf("Failure creating python object for static array %s\n",
-               (self->farrays[i].name);
+               self->farrays[i].name);
         exit(EXIT_FAILURE);}
       /* Reverse the order of the dims and strides so indices */
       /* can be refered to in the correct (fortran) order in */
