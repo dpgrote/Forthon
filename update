@@ -3,7 +3,7 @@ cvs update
 python -c "import version;version.update()"
 set vvv=`python version.py`
 mkdir Forthon-$vvv
-cp -a docs INSTALL Notice simpleexample example Forthon Lib setup.py Src version.py Forthon-$vvv
+cp -a docs README INSTALL Notice simpleexample example Forthon Lib setup.py Src version.py Forthon-$vvv
 tar --exclude build --exclude CVS --exclude \*.so --exclude .\* -czf Forthon-$vvv.tgz Forthon-$vvv
 scp Forthon-$vvv.tgz dave@hifweb:/web/html/Forthon
 scp docs/index.html dave@hifweb:/web/html/Forthon

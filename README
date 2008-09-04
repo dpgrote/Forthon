@@ -19,5 +19,6 @@ Release Notes:
    get imported when get_include was called. So, for older versions of numpy,
    the code from get_include is included explicitly rather than calling it
    from numpy. This only affects numpy versions older than 1.1.0.
+   Note that this fix does not work for numpy 1.0.4.
  - Fixed ForthonPackage_staticarrays for multi-dimensional strings
 
