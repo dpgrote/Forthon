@@ -1,3 +1,3 @@
 from _Forthon import *
 from ForthonTimer import *
-__version__ = "0.7.11"
+__version__ = "0.7.12"
