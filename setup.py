@@ -26,10 +26,13 @@ class install_data_fixperms(distutils.command.install_data.install_data):
     self.install_dir = getattr(install_cmd, 'install_lib')
     # print "Installing into", self.install_dir
     res = distutils.command.install_data.install_data.run(self)
-    subfiles = os.listdir(self.install_dir)
+    # --- DPG: Is there a better way of getting the full path, with Forthon?
+    install_dir = os.path.join(self.install_dir,'Forthon')
+    # --- DPG: Only chmod the data_files, to be cleaner
+    subfiles = ['Notice','Forthon.h','Forthon.c']
     # print "Files are", subfiles
     for i in subfiles:
-      fullname = os.path.join(self.install_dir, i)
+      fullname = os.path.join(install_dir, i)
       # print "Working on", fullname
       os.chmod(fullname, perm644)
 # Now we fix the permissions
@@ -94,10 +97,9 @@ and creation of instances at the Python level. A mechanism for automatic
 building of extension modules is also included. Versions using Numeric and
 Numpy are available.""",
        platforms = "Linux, Unix, Windows (cygwin), Mac OSX",
-       extra_path = 'Forthon',
-       packages = [''],
-       package_dir = {'': 'Lib'},
-       data_files = [("", ['Notice','Src/Forthon.h','Src/Forthon.c'])],
+       packages = ['Forthon'],
+       package_dir = {'Forthon': 'Lib'},
+       data_files = [('Forthon', ['Notice','Src/Forthon.h','Src/Forthon.c'])],
        cmdclass = {'install_data': install_data_fixperms},
        scripts = [Forthon]
        )
