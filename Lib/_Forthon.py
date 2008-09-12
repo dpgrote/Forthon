@@ -53,7 +53,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.49 2008/07/23 23:13:30 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.50 2008/09/12 21:29:23 dave Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling. These should be moved to C.
@@ -894,11 +894,18 @@ Note that it will automatically detect whether the file is PDB or HDF.
     assert filename is not None,"A filename must be specified"
     # --- Check if file exists
     assert os.access(filename,os.F_OK),"File %s does not exist"%filename
-    # --- open pdb file
+    # --- open file, trying PDB format first
     try:
       ff = PR.PR(filename)
     except:
-      ff = PRpyt.PR(filename)
+      pass
+    if ff is None:
+      # --- If PDB didn't work, try pytables
+      try:
+        ff = PRpyt.PR(filename)
+      except:
+        pass
+    assert ff is not None,"File %s could not be opened"%filename
     closefile = 1
   else:
     closefile = 0
