@@ -30,10 +30,14 @@ import re
 import os
 import copy
 try:
-  import PW
-  import PR
+  from PyPDB import PW,PR
 except ImportError:
-  pass
+  try:
+    # --- Old way of importing the PyPDB modules
+    import PW
+    import PR
+  except ImportError:
+    pass
 try:
   import PWpyt
   import PRpyt
@@ -53,7 +57,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.50 2008/09/12 21:29:23 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.51 2008/09/12 23:20:03 dave Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling. These should be moved to C.
