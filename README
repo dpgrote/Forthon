@@ -11,6 +11,10 @@ written in the much more versatile Python language.
 
 Release Notes:
 
+0.7.13: September 12, 2008
+ - Now uses new import method for the PyPDB modules
+ - Forthon is now installed as a package, and no Forthon.pth is created
+
 0.7.12: August 29, 2008
 
  - Added the __version__ attribute
