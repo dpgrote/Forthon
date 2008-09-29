@@ -242,7 +242,7 @@ appropriate block for the machine.
       flibroot = self.findgnulibroot('gfortran')
       self.libdirs = [flibroot]
       self.libs = ['gfortran']
-      self.fopt = '-O3'
+      self.fopt = '-O3 -ftree-vectorize -ftree-vectorizer-verbose=1'
       if struct.calcsize('l') == 8:
         self.f90free += ' -DISZ=8 -fdefault-integer-8'
         self.f90fixed += ' -DISZ=8 -fdefault-integer-8'
@@ -418,7 +418,7 @@ appropriate block for the machine.
            -ffast-math -mpowerpc-gpopt -force_cpusubtype_ALL \
            -fstrict-aliasing -mtune=G5 -mcpu=G5 -mpowerpc64'
 #      self.fopt = '-O3  -mtune=G5 -mcpu=G5 -mpowerpc64'
-      self.fopt = '-O3'
+      self.fopt = '-O3 -ftree-vectorize -ftree-vectorizer-verbose=1'
 #      self.extra_link_args = ['-flat_namespace','-lg2c']
       self.extra_link_args = ['-flat_namespace']
       flibroot = self.findgnulibroot('gfortran')
