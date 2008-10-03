@@ -431,8 +431,8 @@ appropriate block for the machine.
         (self.fcompname in ['xlf','xlf90'] or self.fcompname is None)):
       self.fcompname = 'xlf'
       # --- XLF
-      self.f90free  = 'xlf95 -WF,-DXLF -qsuffix=f=f90:cpp=F90 -qextname -qintsize=4 -qdpc=e -bmaxdata:0x70000000 -bmaxstack:0x10000000 -qinitauto'
-      self.f90fixed = 'xlf95 -WF,-DXLF -qextname -qfixed=132 -qintsize=4 -qdpc=e -bmaxdata:0x70000000 -bmaxstack:0x10000000 -qinitauto'
+      self.f90free  = 'xlf95 -WF,-DXLF -qsuffix=f=f90:cpp=F90 -qextname -qrealsize=8 -qintsize=4 -qdpc=e -bmaxdata:0x70000000 -bmaxstack:0x10000000 -qinitauto'
+      self.f90fixed = 'xlf95 -WF,-DXLF -qextname -qfixed=132 -qrealsize=8 -qintsize=4 -qdpc=e -bmaxdata:0x70000000 -bmaxstack:0x10000000 -qinitauto'
       if self.implicitnone:
         self.f90free  += ' -u'
         self.f90fixed += ' -u'
@@ -532,16 +532,16 @@ appropriate block for the machine.
         (self.fcompname is None and self.findfile('xlf95'))):
       self.fcompname = 'xlf'
       # --- IBM SP, serial
-      self.f90free  = 'xlf95 -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qintsize=4 -qsave=defaultinit -qsuffix=f=f90:cpp=F90 -qfree=f90 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
-      self.f90fixed = 'xlf95 -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qintsize=4 -qsave=defaultinit -qfixed=132 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
+      self.f90free  = 'xlf95 -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qrealsize=8 -qintsize=4 -qsave=defaultinit -qsuffix=f=f90:cpp=F90 -qfree=f90 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
+      self.f90fixed = 'xlf95 -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qrealsize=8 -qintsize=4 -qsave=defaultinit -qfixed=132 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
       self.popt = '-O'
       if struct.calcsize('l') == 4:
         self.extra_link_args = ['-bmaxdata:0x70000000','-bmaxstack:0x10000000']
         self.extra_compile_args = ['-bmaxdata:0x70000000','-bmaxstack:0x10000000']
         self.ld = 'xlf -bmaxdata:0x70000000 -bmaxstack:0x10000000 -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp'
       elif struct.calcsize('l') == 8:
-        self.f90free  = 'xlf95_r -q64 -WF,-DISZ=8 -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qintsize=8 -qsave=defaultinit -qsuffix=f=f90:cpp=F90 -qfree=f90 -WF,-DESSL'
-        self.f90fixed = 'xlf95_r -q64 -WF,-DISZ=8 -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qintsize=8 -qsave=defaultinit -qfixed=132 -WF,-DESSL'
+        self.f90free  = 'xlf95_r -q64 -WF,-DISZ=8 -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qrealsize=8 -qintsize=8 -qsave=defaultinit -qsuffix=f=f90:cpp=F90 -qfree=f90 -WF,-DESSL'
+        self.f90fixed = 'xlf95_r -q64 -WF,-DISZ=8 -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qrealsize=8 -qintsize=8 -qsave=defaultinit -qfixed=132 -WF,-DESSL'
         self.extra_link_args = ['-q64'] #,'-qheapdebug','-qcheck=all']
         self.extra_compile_args = ['-q64'] #,'-qheapdebug','-qcheck=all']
         self.ld = 'xlf_r -q64 -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp'
@@ -557,8 +557,8 @@ appropriate block for the machine.
         (self.fcompname is None and self.findfile('mpxlf95'))):
       self.fcompname = 'xlf'
       # --- IBM SP, parallel
-      self.f90free  = 'mpxlf95 -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qintsize=4 -qsave=defaultinit -WF,-DMPIPARALLEL -qsuffix=f=f90:cpp=F90 -qfree=f90 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
-      self.f90fixed = 'mpxlf95 -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qintsize=4 -qsave=defaultinit -WF,-DMPIPARALLEL -qfixed=132 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
+      self.f90free  = 'mpxlf95 -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qrealsize=8 -qintsize=4 -qsave=defaultinit -WF,-DMPIPARALLEL -qsuffix=f=f90:cpp=F90 -qfree=f90 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
+      self.f90fixed = 'mpxlf95 -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qrealsize=8 -qintsize=4 -qsave=defaultinit -WF,-DMPIPARALLEL -qfixed=132 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
       if self.implicitnone:
         self.f90free  += ' -u'
         self.f90fixed += ' -u'
@@ -577,8 +577,8 @@ appropriate block for the machine.
         (self.fcompname is None and self.findfile('xlf95_r'))):
       self.fcompname = 'xlf'
       # --- IBM SP, OpenMP
-      self.f90free  = 'xlf95_r -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qintsize=4 -qsave=defaultinit -qsuffix=f=f90:cpp=F90 -qfree=f90 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
-      self.f90fixed = 'xlf95 -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qintsize=4 -qsave=defaultinit -qfixed=132 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
+      self.f90free  = 'xlf95_r -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qrealsize=8 -qintsize=4 -qsave=defaultinit -qsuffix=f=f90:cpp=F90 -qfree=f90 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
+      self.f90fixed = 'xlf95 -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qrealsize=8 -qintsize=4 -qsave=defaultinit -qfixed=132 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
       if self.implicitnone:
         self.f90free  += ' -u'
         self.f90fixed += ' -u'
@@ -596,8 +596,8 @@ appropriate block for the machine.
         (self.fcompname is None and self.findfile('mpxlf95'))):
       self.fcompname = 'xlf'
       # --- IBM SP, parallel
-      self.f90free  = 'mpxlf95_r -c -q64 -WF,-DISZ=8 -WF,-DXLF -qmaxmem=8192 -qdpc=e -qintsize=8 -qsave=defaultinit -WF,-DMPIPARALLEL -qsuffix=f=f90:cpp=F90 -qfree=f90 -WF,-DESSL'
-      self.f90fixed = 'mpxlf95_r -c -q64 -WF,-DISZ=8 -WF,-DXLF -qmaxmem=8192 -qdpc=e -qintsize=8 -qsave=defaultinit -WF,-DMPIPARALLEL -qfixed=132 -WF,-DESSL'
+      self.f90free  = 'mpxlf95_r -c -q64 -WF,-DISZ=8 -WF,-DXLF -qmaxmem=8192 -qdpc=e -qrealsize=8 -qintsize=8 -qsave=defaultinit -WF,-DMPIPARALLEL -qsuffix=f=f90:cpp=F90 -qfree=f90 -WF,-DESSL'
+      self.f90fixed = 'mpxlf95_r -c -q64 -WF,-DISZ=8 -WF,-DXLF -qmaxmem=8192 -qdpc=e -qrealsize=8 -qintsize=8 -qsave=defaultinit -WF,-DMPIPARALLEL -qfixed=132 -WF,-DESSL'
       if self.implicitnone:
         self.f90free  += ' -u'
         self.f90fixed += ' -u'
