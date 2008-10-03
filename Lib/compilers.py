@@ -532,19 +532,16 @@ appropriate block for the machine.
         (self.fcompname is None and self.findfile('xlf95'))):
       self.fcompname = 'xlf'
       # --- IBM SP, serial
-      self.f90free  = 'xlf95 -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qintsize=4 -qsave=defaultinit -qsuffix=f=f90:cpp=F90 -qfree=f90 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
-      self.f90fixed = 'xlf95 -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qintsize=4 -qsave=defaultinit -qfixed=132 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
+      intsize = struct.calcsize('l')
+      if intsize == 4: bmax = '-bmaxdata:0x70000000 -bmaxstack:0x10000000'
+      else:            bmax = '-q64'
+      f90 = 'xlf95 -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -WF,-DISZ=%(intsize)s -qintsize=%(intsize)s -qsave=defaultinit -WF,-DESSL %(bmax)s'%locals()
+      self.f90free  = f90 + ' -qsuffix=f=f90:cpp=F90 -qfree=f90'
+      self.f90fixed = f90 + ' -qfixed=132'
+      self.ld = 'xlf -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp %(bmax)s'%locals()
       self.popt = '-O'
-      if struct.calcsize('l') == 4:
-        self.extra_link_args = ['-bmaxdata:0x70000000','-bmaxstack:0x10000000']
-        self.extra_compile_args = ['-bmaxdata:0x70000000','-bmaxstack:0x10000000']
-        self.ld = 'xlf -bmaxdata:0x70000000 -bmaxstack:0x10000000 -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp'
-      elif struct.calcsize('l') == 8:
-        self.f90free  = 'xlf95_r -q64 -WF,-DISZ=8 -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qintsize=8 -qsave=defaultinit -qsuffix=f=f90:cpp=F90 -qfree=f90 -WF,-DESSL'
-        self.f90fixed = 'xlf95_r -q64 -WF,-DISZ=8 -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qintsize=8 -qsave=defaultinit -qfixed=132 -WF,-DESSL'
-        self.extra_link_args = ['-q64'] #,'-qheapdebug','-qcheck=all']
-        self.extra_compile_args = ['-q64'] #,'-qheapdebug','-qcheck=all']
-        self.ld = 'xlf_r -q64 -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp'
+      self.extra_link_args = [bmax]
+      self.extra_compile_args = [bmax]
       if self.implicitnone:
         self.f90free  += ' -u'
         self.f90fixed += ' -u'
@@ -557,17 +554,20 @@ appropriate block for the machine.
         (self.fcompname is None and self.findfile('mpxlf95'))):
       self.fcompname = 'xlf'
       # --- IBM SP, parallel
-      self.f90free  = 'mpxlf95 -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qintsize=4 -qsave=defaultinit -WF,-DMPIPARALLEL -qsuffix=f=f90:cpp=F90 -qfree=f90 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
-      self.f90fixed = 'mpxlf95 -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qintsize=4 -qsave=defaultinit -WF,-DMPIPARALLEL -qfixed=132 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
+      intsize = struct.calcsize('l')
+      if intsize == 4: bmax = '-bmaxdata:0x70000000 -bmaxstack:0x10000000'
+      else:            bmax = '-q64'
+      f90 = 'mpxlf95 -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -WF,-DISZ=%(intsize)s -qintsize=%(intsize)s -qsave=defaultinit -WF,-DMPIPARALLEL -WF,-DESSL %(bmax)s'%locals()
+      self.f90free  = f90 + ' -qsuffix=f=f90:cpp=F90 -qfree=f90'
+      self.f90fixed = f90 + ' -qfixed=132'
+      self.ld = 'mpxlf_r -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp %(bmax)s'%locals()
       if self.implicitnone:
         self.f90free  += ' -u'
         self.f90fixed += ' -u'
       self.popt = '-O'
-      self.extra_link_args = ['-bmaxdata:0x70000000','-bmaxstack:0x10000000']
-      self.extra_compile_args = ['-bmaxdata:0x70000000','-bmaxstack:0x10000000']
-      self.ld = 'mpxlf_r -bmaxdata:0x70000000 -bmaxstack:0x10000000 -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp'
+      self.extra_link_args = [bmax]
+      self.extra_compile_args = [bmax]
       self.libs = ['xlf90','xlopt','xlf','xlomp_ser','pthread','essl']
-     #self.libs = ' $(PYMPI)/driver.o $(PYMPI)/patchedmain.o -L$(PYMPI) -lpympi -lpthread'
       self.defines = ['PYMPI=/usr/common/homes/g/grote/pyMPI']
       self.fopt = '-O3 -qstrict -qarch=auto -qtune=auto'
       return 1
@@ -577,16 +577,19 @@ appropriate block for the machine.
         (self.fcompname is None and self.findfile('xlf95_r'))):
       self.fcompname = 'xlf'
       # --- IBM SP, OpenMP
-      self.f90free  = 'xlf95_r -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qintsize=4 -qsave=defaultinit -qsuffix=f=f90:cpp=F90 -qfree=f90 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
-      self.f90fixed = 'xlf95 -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qintsize=4 -qsave=defaultinit -qfixed=132 -bmaxdata:0x70000000 -bmaxstack:0x10000000 -WF,-DESSL'
+      intsize = struct.calcsize('l')
+      if intsize == 4: bmax = '-bmaxdata:0x70000000 -bmaxstack:0x10000000'
+      else:            bmax = '-q64'
+      f90  = 'xlf95_r -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -WF,-DISZ=%(intsize)s -qintsize=%(intsize)s -qsave=defaultinit -WF,-DESSL %(bmax)s'%locals()
+      self.f90free  = f90 + ' -qsuffix=f=f90:cpp=F90 -qfree=f90'
+      self.f90fixed = f90 + ' -qfixed=132'
+      self.ld = 'xlf95_r -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp %(bmax)s'%locals()
       if self.implicitnone:
         self.f90free  += ' -u'
         self.f90fixed += ' -u'
       self.popt = '-O'
-      self.extra_link_args = ['-bmaxdata:0x70000000','-bmaxstack:0x10000000']
-      self.extra_compile_args = ['-bmaxdata:0x70000000','-bmaxstack:0x10000000']
-      self.ld = 'xlf95_r -bmaxdata:0x70000000 -bmaxstack:0x10000000 -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp'
-      #self.libs = ['pthread','xlf90','xlopt','xlf','xlsmp']
+      self.extra_link_args = [bmax]
+      self.extra_compile_args = [bmax]
       self.libs = ['xlf90','xlopt','xlf','xlsmp','pthreads','essl']
       self.fopt = '-O3 -qstrict -qarch=auto -qtune=auto -qsmp=omp'
       return 1
@@ -596,17 +599,20 @@ appropriate block for the machine.
         (self.fcompname is None and self.findfile('mpxlf95'))):
       self.fcompname = 'xlf'
       # --- IBM SP, parallel
-      self.f90free  = 'mpxlf95_r -c -q64 -WF,-DISZ=8 -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qintsize=8 -qsave=defaultinit -WF,-DMPIPARALLEL -qsuffix=f=f90:cpp=F90 -qfree=f90 -WF,-DESSL'
-      self.f90fixed = 'mpxlf95_r -c -q64 -WF,-DISZ=8 -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qintsize=8 -qsave=defaultinit -WF,-DMPIPARALLEL -qfixed=132 -WF,-DESSL'
+      intsize = struct.calcsize('l')
+      if intsize == 4: bmax = '-bmaxdata:0x70000000 -bmaxstack:0x10000000'
+      else:            bmax = '-q64'
+      f90 = 'mpxlf95_r -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -WF,-DISZ=%(intsize)s -qintsize=8 -qsave=defaultinit -WF,-DMPIPARALLEL -WF,-DESSL %(bmax)s'%locals()
+      self.f90free  = f90 + ' -qsuffix=f=f90:cpp=F90 -qfree=f90'
+      self.f90fixed = f90 + ' -qfixed=132'
+      self.ld = 'mpxlf95_r -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp %bmax)s'%locals()
       if self.implicitnone:
         self.f90free  += ' -u'
         self.f90fixed += ' -u'
       self.popt = '-O'
-      self.extra_link_args = ['-q64']
-      self.extra_compile_args = ['-q64']
-      self.ld = 'mpxlf95_r -q64 -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp'
+      self.extra_link_args = [bmax]
+      self.extra_compile_args = [bmax]
       self.libs = ['xlf90','xlopt','xlf','xlomp_ser','pthread','essl']
-     #self.libs = ' $(PYMPI)/driver.o $(PYMPI)/patchedmain.o -L$(PYMPI) -lpympi -lpthread'
       self.defines = ['PYMPI=/usr/common/homes/g/grote/pyMPI']
       self.fopt = '-O3 -qstrict -qarch=auto -qtune=auto'
       return 1
