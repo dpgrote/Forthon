@@ -68,6 +68,10 @@ One or more of the following options can be specified.
     Additional options for the fortran compiler. For example to turn on
     profiling.  If there are any spaces in options, it must be surrounded in
     double quotes.
+ --cargs options
+    Additional options for the C compiler. These are passed through
+    distutils, which does the compilation of C code. If there are any spaces
+    in options, it must be surrounded in double quotes.  
  --static
     Build the static version of the code by default, rather than the
     dynamically linker version. Not yet supported.
@@ -119,7 +123,7 @@ if len(sys.argv) == 1:
 optlist,args = getopt.getopt(sys.argv[1:],'agd:t:F:D:L:l:I:i:f:',
                          ['f90','f77','nowritemodules',
                           'timeroutines','macros=',
-                          'fopt=','fargs=','static',
+                          'fopt=','fargs=','cargs=','static',
                           '2underscores','no2underscores',
                           'free_suffix=','fixed_suffix=',
                           'compile_first=','builddir=','noimplicitnone',
@@ -145,6 +149,7 @@ debug          = 0
 twounderscores = 0
 fopt           = None
 fargs          = ''
+cargs          = None
 libs           = []
 libdirs        = []
 includedirs    = []
@@ -175,6 +180,7 @@ for o in optlist:
   elif o[0] == '--no2underscores': twounderscores = 0
   elif o[0] == '--fopt': fopt = o[1]
   elif o[0] == '--fargs': fargs = fargs + ' ' + o[1]
+  elif o[0] == '--cargs': cargs = o[1]
   elif o[0] == '--static': static = 1
   elif o[0] == '--nowritemodules': writemodules = 0
   elif o[0] == '--timeroutines': timeroutines = 1
@@ -368,6 +374,10 @@ forthonargs = string.join(forthonargs,' ')
 # --- Add any includedirs to fargs
 for i in includedirs:
   fargs = fargs + ' -I'+i+' '
+
+# --- Add in any user supplied cargs
+if cargs is not None:
+  extra_compile_args.append(cargs)
 
 # --- Add build rules for fortran files with suffices other than the
 # --- basic fixed and free ones. Those first two suffices are included
