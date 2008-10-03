@@ -605,7 +605,7 @@ appropriate block for the machine.
       f90 = 'mpxlf95_r -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -WF,-DISZ=%(intsize)s -qintsize=8 -qsave=defaultinit -WF,-DMPIPARALLEL -WF,-DESSL %(bmax)s'%locals()
       self.f90free  = f90 + ' -qsuffix=f=f90:cpp=F90 -qfree=f90'
       self.f90fixed = f90 + ' -qfixed=132'
-      self.ld = 'mpxlf95_r -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp %bmax)s'%locals()
+      self.ld = 'mpxlf95_r -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp %(bmax)s'%locals()
       if self.implicitnone:
         self.f90free  += ' -u'
         self.f90fixed += ' -u'
