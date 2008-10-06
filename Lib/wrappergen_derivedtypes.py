@@ -79,7 +79,10 @@ class ForthonDerivedType:
       # --- continuation marks in between any variable names.
       for i in range(132,len(text),132):
         # --- \W matches anything but a letter or number.
-        ss = re.search('\W',text[i::-1])
+        #ss = re.search('\W',text[i::-1])
+        # --- This is the same as \W, but also skips %, since PG compilers
+        # --- don't seem to like a line continuation mark just before a %.
+        ss = re.search('[^a-zA-Z0-9_%]',text[i::-1])
         assert ss is not None,\
                "Forthon can't find a place to break up this line:\n"+text
         text = text[:i-ss.start()] + '&\n' + text[i-ss.start():]
