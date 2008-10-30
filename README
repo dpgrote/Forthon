@@ -11,6 +11,9 @@ written in the much more versatile Python language.
 
 Release Notes:
 
+0.7.15: October 30, 2008
+ - Fix for arrays of strings (including the Filename type)
+
 0.7.14: October 3, 2008
  - Added -qaudodbl=dbl4 option for the xlf compilers
  - Reworked the code in Lib/compilers for the xlf compilers on AIX
