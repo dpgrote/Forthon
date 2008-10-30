@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.63 2008/08/29 17:42:17 dave Exp $ */
+/* $Id: Forthon.h,v 1.64 2008/10/30 17:30:11 dave Exp $ */
 
 #include <Python.h>
 
@@ -364,12 +364,13 @@ static void ForthonPackage_staticarrays(ForthonObject *self)
         /* length of the associated fortran character variable. If the */
         /* string is not an array, then it is made into a 1-D array of */
         /* length 1. */
-        /* The dimension[0] holds the character length. */
-        itemsize = self->farrays[i].dimensions[0];
+        nd = self->farrays[i].nd;
+        /* The dimensions[nd-1] holds the character length. */
+        itemsize = self->farrays[i].dimensions[nd-1];
         /* If this is really an array, remove the first dimension, which */
         /* is the character length. Otherwise, make it a 1-D array. */
-        if (self->farrays[i].nd > 1) {nd = self->farrays[i].nd - 1;}
-        else                         {nd = 1;}
+        if (nd > 1) {nd -= 1;}
+        else        {nd = 1;}
         /* Allocate the appropriate amount of space for the dimensions. */
         dimensions = (npy_intp*)malloc(sizeof(npy_intp)*nd);
         if (self->farrays[i].nd == 1) {
@@ -379,7 +380,7 @@ static void ForthonPackage_staticarrays(ForthonObject *self)
         else {
           /* Copy over the rest of the dimensions. */
           for (j=0;j<nd;j++)
-            dimensions[j] = self->farrays[i].dimensions[j+1];
+            dimensions[j] = self->farrays[i].dimensions[j];
           }
         }
       else {
@@ -409,14 +410,19 @@ static void ForthonPackage_staticarrays(ForthonObject *self)
       ARRAY_REVERSE_STRIDE(self->farrays[i].pya);
       ARRAY_REVERSE_DIM(self->farrays[i].pya);
       /* For strings, replace nulls with blank spaces */
-      if (self->farrays[i].type == PyArray_STRING)
+      if (self->farrays[i].type == PyArray_STRING) {
         if ((c=memchr(self->farrays[i].data.s,0,
-                     PyArray_SIZE(self->farrays[i].pya))))
+                      PyArray_SIZE(self->farrays[i].pya)*itemsize)))
           memset(c,(int)' ',
-                 (int)(PyArray_SIZE(self->farrays[i].pya)-(long)c+
+                 (int)(PyArray_SIZE(self->farrays[i].pya)*itemsize-(long)c+
                  (long)self->farrays[i].data.s));
-      /* Add the array size to totmembytes. */
-      totmembytes += (long)PyArray_NBYTES(self->farrays[i].pya);
+        /* Add the array size to totmembytes. */
+        totmembytes += (long)PyArray_NBYTES(self->farrays[i].pya)*itemsize;
+        }
+      else {
+        /* Add the array size to totmembytes. */
+        totmembytes += (long)PyArray_NBYTES(self->farrays[i].pya);
+        }
       }
     }
 }
@@ -1805,8 +1811,9 @@ static PyObject *ForthonPackage_getvartype(PyObject *_self_,PyObject *args)
 {
   ForthonObject *self = (ForthonObject *)_self_;
   PyObject *pyi;
-  int i;
+  int i,charsize;
   char *name;
+  char charstring[50];
   if (!PyArg_ParseTuple(args,"s",&name)) return NULL;
 
   /* The PyString stuff is done to avoid having to deal with strings at the
@@ -1833,7 +1840,9 @@ static PyObject *ForthonPackage_getvartype(PyObject *_self_,PyObject *args)
   if (pyi != NULL) {
     PyArg_Parse(pyi,"i",&i);
     if (self->farrays[i].type == PyArray_STRING) {
-      return PyString_FromString("character");}
+      charsize = self->farrays[i].dimensions[self->farrays[i].nd-1];
+      sprintf(charstring,"character(%d)",charsize);
+      return PyString_FromString(charstring);}
     else if (self->farrays[i].type == PyArray_LONG) {
       return PyString_FromString("integer");}
     else if (self->farrays[i].type == PyArray_DOUBLE) {
@@ -1854,8 +1863,9 @@ static PyObject *ForthonPackage_listvar(PyObject *_self_,PyObject *args)
   ForthonObject *self = (ForthonObject *)_self_;
   PyObject *pyi;
   PyObject *doc;
-  int i;
+  int i,charsize;
   char *name;
+  char charstring[50];
   if (!PyArg_ParseTuple(args,"s",&name)) return NULL;
 
   /* The PyString stuff is done to avoid having to deal with strings at the
@@ -1907,8 +1917,10 @@ static PyObject *ForthonPackage_listvar(PyObject *_self_,PyObject *args)
     PyString_ConcatAndDel(&doc,PyString_FromString(self->farrays[i].dimstring));
     PyString_ConcatAndDel(&doc,PyString_FromString("\nType:       "));
     if (self->farrays[i].type == PyArray_STRING) {
-      PyString_ConcatAndDel(&doc,PyString_FromString("character*"));
-      PyString_ConcatAndDel(&doc,PyObject_Str(PyInt_FromLong((long)(self->farrays[i].dimensions[0]))));
+      charsize = self->farrays[i].dimensions[self->farrays[i].nd-1];
+      sprintf(charstring,"character(%d)",charsize);
+      PyString_ConcatAndDel(&doc,PyString_FromString(charstring));
+      /* PyString_ConcatAndDel(&doc,PyObject_Str(PyInt_FromLong((long)(self->farrays[i].dimensions[0])))); */
       }
     else if (self->farrays[i].type == PyArray_LONG) {
       PyString_ConcatAndDel(&doc,PyString_FromString("integer"));}
