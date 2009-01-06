@@ -10,4 +10,5 @@ scp docs/index.html dave@hifweb:/web/html/Forthon
 ssh hifweb "chmod -R go+rX /web/html/Forthon"
 rm -f Forthon-$vvv.tgz version.pyc
 mv Forthon-$vvv releases
+cvs diff
 
