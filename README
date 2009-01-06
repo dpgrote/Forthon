@@ -11,6 +11,11 @@ written in the much more versatile Python language.
 
 Release Notes:
 
+0.7.16:
+ - Minor fixes for code cleanup
+   - removed unneeded i argument in Forthon_checksubroutineargtype
+   - added some extra parenthesis for clarity
+
 0.7.15: October 30, 2008
  - Fix for arrays of strings (including the Filename type)
 
