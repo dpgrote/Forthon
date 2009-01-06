@@ -800,7 +800,7 @@ class ForthonDerivedType:
         self.fw('SUBROUTINE '+self.fsub(t,'setpointer',s.name)+'(p__,obj__,nullit__)')
         self.fw('  USE '+t.name+'module')
         self.fw('  TYPE('+t.name+'):: obj__')
-        self.fw('  '+fvars.ftof(s.type)+',target::p__')
+        self.fw('  '+fvars.ftof(s.type)+',target:: p__')
         self.fw('  INTEGER('+isz+'):: nullit__')
         if s.dynamic:
           self.fw('  if (nullit__ == 0) then')

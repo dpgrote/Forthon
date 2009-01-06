@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.57 2008/10/06 23:35:03 dave Exp $
+# $Id: wrappergenerator.py,v 1.58 2009/01/06 18:22:02 dave Exp $
 
 import sys
 import os.path
@@ -452,7 +452,7 @@ of scalars and arrays.
         self.cw('  argno = %d;'%(i+1))
         if not fvars.isderivedtype(f.args[i]):
           self.cw('  if (!Forthon_checksubroutineargtype(pyobj['+repr(i)+'],'+
-              'PyArray_'+fvars.ftop(f.args[i].type)+','+repr(i)+')) {')
+              'PyArray_'+fvars.ftop(f.args[i].type)+')) {')
           self.cw('    sprintf(e,"Argument '+repr(i+1)+ ' in '+f.name+
                                ' has the wrong type");')
           self.cw('    PyErr_SetString(ErrorObject,e);')
@@ -999,7 +999,7 @@ of scalars and arrays.
         self.fw('SUBROUTINE '+self.fsub('setpointer',s.name)+'(p__,cobj__)')
         self.fw('  USE '+s.group)
         self.fw('  integer('+self.isz+'):: cobj__')
-        self.fw('  '+fvars.ftof(s.type)+',target::p__')
+        self.fw('  '+fvars.ftof(s.type)+',target:: p__')
         if s.dynamic:
           self.fw('  '+s.name+' => p__')
         else:
@@ -1040,7 +1040,7 @@ of scalars and arrays.
             self.fw('  integer('+self.isz+'):: dims__('+repr(len(a.dims))+')')
           else:
             self.fw('  integer(4):: dims__('+repr(len(a.dims))+')')
-          self.fw('  '+fvars.ftof(a.type)+',target::p__'+
+          self.fw('  '+fvars.ftof(a.type)+',target:: p__'+
                     self.prefixdimsf(a.dimstring))
           self.fw('  '+a.name+' => p__')
           self.fw('  return')
@@ -1113,18 +1113,18 @@ of scalars and arrays.
         if s.group == g:
           self.fw('  '+fvars.ftof(s.type),noreturn=1)
           if s.dynamic: self.fw(',POINTER',noreturn=1)
-          self.fw(save+'::'+s.name,noreturn=1)
+          self.fw(save+':: '+s.name,noreturn=1)
           if s.data: self.fw('='+s.data[1:-1],noreturn=1)
           self.fw('')
       for a in self.alist:
         if a.group == g:
           if a.dynamic:
             if a.type == 'character':
-              self.fw('  character(len='+a.dims[0].high+'),'+dyntype+save+'::'+
+              self.fw('  character(len='+a.dims[0].high+'),'+dyntype+save+':: '+
                       a.name,noreturn=1)
               ndims = len(a.dims) - 1
             else:
-              self.fw('  '+fvars.ftof(a.type)+','+dyntype+save+'::'+a.name,
+              self.fw('  '+fvars.ftof(a.type)+','+dyntype+save+':: '+a.name,
                       noreturn=1)
               ndims = len(a.dims)
             if ndims > 0:
@@ -1132,10 +1132,10 @@ of scalars and arrays.
             self.fw('')
           else:
             if a.type == 'character':
-              self.fw('  character(len='+a.dims[0].high+')'+save+'::'+a.name+
+              self.fw('  character(len='+a.dims[0].high+')'+save+':: '+a.name+
                       a.dimstring)
             else:
-              self.fw('  '+fvars.ftof(a.type)+save+'::'+a.name+a.dimstring)
+              self.fw('  '+fvars.ftof(a.type)+save+':: '+a.name+a.dimstring)
             if a.data:
               # --- Add line continuation marks if the data line extends over
               # --- multiple lines.
