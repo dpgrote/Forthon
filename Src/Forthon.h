@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.64 2008/10/30 17:30:11 dave Exp $ */
+/* $Id: Forthon.h,v 1.65 2009/01/06 18:22:49 dave Exp $ */
 
 #include <Python.h>
 
@@ -198,7 +198,7 @@ static double cputime(void)
 
 /* ###################################################################### */
 /* Utility routines used in wrapping the subroutines                      */
-static int Forthon_checksubroutineargtype(PyObject *pyobj,int type_num,int i)
+static int Forthon_checksubroutineargtype(PyObject *pyobj,int type_num)
 {
   int ret;
   if (PyArray_Check(pyobj)) {
@@ -1337,7 +1337,10 @@ static PyObject *ForthonPackage_gchange(PyObject *_self_,PyObject *args)
           axdims = PyArray_DIMS(ax);
           PyArray_DIMS(self->farrays[i].pya) = d;
           PyArray_DIMS(ax) = d;
-          rt=PyArray_CopyInto(ax,self->farrays[i].pya);
+          rt = PyArray_CopyInto(ax,self->farrays[i].pya);
+          if (rt)
+            printf("gchange: error copying data for the array %s",
+                   self->farrays[i].name);
           PyArray_DIMS(self->farrays[i].pya) = pyadims;
           PyArray_DIMS(ax) = axdims;
           free(d);
@@ -1589,7 +1592,7 @@ static PyObject *ForthonPackage_delvarattr(PyObject *_self_,PyObject *args)
       }
     strncpy(newattr,self->fscalars[i].attributes,ind);
     newattr[ind] = (char) NULL;
-    if (ind+strlen(attr) < strlen(self->fscalars[i].attributes))
+    if ((ind+strlen(attr)) < strlen(self->fscalars[i].attributes))
       strcat(newattr,self->fscalars[i].attributes+ind+strlen(attr));
     /* See comments in addvarattr why the free is commented out */
     /* free(self->fscalars[i].attributes); */
@@ -1614,7 +1617,7 @@ static PyObject *ForthonPackage_delvarattr(PyObject *_self_,PyObject *args)
       }
     strncpy(newattr,self->farrays[i].attributes,ind);
     newattr[ind] = (char) NULL;
-    if (ind+strlen(attr) < strlen(self->farrays[i].attributes))
+    if ((ind+strlen(attr)) < strlen(self->farrays[i].attributes))
     strcat(newattr,self->farrays[i].attributes+ind+strlen(attr));
     /* See comments in addvarattr why the free is commented out */
     /* free(self->farrays[i].attributes); */
