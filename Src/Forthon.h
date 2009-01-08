@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.66 2009/01/08 20:54:33 dave Exp $ */
+/* $Id: Forthon.h,v 1.67 2009/01/08 23:57:00 dave Exp $ */
 
 #include <Python.h>
 
@@ -413,6 +413,7 @@ static void ForthonPackage_staticarrays(ForthonObject *self)
       if (self->farrays[i].type == PyArray_STRING) {
         if ((c=memchr(self->farrays[i].data.s,0,
                       PyArray_SIZE(self->farrays[i].pya)*itemsize)))
+          /* Note that long is used since c and data.s are addresses. */
           memset(c,(int)' ',
                  (int)(PyArray_SIZE(self->farrays[i].pya)*itemsize-(long)c+
                  (long)self->farrays[i].data.s));
@@ -458,7 +459,7 @@ static void ForthonPackage_updatederivedtype(ForthonObject *self,long i,
 static void Forthon_updatederivedtypeelements(ForthonObject *self,
                                               ForthonObject *value)
 {
-  long i;
+  int i;
   PyObject *oldobj;
 
   /* Loop over scalars, and update the references to derived types. Note   */
@@ -920,7 +921,7 @@ static PyObject *ForthonPackage_allocated(PyObject *_self_,PyObject *args)
   if (pyi != NULL) {
     PyArg_Parse(pyi,"i",&i);
     if (self->fscalars[i].type == PyArray_OBJECT) {
-      ForthonPackage_updatederivedtype(self,i,createnew);
+      ForthonPackage_updatederivedtype(self,(long)i,createnew);
       if (self->fscalars[i].data == NULL) {return Py_BuildValue("i",0);}
       else {
         return Py_BuildValue("i",
@@ -934,7 +935,7 @@ static PyObject *ForthonPackage_allocated(PyObject *_self_,PyObject *args)
   if (pyi != NULL) {
     PyArg_Parse(pyi,"i",&i);
     /* Update the array if it is dynamic and fortran assignable. */
-    ForthonPackage_updatearray(self,i);
+    ForthonPackage_updatearray(self,(long)i);
     if (self->farrays[i].pya == NULL) {return Py_BuildValue("i",0);}
     else                              {return Py_BuildValue("i",1);}
     }
@@ -1897,7 +1898,7 @@ static PyObject *ForthonPackage_listvar(PyObject *_self_,PyObject *args)
       PyString_ConcatAndDel(&doc,PyString_FromString("double complex"));}
     PyString_ConcatAndDel(&doc,PyString_FromString("\nAddress:    "));
     if (self->fscalars[i].type == PyArray_OBJECT)
-      ForthonPackage_updatederivedtype(self,i,(long) 1);
+      ForthonPackage_updatederivedtype(self,i,1);
     PyString_ConcatAndDel(&doc,PyObject_Str(PyInt_FromLong((long)(self->fscalars[i].data))));
     PyString_ConcatAndDel(&doc,PyString_FromString("\nComment:\n"));
     PyString_ConcatAndDel(&doc,PyString_FromString(self->fscalars[i].comment));
