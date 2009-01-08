@@ -12,6 +12,8 @@ written in the much more versatile Python language.
 Release Notes:
 
 0.7.16:
+ - Removed all reference to Numeric, which is no long supported
+ - createnew and nullit were changed from long to int
  - Minor fixes for code cleanup
    - removed unneeded i argument in Forthon_checksubroutineargtype
    - added some extra parenthesis for clarity
