@@ -816,7 +816,8 @@ class ForthonDerivedType:
           self.fw('SUBROUTINE '+self.fsub(t,'getpointer',s.name)+
                           '(cobj__,obj__,createnew__)')
           self.fw('  USE '+t.name+'module')
-          self.fw('  integer(4):: cobj__,createnew__')
+          self.fw('  integer('+isz+'):: cobj__')
+          self.fw('  integer(4):: createnew__')
           self.fw('  TYPE('+t.name+'):: obj__')
           self.fw('  if (ASSOCIATED(obj__%'+s.name+')) then')
           self.fw('    if (obj__%'+s.name+'%cobj__ == 0 .and. createnew__==1) then')

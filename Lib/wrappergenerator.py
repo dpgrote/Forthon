@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.59 2009/01/08 20:54:32 dave Exp $
+# $Id: wrappergenerator.py,v 1.60 2009/01/08 21:48:57 dave Exp $
 
 import sys
 import os.path
@@ -1012,7 +1012,8 @@ of scalars and arrays.
           self.fw('SUBROUTINE '+self.fsub('getpointer',s.name)+
                                  '(cobj__,obj__,createnew__)')
           self.fw('  USE '+s.group)
-          self.fw('  integer(4):: cobj__,obj__,createnew__')
+          self.fw('  integer('+self.isz+'):: cobj__,obj__')
+          self.fw('  integer(4):: createnew__')
           self.fw('  if (ASSOCIATED('+s.name+')) then')
           self.fw('    if ('+s.name+'%cobj__ == 0 .and. createnew__ == 1) then')
           self.fw('      call init'+s.type+'py(int(-1,'+self.isz+'),'+s.name+','+
