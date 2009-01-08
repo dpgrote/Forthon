@@ -7,22 +7,11 @@ But flies an eagle flight, bold, and forthon, Leaving no tract behind.
 import sys
 import __main__
 
-__main__.__dict__['with_numpy'] = 1
-try:
-  with_numpy = __main__.__dict__['with_numpy']
-except KeyError:
-  with_numpy = ('--with-numpy' in sys.argv)
-  __main__.__dict__['with_numpy'] = with_numpy
-  
-if with_numpy:
-  from numpy import *
-  ArrayType = ndarray
-  def gettypecode(x):
-    return x.dtype.char
-else:
-  from Numeric import *
-  def gettypecode(x):
-    return x.typecode()
+# --- Only numpy is now supported.
+from numpy import *
+ArrayType = ndarray
+def gettypecode(x):
+  return x.dtype.char
 
 from types import *
 import string
@@ -57,7 +46,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.51 2008/09/12 23:20:03 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.52 2009/01/08 20:54:32 dave Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling. These should be moved to C.
@@ -289,25 +278,9 @@ def nint(x):
 # --- with these commands are passed to a fortran subroutine, no copies are
 # --- needed to get the data into the proper order for fortran.
 def fones(shape,typecode='l'):
-  if with_numpy:
-    return ones(shape,dtype=typecode,order='FORTRAN')
-  else:
-    try:
-      s = list(shape)
-    except TypeError:
-      s = list([shape])
-    s.reverse()
-    return transpose(ones(s,typecode))
+  return ones(shape,dtype=typecode,order='FORTRAN')
 def fzeros(shape,typecode='l'):
-  if with_numpy:
-    return zeros(shape,dtype=typecode,order='FORTRAN')
-  else:
-    try:
-      s = list(shape)
-    except TypeError:
-      s = list([shape])
-    s.reverse()
-    return transpose(zeros(s,typecode))
+  return zeros(shape,dtype=typecode,order='FORTRAN')
 
 def doc(f,printit=1):
   """
@@ -647,12 +620,6 @@ def pydumpforthonobject(ff,attr,objname,obj,varsuffix,writtenvars,fobjlist,
       a = obj.getvarattr(vname)
       if re.search('parallel',a):
         if verbose: print "variable "+vname+varsuffix+" skipped since it is a parallel variable"
-        continue
-    if not with_numpy:
-      # --- Check if variable is a complex array. Currently, these
-      # --- can not be written out with Numeric.
-      if isinstance(v,ArrayType) and gettypecode(v) == Complex:
-        if verbose: print "variable "+vname+varsuffix+" skipped since it is a complex array"
         continue
     # --- Check if variable with same name has already been written out.
     # --- This only matters when the variable is being written out as

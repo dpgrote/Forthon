@@ -144,10 +144,10 @@ class ForthonDerivedType:
       # --- for non-dynamic derived types, the setpointer routine does a copy.
       for s in slist:
         self.cw('extern void '+fname(self.fsub(t,'setpointer',s.name))+
-                '(char *p,char *fobj,long *nullit);')
+                '(char *p,char *fobj,int *nullit);')
         if s.dynamic:
           self.cw('extern void '+fname(self.fsub(t,'getpointer',s.name))+
-                  '(ForthonObject **cobj__,char *obj,long *createnew__);')
+                  '(ForthonObject **cobj__,char *obj,int *createnew__);')
       for a in alist:
         self.cw('extern void '+fname(self.fsub(t,'setpointer',a.name))+
                   '(char *p,char *fobj,npy_intp *dims__);')
@@ -801,7 +801,7 @@ class ForthonDerivedType:
         self.fw('  USE '+t.name+'module')
         self.fw('  TYPE('+t.name+'):: obj__')
         self.fw('  '+fvars.ftof(s.type)+',target:: p__')
-        self.fw('  INTEGER('+isz+'):: nullit__')
+        self.fw('  INTEGER(4):: nullit__')
         if s.dynamic:
           self.fw('  if (nullit__ == 0) then')
           self.fw('    obj__%'+s.name+' => p__')
@@ -816,7 +816,7 @@ class ForthonDerivedType:
           self.fw('SUBROUTINE '+self.fsub(t,'getpointer',s.name)+
                           '(cobj__,obj__,createnew__)')
           self.fw('  USE '+t.name+'module')
-          self.fw('  integer('+isz+'):: cobj__,createnew__')
+          self.fw('  integer(4):: cobj__,createnew__')
           self.fw('  TYPE('+t.name+'):: obj__')
           self.fw('  if (ASSOCIATED(obj__%'+s.name+')) then')
           self.fw('    if (obj__%'+s.name+'%cobj__ == 0 .and. createnew__==1) then')
@@ -836,10 +836,7 @@ class ForthonDerivedType:
           self.fw('SUBROUTINE '+self.fsub(t,'setpointer',a.name)+'(p__,obj__,dims__)')
           self.fw('  USE '+t.name+'module')
           self.fw('  TYPE('+t.name+'):: obj__')
-          if with_numpy:
-            self.fw('  integer('+isz+'):: dims__('+repr(len(a.dims))+')')
-          else:
-            self.fw('  integer(4):: dims__('+repr(len(a.dims))+')')
+          self.fw('  integer('+isz+'):: dims__('+repr(len(a.dims))+')')
           self.fw('  '+fvars.ftof(a.type)+',target:: '+
                   'p__'+self.prefixdimsf(a.dimstring,sdict)+'')
           self.fw('  obj__%'+a.name+' => p__')

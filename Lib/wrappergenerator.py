@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.58 2009/01/06 18:22:02 dave Exp $
+# $Id: wrappergenerator.py,v 1.59 2009/01/08 20:54:32 dave Exp $
 
 import sys
 import os.path
@@ -277,7 +277,7 @@ of scalars and arrays.
                   '(char *p,long *cobj__);')
         if s.dynamic:
           self.cw('extern void '+fname(self.fsub('getpointer',s.name))+
-                  '(ForthonObject **cobj__,long *obj,long *createnew);')
+                  '(ForthonObject **cobj__,long *obj,int *createnew);')
       for a in self.alist:
         self.cw('extern void '+fname(self.fsub('setpointer',a.name))+
                 '(char *p,long *cobj__,npy_intp *dims__);')
@@ -1012,7 +1012,7 @@ of scalars and arrays.
           self.fw('SUBROUTINE '+self.fsub('getpointer',s.name)+
                                  '(cobj__,obj__,createnew__)')
           self.fw('  USE '+s.group)
-          self.fw('  integer('+self.isz+'):: cobj__,obj__,createnew__')
+          self.fw('  integer(4):: cobj__,obj__,createnew__')
           self.fw('  if (ASSOCIATED('+s.name+')) then')
           self.fw('    if ('+s.name+'%cobj__ == 0 .and. createnew__ == 1) then')
           self.fw('      call init'+s.type+'py(int(-1,'+self.isz+'),'+s.name+','+
@@ -1036,10 +1036,7 @@ of scalars and arrays.
               groupsprinted.append(g)
           self.fw('  USE '+a.group)
           self.fw('  integer('+self.isz+'):: cobj__')
-          if with_numpy:
-            self.fw('  integer('+self.isz+'):: dims__('+repr(len(a.dims))+')')
-          else:
-            self.fw('  integer(4):: dims__('+repr(len(a.dims))+')')
+          self.fw('  integer('+self.isz+'):: dims__('+repr(len(a.dims))+')')
           self.fw('  '+fvars.ftof(a.type)+',target:: p__'+
                     self.prefixdimsf(a.dimstring))
           self.fw('  '+a.name+' => p__')

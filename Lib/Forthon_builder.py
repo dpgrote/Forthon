@@ -98,9 +98,7 @@ One or more of the following options can be specified.
     Specifies whether or not to use second underscores when doing fortran
     name mangling.
  --with-numpy
-    When specified, numpy is used instead of Numeric. This is now the default.
- --with-Numeric
-    When specified, Numeric is used instead of numpy
+    This is now the default. Numeric is no longer supported.
 
 """
 
@@ -127,7 +125,7 @@ optlist,args = getopt.getopt(sys.argv[1:],'agd:t:F:D:L:l:I:i:f:',
                           '2underscores','no2underscores',
                           'free_suffix=','fixed_suffix=',
                           'compile_first=','builddir=','noimplicitnone',
-                          'build-temp=','with-numpy','with-Numeric'])
+                          'build-temp=','with-numpy'])
 
 # --- Get the package name and any other extra files
 pkg = args[0]
@@ -160,7 +158,6 @@ compile_first  = ''
 builddir       = None
 implicitnone   = 1
 build_temp     = ''
-with_numpy     = 1
 
 for o in optlist:
   if o[0]=='-a': initialgallot = '-a'
@@ -191,8 +188,6 @@ for o in optlist:
   elif o[0] == '--builddir': builddir = o[1]
   elif o[0] == '--noimplicitnone': implicitnone = 0
   elif o[0] == '--build-temp': build_temp = o[1]
-  elif o[0] == '--with-numpy': with_numpy = 1
-  elif o[0] == '--with-Numeric': with_numpy = 0
 
 if fortranfile is None: fortranfile = pkg + '.' + fixed_suffix
 
@@ -202,31 +197,25 @@ if twounderscores: forthonargs.append('--2underscores')
 else:              forthonargs.append('--no2underscores')
 if not writemodules: forthonargs.append('--nowritemodules')
 if timeroutines: forthonargs.append('--timeroutines')
-if with_numpy:
-  forthonargs.append('--with-numpy')
-  # --- Get the numpy headers path
-  import numpy
-  if numpy.__version__ < '1.1.0':
-    # --- Older versions of numpy hacked into distutils, changing things
-    # --- in such a way to mangle things like object file names. To avoid
-    # --- this, the code from get_include is included here explicitly,
-    # --- avoiding the importing of numpy.distutils.
-    import os
-    if numpy.show_config is None:
-        # running from numpy source directory
-        d = os.path.join(os.path.dirname(numpy.__file__), 'core', 'include')
-    else:
-        # using installed numpy core headers
-        import numpy.core as core
-        d = os.path.join(os.path.dirname(core.__file__), 'include')
-    includedirs.append(d)
-  else:
-    includedirs.append(numpy.get_include())
 
-# --- The macro WITH_NUMERIC must be defined when using Numeric
-define_macros = []
-if not with_numpy:
-  define_macros.append(('WITH_NUMERIC','1'))
+# --- Get the numpy headers path
+import numpy
+if numpy.__version__ < '1.1.0':
+  # --- Older versions of numpy hacked into distutils, changing things
+  # --- in such a way to mangle things like object file names. To avoid
+  # --- this, the code from get_include is included here explicitly,
+  # --- avoiding the importing of numpy.distutils.
+  import os
+  if numpy.show_config is None:
+      # running from numpy source directory
+      d = os.path.join(os.path.dirname(numpy.__file__), 'core', 'include')
+  else:
+      # using installed numpy core headers
+      import numpy.core as core
+      d = os.path.join(os.path.dirname(core.__file__), 'include')
+  includedirs.append(d)
+else:
+  includedirs.append(numpy.get_include())
 
 # --- Fix path - needed for Cygwin
 def fixpath(path,dos=1):
@@ -288,7 +277,7 @@ forthonargs = forthonargs + fcompiler.forthonargs
 if fopt is None: fopt = fcompiler.fopt
 extra_link_args = fcompiler.extra_link_args
 extra_compile_args = fcompiler.extra_compile_args
-define_macros += fcompiler.define_macros
+define_macros = fcompiler.define_macros
 
 # --- Create path to fortran files for the Makefile since they will be
 # --- referenced from the build directory.

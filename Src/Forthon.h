@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.65 2009/01/06 18:22:49 dave Exp $ */
+/* $Id: Forthon.h,v 1.66 2009/01/08 20:54:33 dave Exp $ */
 
 #include <Python.h>
 
@@ -430,7 +430,7 @@ static void ForthonPackage_staticarrays(ForthonObject *self)
 /* ######################################################################### */
 /* # Update the data element of a derived type.                              */
 static void ForthonPackage_updatederivedtype(ForthonObject *self,long i,
-                                             long createnew)
+                                             int createnew)
 {
   ForthonObject *objid;
   PyObject *oldobj;
@@ -520,7 +520,7 @@ static PyObject *Forthon_getscalarderivedtype(ForthonObject *self,void *closure)
 {
   Fortranscalar *fscalar = &(self->fscalars[(long)closure]);
   ForthonObject *objid;
-  long createnew=1;
+  int createnew=1;
   /* These are attached to variables of fortran derived type */
   ForthonPackage_updatederivedtype(self,(long)closure,createnew);
   objid = (ForthonObject *)fscalar->data;
@@ -644,7 +644,7 @@ static int Forthon_setscalarderivedtype(ForthonObject *self,PyObject *value,
   long i = (long)closure;
   Fortranscalar *fscalar = &(self->fscalars[i]);
   void *d;
-  long createnew,nullit;
+  int createnew,nullit;
   PyObject *oldobj;
 
   /* Only create a new instance if a non-NULL value is passed in. */
@@ -831,7 +831,7 @@ static int Forthon_setarraydict(ForthonObject *self,void *closure)
 static int Forthon_traverse(ForthonObject *self,visitproc visit,void *arg)
 {
   int i;
-  long createnew=0;
+  int createnew=0;
   for (i=0;i<self->nscalars;i++) {
     if (self->fscalars[i].type == PyArray_OBJECT &&
         self->fscalars[i].dynamic &&
@@ -850,7 +850,7 @@ static int Forthon_clear(ForthonObject *self)
 {
   /* Note that this is called by Forthon_dealloc. */
   int i;
-  long createnew=0,nullit=1;
+  int createnew=0,nullit=1;
   void *d;
   PyObject *oldobj;
 
@@ -911,7 +911,7 @@ static PyObject *ForthonPackage_allocated(PyObject *_self_,PyObject *args)
   ForthonObject *self = (ForthonObject *)_self_;
   PyObject *pyi;
   int i;
-  long createnew=1;
+  int createnew=1;
   char *name;
   if (!PyArg_ParseTuple(args,"s",&name)) return NULL;
 
