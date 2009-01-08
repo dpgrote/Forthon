@@ -159,3 +159,5 @@ a3() subroutine
 
 ****** Stringtest:
 tstring character*4 /"////"/ # test "/" in strings
+cccc character*8
+printchar8(cccc:string) subroutine
