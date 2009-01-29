@@ -1,7 +1,7 @@
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 19, 1998
 # Parse the interface description file
-# $Id: interfaceparser.py,v 1.16 2007/08/24 17:34:19 dave Exp $
+# $Id: interfaceparser.py,v 1.17 2009/01/29 22:15:08 dave Exp $
 
 # This reads in the entire variable description file and extracts all of
 # the variable and subroutine information needed to create an interface
@@ -97,10 +97,14 @@ def processfile(packname,filename,othermacros=[],timeroutines=0):
   group = ''
   attributes = ''
 
+  # The parser needs to distinguish between variable names and type names.
+  # When readyfortype is 0, the next string found will be interpreted as a
+  # variable name. If 1, then it will be a type name.
+  readyfortype = 0
+
   # Parse rest of file
   hidden = 0
   istype = 0
-  readyfortype = 0
   while text:
     text = text + '\n'
 
@@ -308,6 +312,18 @@ def processfile(packname,filename,othermacros=[],timeroutines=0):
           v.attr = re.sub('(?<=\W)'+m.group(1)+'(?=\W)',' ',v.attr,count=1)
       else:
         i = 0
+      readyfortype = 0
+
+    # Look for a set action flag
+    elif re.match('SET\s',text):
+      v.setaction = 1
+      i = 2
+      readyfortype = 0
+
+    # Look for a get action flag
+    elif re.match('GET\s',text):
+      v.getaction = 1
+      i = 2
       readyfortype = 0
 
     # Look for comment (and remove extra spaces)

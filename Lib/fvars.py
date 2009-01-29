@@ -1,5 +1,5 @@
 # Created by David P. Grote, March 6, 1998
-# $Id: fvars.py,v 1.6 2008/07/23 23:13:30 dave Exp $
+# $Id: fvars.py,v 1.7 2009/01/29 22:15:08 dave Exp $
 
 import cfinterface
 
@@ -20,6 +20,8 @@ class Fvars:
   array = 0
   function = 0
   derivedtype = 0
+  setaction = None
+  getaction = None
 
 class Fargs:
   name = ''

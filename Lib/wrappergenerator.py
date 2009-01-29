@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.60 2009/01/08 21:48:57 dave Exp $
+# $Id: wrappergenerator.py,v 1.61 2009/01/29 22:15:08 dave Exp $
 
 import sys
 import os.path
@@ -267,7 +267,7 @@ of scalars and arrays.
       self.cw('extern PyObject *'+self.cname(t.name)+'New(PyObject *self, PyObject *args);')
     self.cw('')
 
-    # --- setpointer and getpointer routine for f90
+    # --- setpointer and getpointer routines for f90
     # --- Note that setpointers get written out for all derived types -
     # --- for non-dynamic derived types, the setpointer routine does a copy.
     if self.f90:
@@ -284,6 +284,21 @@ of scalars and arrays.
         if re.search('fassign',a.attr):
           self.cw('extern void '+fname(self.fsub('getpointer',a.name))+
                   '(long *i,long *cobj__);')
+    self.cw('')
+
+    # --- setaction and getaction routines for f90
+    for s in self.slist:
+      if s.setaction is not None:
+        self.cw('extern void '+fname(self.fsub('setaction',s.name))+
+                '('+fvars.ftoc_dict[s.type]+' *v);')
+      if s.getaction is not None:
+        self.cw('extern void '+fname(self.fsub('getaction',s.name))+'(void);')
+    for a in self.alist:
+      if a.setaction is not None:
+        self.cw('extern void '+fname(self.fsub('setaction',a.name))+
+                '('+fvars.ftoc_dict[a.type]+' *v);')
+      if a.getaction is not None:
+        self.cw('extern void '+fname(self.fsub('getaction',a.name))+'(void);')
 
     ###########################################################################
     # --- Write declarations of c pointers to fortran variables
@@ -309,6 +324,14 @@ of scalars and arrays.
         else:
           setpointer = 'NULL'
           getpointer = 'NULL'
+        if s.setaction is None:
+          setaction = 'NULL'
+        else:
+          setaction = '*'+fname(self.fsub('setaction',s.name))
+        if s.getaction is None:
+          getaction = 'NULL'
+        else:
+          getaction = '*'+fname(self.fsub('getaction',s.name))
         self.cw('{PyArray_%s,'%fvars.ftop(s.type) + 
                  '"%s",'%s.type +
                  '"%s",'%s.name + 
@@ -318,7 +341,10 @@ of scalars and arrays.
                  '"%s",'%string.replace(repr(s.comment)[1:-1],'"','\\"') + 
                  '%i,'%s.dynamic + 
                  '%s,'%setpointer + 
-                 '%s}'%getpointer,noreturn=1)
+                 '%s,'%getpointer +
+                 '%s,'%setaction + 
+                 '%s'%getaction +
+                 '}',noreturn=1)
         if i < len(self.slist)-1: self.cw(',')
       self.cw('};')
     else:
@@ -339,6 +365,14 @@ of scalars and arrays.
           getpointer = '*'+fname(self.fsub('getpointer',a.name))
         else:
           getpointer = 'NULL'
+        if a.setaction is None:
+          setaction = 'NULL'
+        else:
+          setaction = '*'+fname(self.fsub('setaction',a.name))
+        if a.getaction is None:
+          getaction = 'NULL'
+        else:
+          getaction = '*'+fname(self.fsub('getaction',a.name))
         if a.data and a.dynamic:
           initvalue = a.data[1:-1]
         else:
@@ -351,6 +385,8 @@ of scalars and arrays.
                   '{NULL},' +
                   '%s,'%setpointer +
                   '%s,'%getpointer +
+                  '%s,'%setaction + 
+                  '%s,'%getaction +
                   '%s,'%initvalue +
                   'NULL,' +
                   '"%s",'%a.group +

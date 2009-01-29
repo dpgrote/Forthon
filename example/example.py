@@ -69,6 +69,17 @@ print 'The following two arrays should be different, since a copy is done'
 print 'if the RHS array has C ordering.'
 print xx
 print example.xxx
+print ''
 
+print 'Testing set and get actions on variables'
+print 'The text "action1 is being set to 1" should be printed below'
+example.action1 = 1
+print 'The test "action1 is being get" should be printed below'
+example.action1
+print 'The text "Type2 xx is being set to 3.1415926" should be printed below'
+example.action2.xx = 3.1415926
+print 'The test "Type2 xx is being get" should be printed below'
+example.action2.xx
+print ''
 
 print 'Tests complete'

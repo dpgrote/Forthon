@@ -156,6 +156,23 @@ class ForthonDerivedType:
                   '(long *i,char* fobj);')
       self.cw('')
   
+      # --- setaction and getaction routines for f90
+      for s in slist:
+        if s.setaction is not None:
+          self.cw('extern void '+fname(self.fsub(t,'setaction',s.name))+
+                  '('+fvars.ftoc_dict[s.type]+' *v);')
+        if s.getaction is not None:
+          self.cw('extern void '+fname(self.fsub(t,'getaction',s.name))+
+                  '(void);')
+      for a in alist:
+        if a.setaction is not None:
+          self.cw('extern void '+fname(self.fsub(t,'setaction',a.name))+
+                  '('+fvars.ftoc_dict[a.type]+' *v);')
+        if a.getaction is not None:
+          self.cw('extern void '+fname(self.fsub(t,'getaction',a.name))+
+                  '(void);')
+      self.cw('')
+
       #########################################################################
       # --- Write declarations of c pointers to fortran variables
       self.cw('void '+t.name+'declarevars(ForthonObject *obj) {')
@@ -171,6 +188,14 @@ class ForthonDerivedType:
         setpointer = '*'+fname(self.fsub(t,'setpointer',s.name))
         if s.dynamic: getpointer = '*'+fname(self.fsub(t,'getpointer',s.name))
         else:         getpointer = 'NULL'
+        if s.setaction is None:
+          setaction = 'NULL'
+        else:
+          setaction = '*'+fname(self.fsub(t,'setaction',s.name))
+        if s.getaction is None:
+          getaction = 'NULL'
+        else:
+          getaction = '*'+fname(self.fsub(t,'getaction',s.name))
         self.cw('obj->fscalars[%d].type = PyArray_%s;'%(i,fvars.ftop(s.type)))
         self.cw('obj->fscalars[%d].typename = "%s";'%(i,s.type))
         self.cw('obj->fscalars[%d].name = "%s";'%(i,s.name))
@@ -184,6 +209,8 @@ class ForthonDerivedType:
         self.cw('obj->fscalars[%d].dynamic = %d;'%(i,s.dynamic))
         self.cw('obj->fscalars[%d].setpointer = %s;'%(i,setpointer))
         self.cw('obj->fscalars[%d].getpointer = %s;'%(i,getpointer))
+        self.cw('obj->fscalars[%d].setaction = %s;'%(i,setaction))
+        self.cw('obj->fscalars[%d].getaction = %s;'%(i,getaction))
 
       # --- Arrays
       self.cw('obj->narrays = '+repr(len(alist))+';')
@@ -193,12 +220,22 @@ class ForthonDerivedType:
         self.cw('obj->farrays = NULL;')
       for i in range(len(alist)):
         a = alist[i]
-        if a.dynamic: setpointer = '*'+fname(self.fsub(t,'setpointer',a.name))
-        else:         setpointer = 'NULL'
+        if a.dynamic:
+          setpointer = '*'+fname(self.fsub(t,'setpointer',a.name))
+        else:
+          setpointer = 'NULL'
         if a.dynamic or re.search('fassign',a.attr):
           getpointer = '*'+fname(self.fsub(t,'getpointer',a.name))
         else:
           getpointer = 'NULL'
+        if s.setaction is None:
+          setaction = 'NULL'
+        else:
+          setaction = '*'+fname(self.fsub(t,'setaction',a.name))
+        if s.getaction is None:
+          getaction = 'NULL'
+        else:
+          getaction = '*'+fname(self.fsub(t,'getaction',a.name))
         if a.data and a.dynamic: initvalue = a.data[1:-1]
         else:                    initvalue = '0'
         self.cw('obj->farrays[%d].type = PyArray_%s;'%(i,fvars.ftop(a.type)))
@@ -209,6 +246,8 @@ class ForthonDerivedType:
         self.cw('obj->farrays[%d].data.s = (char *)NULL;'%i)
         self.cw('obj->farrays[%d].setpointer = %s;'%(i,setpointer))
         self.cw('obj->farrays[%d].getpointer = %s;'%(i,getpointer))
+        self.cw('obj->farrays[%d].setaction = %s;'%(i,setaction))
+        self.cw('obj->farrays[%d].getaction = %s;'%(i,getaction))
         self.cw('obj->farrays[%d].initvalue = %s;'%(i,initvalue))
         self.cw('obj->farrays[%d].pya = NULL;'%i)
         self.cw('obj->farrays[%d].group = "%s";'%(i,a.group))

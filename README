@@ -19,6 +19,9 @@ Release Notes:
    - added some extra parenthesis for clarity
  - For darwin, sets ARCHFLAGS="-arch i386" since this is mucked up
    by distutils
+ - Added SET and GET flags for variable in the .v file which indicate
+   a set or get action, a subroutine that is called when the variable is
+   set or get
 
 0.7.15: October 30, 2008
  - Fix for arrays of strings (including the Filename type)

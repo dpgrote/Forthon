@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.67 2009/01/08 23:57:00 dave Exp $ */
+/* $Id: Forthon.h,v 1.68 2009/01/29 22:15:08 dave Exp $ */
 
 #include <Python.h>
 
@@ -115,6 +115,8 @@ typedef struct {
   int dynamic;
   void (*setpointer)();
   void (*getpointer)();
+  void (*setaction)();
+  void (*getaction)();
   } Fortranscalar;
 
 typedef struct {
@@ -126,6 +128,8 @@ typedef struct {
   union {char* s;char** d;} data;
   void (*setpointer)();
   void (*getpointer)();
+  void (*setaction)();
+  void (*getaction)();
   double initvalue;
   PyArrayObject* pya;
   char* group;
@@ -596,6 +600,7 @@ static int Forthon_setscalardouble(ForthonObject *self,PyObject *value,
     return -1;}
   e = PyArg_Parse(value,"d",&lv);
   if (e) {
+    if (fscalar->setaction != NULL) fscalar->setaction(&lv);
     memcpy((fscalar->data),&lv,sizeof(double));}
   else {
     PyErr_SetString(ErrorObject,"Right hand side has incorrect type");
@@ -614,6 +619,7 @@ static int Forthon_setscalarcdouble(ForthonObject *self,PyObject *value,
     return -1;}
   e = PyArg_Parse(value,"D",&lv);
   if (e) {
+    if (fscalar->setaction != NULL) fscalar->setaction(&lv);
     memcpy((fscalar->data),&lv,2*sizeof(double));}
   else {
     PyErr_SetString(ErrorObject,"Right hand side has incorrect type");
@@ -632,6 +638,7 @@ static int Forthon_setscalarinteger(ForthonObject *self,PyObject *value,
     return -1;}
   e = PyArg_Parse(value,"l",&lv);
   if (e) {
+    if (fscalar->setaction != NULL) fscalar->setaction(&lv);
     memcpy((fscalar->data),&lv,sizeof(long));}
   else {
     PyErr_SetString(ErrorObject,"Right hand side has incorrect type");
@@ -691,6 +698,9 @@ static int Forthon_setscalarderivedtype(ForthonObject *self,PyObject *value,
     Py_INCREF(value);
     Py_XDECREF(oldobj);
   }
+
+  if (fscalar->setaction != NULL)
+    fscalar->setaction(((ForthonObject *)value)->fobj);
 
   /* This does the assignment in Fortran. */
   nullit = 0;
@@ -767,6 +777,7 @@ static int Forthon_setarray(ForthonObject *self,PyObject *value,
         setit=0;
       }
     if (setit) {
+      if (farray->setaction != NULL) farray->setaction(PyArray_BYTES(ax));
       if (farray->pya != NULL) {Py_XDECREF(farray->pya);}
       farray->pya = ax;
       /* Note that pya->dimensions are in the correct fortran order, but */
@@ -2136,6 +2147,7 @@ static PyObject *Forthon_getattro(ForthonObject *self,PyObject *oname)
   pyi = PyDict_GetItem(self->scalardict,oname);
   if (pyi != NULL) {
     PyArg_Parse(pyi,"l",&i);
+    if (self->fscalars[i].getaction != NULL) self->fscalars[i].getaction();
     if (self->fscalars[i].type == PyArray_DOUBLE) {
       return Forthon_getscalardouble(self,(void *)i);}
     else if (self->fscalars[i].type == PyArray_CDOUBLE) {
@@ -2151,6 +2163,7 @@ static PyObject *Forthon_getattro(ForthonObject *self,PyObject *oname)
   pyi = PyDict_GetItem(self->arraydict,oname);
   if (pyi != NULL) {
     PyArg_Parse(pyi,"l",&i);
+    if (self->farrays[i].getaction != NULL) self->farrays[i].getaction();
     return Forthon_getarray(self,(void *)i);}
 
   /* Now convert oname into the actual string, checking for errors. */

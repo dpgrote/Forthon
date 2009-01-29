@@ -38,7 +38,7 @@ example
 #           from python.
 #
 # The definition of scalar variables has the following format
-#   varname type /initvalue/ [units] +attr1 -attr2 # documentation
+#   varname type /initvalue/ [units] +attr1 -attr2 SET GET # documentation
 # Only the varname and type are required and must be first and in that order.
 # The remaining fields can be in any order except that the documentation
 # (preceded by the # sign) must be last. The documentation can be
@@ -50,10 +50,15 @@ example
 # the + or - syntax.
 # The type must be one of real, integer, logical, complex, or one of the
 # defined derived types. Note that real defaults to double, integer and
-# logical have the same length as a C long, and complex is double.
+# logical have the same length as a C long, and complex is double complex.
 # Variables of derived type can be defined as a fortran pointer by prepending
 # the type name with an underscore. (See definition of t2 below).
 # Currently, the units are ignored.
+# If either SET or GET is specified, this flags the presence of a set or
+# get action, a subroutine that is called when the variable is set or get.
+# The subroutine must have a name in the format pkgnamesetactionvarname or
+# pkgnamegetactionvarname, where pkgname is the package name and varname is the
+# variable name.
 #
 # The definition of arrays has the same syntax as above except for the
 # addition of the array shape.
@@ -122,7 +127,7 @@ varreal real /2./
 
 %%%%% Type2:
 ii integer
-xx real
+xx real GET SET
 
 %%%%% Type1:
 $ Sample derived type
@@ -131,7 +136,7 @@ b real # Real element of a derived type
 e(10) real /8./ # Static array element of a derived type
 m integer # Size of array pointer in derived type
 y(0:m) _real /3./ # Array pointer element of a derived type
-static2 Type2 # Pointer to derived type object of the same type
+static2 Type2 # Pointer to static derived type object
 next _Type1 # Pointer to derived type object of the same type
 prev _Type1 # Pointer to derived type object of the same type
 xxx(:,:) _real
@@ -161,3 +166,8 @@ a3() subroutine
 tstring character*4 /"////"/ # test "/" in strings
 cccc character*8
 printchar8(cccc:string) subroutine
+
+****** Actiontest:
+action1 integer GET SET # This variable is used to get set and get actions
+action2 Type2 # This variable is used to get set and get actions in a
+              # derived type

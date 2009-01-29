@@ -90,10 +90,32 @@ c========================================================================
       t2 => NewType1()
       return
       end
-
 c========================================================================
       subroutine printchar8(cccc)
       character(8):: cccc
       print*,"|",cccc,"|"
       return
       end
+c========================================================================
+      subroutine examplesetactionaction1(i)
+      integer(ISZ):: i
+      print*,"action1 is being set to ",i
+      return
+      end
+c========================================================================
+      subroutine examplegetactionaction1()
+      print*,"action1 is being get"
+      return
+      end
+c========================================================================
+      subroutine type2setactionxx(x)
+      real(kind=8):: x
+      print*,"Type2 xx being set to ",x
+      return
+      end
+c========================================================================
+      subroutine type2getactionxx()
+      print*,"Type2 xx being get"
+      return
+      end
+c========================================================================
