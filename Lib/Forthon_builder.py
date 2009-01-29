@@ -447,6 +447,10 @@ sys.argv = ['Forthon','build','--build-platlib','.','--build-temp',build_temp]
 if machine == 'win32': sys.argv.append('--compiler=mingw32')
 if machine == 'win32': includedirs+=['/usr/include']
 
+# --- On darwin machines, the python makefile mucks up the -arch argument.
+# --- This fixes it.
+if machine == 'darwin': os.environ['ARCHFLAGS'] = '-arch i386'
+
 setup(name = pkg,
       ext_modules = [Extension(pkg+'py',
                                cfiles+extracfiles,
