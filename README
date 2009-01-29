@@ -17,6 +17,8 @@ Release Notes:
  - Minor fixes for code cleanup
    - removed unneeded i argument in Forthon_checksubroutineargtype
    - added some extra parenthesis for clarity
+ - For darwin, sets ARCHFLAGS="-arch i386" since this is mucked up
+   by distutils
 
 0.7.15: October 30, 2008
  - Fix for arrays of strings (including the Filename type)
