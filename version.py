@@ -1,4 +1,4 @@
-"0.7.15"
+"0.7.16"
 
 import string
 import version

@@ -11,7 +11,7 @@ written in the much more versatile Python language.
 
 Release Notes:
 
-0.7.16:
+0.7.16: January 29, 2009
  - Removed all reference to Numeric, which is no long supported
  - createnew and nullit were changed from long to int
  - Minor fixes for code cleanup
