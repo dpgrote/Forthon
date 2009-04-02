@@ -178,6 +178,8 @@ for o in optlist:
   elif o[0] == '-f': fortranfile = o[1]
   elif o[0] == '--f90': f90 = '--f90'
   elif o[0] == '--f77': f90 = '--f77'
+  elif o[0] == '--underscoring': underscoring = 1
+  elif o[0] == '--nounderscoring': underscoring = 0
   elif o[0] == '--2underscores': twounderscores = 1
   elif o[0] == '--no2underscores': twounderscores = 0
   elif o[0] == '--fopt': fopt = o[1]
@@ -198,6 +200,8 @@ if fortranfile is None: fortranfile = pkg + '.' + fixed_suffix
 
 # --- Set arguments to Forthon, based on defaults and any inputs.
 forthonargs = []
+if underscoring: forthonargs.append('--underscoring')
+else:            forthonargs.append('--nounderscoring')
 if twounderscores: forthonargs.append('--2underscores')
 else:              forthonargs.append('--no2underscores')
 if not writemodules: forthonargs.append('--nowritemodules')
