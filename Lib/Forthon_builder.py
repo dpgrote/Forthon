@@ -93,6 +93,10 @@ One or more of the following options can be specified.
     to the builddir. This defaults to the builddir.
  --noimplicitnone
     When specified, the implicitnone is not enforced
+ --underscoring
+ --nounderscoring
+    Specifies whether to use any underscores when doing fortran name
+    mangling. For most systems, the default is --underscoring.
  --2underscores
  --no2underscores
     Specifies whether or not to use second underscores when doing fortran
@@ -122,6 +126,7 @@ optlist,args = getopt.getopt(sys.argv[1:],'agd:t:F:D:L:l:I:i:f:',
                          ['f90','f77','nowritemodules',
                           'timeroutines','macros=',
                           'fopt=','fargs=','cargs=','static',
+                          'underscoring','nounderscoring',
                           '2underscores','no2underscores',
                           'free_suffix=','fixed_suffix=',
                           'compile_first=','builddir=','noimplicitnone',

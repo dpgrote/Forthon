@@ -1,5 +1,5 @@
 # Created by David P. Grote, March 6, 1998
-# $Id: cfinterface.py,v 1.13 2009/01/08 20:54:32 dave Exp $
+# $Id: cfinterface.py,v 1.14 2009/04/02 22:18:04 dave Exp $
 
 # Routines which allows c functions to be callable by fortran
 import sys
@@ -11,19 +11,25 @@ import struct
 # Set default values of inputs
 machine = sys.platform
 f90 = 1
+underscoring = 1 # On many systems, the standard is to append an underscore
+                 # on the end of fortran routines.
 twounderscores = 0 # When true, names with underscores in them have an extra
                    # underscore appedend to the fortran name
 
 # Get system name from the command line
 try:
   optlist,args = getopt.getopt(sys.argv[1:],'ad:t:F:',
-                     ['f90','f77','2underscores','no2underscores',
+                     ['f90','f77',
+                      'underscoring','nounderscoring',
+                      '2underscores','no2underscores',
                       'nowritemodules','timeroutines','macros=',
                       'noimplicitnone','with-numpy'])
   for o in optlist:
     if o[0] == '-t': machine = o[1]
     elif o[0] == '--f90': f90 = 1
     elif o[0] == '--f77': f90 = 0
+    elif o[0] == '--underscoring': underscoring = 1
+    elif o[0] == '--nounderscoring': underscoring = 0
     elif o[0] == '--2underscores': twounderscores = 1
     elif o[0] == '--no2underscores': twounderscores = 0
 except (getopt.error,IndexError):
@@ -44,14 +50,18 @@ if machine in ['hp-uxB','aix4','aix5','win32','MAC']:
   def fname(n):
     return string.lower(n)
 elif machine in ['linux2','darwin','SOL','sunos5','AXP','osf1V4','DOS','cygwin']:
-  if twounderscores:
-    def fname(n):
-      m = re.search('_',n)
-      if m == None: return string.lower(n+'_')
-      else:         return string.lower(n+'__')
+  if underscoring:
+    if twounderscores:
+      def fname(n):
+        m = re.search('_',n)
+        if m == None: return string.lower(n+'_')
+        else:         return string.lower(n+'__')
+    else:
+      def fname(n):
+        return string.lower(n+'_')
   else:
     def fname(n):
-      return string.lower(n+'_')
+      return string.lower(n)
 elif machine in ['T3E','sn67112','C90','J90','SGI','irix646']:
   def fname(n):
     return string.upper(n)
