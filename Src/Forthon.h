@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.69 2009/04/03 16:38:34 dave Exp $ */
+/* $Id: Forthon.h,v 1.70 2009/04/03 17:00:30 dave Exp $ */
 
 #include <Python.h>
 
@@ -312,7 +312,6 @@ static void ForthonPackage_updatearray(ForthonObject *self,long i)
     if (farray->data.s == NULL) {
       if (farray->pya != NULL) {Py_XDECREF(farray->pya);}
       farray->pya = NULL;
-      printf("Updatearray %s\n",farray->name);
       for (j=0;j<farray->nd;j++) farray->dimensions[j] = 0;}
     else if (farray->pya == NULL ||
              farray->data.s != PyArray_BYTES(farray->pya) ||
