@@ -11,6 +11,13 @@ written in the much more versatile Python language.
 
 Release Notes:
 
+0.7.17: April 3, 2009
+ - Add the underscoring and nounderscoring option
+ - Added linux_xlf_r in compilers.py, though for now it is specific to
+   Blue Gene serial nodes
+ - Bug fix in ForthonPackage_updatearray - dimensions are now cleared out
+   if the array is unallocated
+
 0.7.16: January 29, 2009
  - Removed all reference to Numeric, which is no long supported
  - createnew and nullit were changed from long to int
