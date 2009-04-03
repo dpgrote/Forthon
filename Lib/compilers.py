@@ -60,6 +60,7 @@ appropriate block for the machine.
         if self.linux_absoft() is not None: break
         if self.linux_lahey() is not None: break
         if self.linux_pathscale() is not None: break
+        if self.linux_xlf_r() is not None: break
       elif self.machine == 'darwin':
         if self.macosx_xlf() is not None: break
         if self.macosx_g95() is not None: break
@@ -335,6 +336,27 @@ appropriate block for the machine.
         self.f90fixed = self.f90fixed + ' -DISZ=8 -i8'
       else:
         self.fopt = '-Ofast'
+      return 1
+
+  def linux_xlf_r(self):
+    if (self.fcompname=='xlf_r' or
+        (self.fcompname is None and self.findfile('xlf95_r'))):
+      self.fcompname = 'xlf'
+      intsize = struct.calcsize('l')
+      f90  = 'xlf95_r -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -WF,-DISZ=%(intsize)s -qintsize=%(intsize)s -qsave=defaultinit -WF,-DESSL'%locals()
+      self.f90free  = f90 + ' -qsuffix=f=f90:cpp=F90 -qfree=f90'
+      self.f90fixed = f90 + ' -qfixed=132'
+      self.ld = 'xlf95_r -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp'%locals()
+      if self.implicitnone:
+        self.f90free  += ' -u'
+        self.f90fixed += ' -u'
+      self.popt = '-O'
+      self.extra_link_args = []
+      self.extra_compile_args = []
+      # --- Note that these are specific the machine intrepid at Argonne.
+      self.libdirs = ['/gpfs/software/linux-sles10-ppc64/apps/V1R3M0/ibmcmp-sep2008/opt/xlf/bg/11.1/lib','/gpfs/software/linux-sles10-ppc64/apps/V1R3M0/ibmcmp-sep2008/opt/xlsmp/bg/1.7/lib']
+      self.libs = ['xlf90_r','xlsmp']
+      self.fopt = '-O3 -qstrict -qarch=auto -qtune=auto -qsmp=omp'
       return 1
 
   #-----------------------------------------------------------------------------
