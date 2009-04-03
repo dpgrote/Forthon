@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.68 2009/01/29 22:15:08 dave Exp $ */
+/* $Id: Forthon.h,v 1.69 2009/04/03 16:38:34 dave Exp $ */
 
 #include <Python.h>
 
@@ -294,6 +294,7 @@ static int dimensionsmatch(Fortranarray *farray)
 static void ForthonPackage_updatearray(ForthonObject *self,long i)
 {
   Fortranarray *farray = &(self->farrays[i]);
+  int j;
   /* If the getpointer routine exists, call it to assign a value to data.s */
   if (farray->getpointer != NULL) {
     /* Force the pointer to be null, since if the array is not associated, */
@@ -306,10 +307,13 @@ static void ForthonPackage_updatearray(ForthonObject *self,long i)
     (farray->getpointer)(farray,self->fobj);
     /* If the data.s is NULL, then the fortran array is not associated. */
     /* Decrement the python object counter if there is one. */
-    /* Set the pointer to the python object to NULL. */
+    /* Set the pointer to the python object to NULL and clear out the */
+    /* dimensions. */
     if (farray->data.s == NULL) {
       if (farray->pya != NULL) {Py_XDECREF(farray->pya);}
-      farray->pya = NULL;}
+      farray->pya = NULL;
+      printf("Updatearray %s\n",farray->name);
+      for (j=0;j<farray->nd;j++) farray->dimensions[j] = 0;}
     else if (farray->pya == NULL ||
              farray->data.s != PyArray_BYTES(farray->pya) ||
              !dimensionsmatch(farray)) {
@@ -1878,7 +1882,7 @@ static PyObject *ForthonPackage_listvar(PyObject *_self_,PyObject *args)
   ForthonObject *self = (ForthonObject *)_self_;
   PyObject *pyi;
   PyObject *doc;
-  int i,charsize;
+  int i,j,charsize;
   char *name;
   char charstring[50];
   if (!PyArg_ParseTuple(args,"s",&name)) return NULL;
@@ -1930,6 +1934,14 @@ static PyObject *ForthonPackage_listvar(PyObject *_self_,PyObject *args)
     PyString_ConcatAndDel(&doc,PyString_FromString(self->farrays[i].attributes));
     PyString_ConcatAndDel(&doc,PyString_FromString("\nDimension:  "));
     PyString_ConcatAndDel(&doc,PyString_FromString(self->farrays[i].dimstring));
+    PyString_ConcatAndDel(&doc,PyString_FromString("\n            ("));
+    for (j=0;j<self->farrays[i].nd;j++) {
+      PyString_ConcatAndDel(&doc,PyObject_Str(PyInt_FromLong((long)(self->farrays[i].dimensions[j]))));
+      if (j < self->farrays[i].nd-1)
+        PyString_ConcatAndDel(&doc,PyString_FromString(", "));
+      }
+    PyString_ConcatAndDel(&doc,PyString_FromString(")"));
+
     PyString_ConcatAndDel(&doc,PyString_FromString("\nType:       "));
     if (self->farrays[i].type == PyArray_STRING) {
       charsize = self->farrays[i].dimensions[self->farrays[i].nd-1];
