@@ -149,6 +149,7 @@ writemodules   = 1
 timeroutines   = ''
 othermacros    = []
 debug          = 0
+underscoring   = 1
 twounderscores = 0
 fopt           = None
 fargs          = ''
