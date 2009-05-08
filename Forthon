@@ -1,2 +1,2 @@
-#! python
+#!/usr/bin/env python
 import Forthon.Forthon_builder
