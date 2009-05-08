@@ -31,11 +31,13 @@ class install_data_fixperms(distutils.command.install_data.install_data):
     # --- DPG: Only chmod the data_files, to be cleaner
     subfiles = ['Notice','Forthon.h','Forthon.c']
     # print "Files are", subfiles
+    # --- Fix the permissions
     for i in subfiles:
       fullname = os.path.join(install_dir, i)
-      # print "Working on", fullname
-      os.chmod(fullname, perm644)
-# Now we fix the permissions
+      try:
+        os.chmod(fullname, perm644)
+      except:
+        print "Unable to change permissions of", fullname + ".  Are you the owner?"
     return res
 
 # --- data_files_home needs to refer to the same place where the rest of
