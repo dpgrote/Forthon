@@ -108,7 +108,13 @@ appropriate block for the machine.
           # --- Check if the path is a link
           if followlinks:
             try:
-              path = os.path.dirname(os.readlink(os.path.join(path,file)))
+              link = os.readlink(os.path.join(path,file))
+              result = os.path.dirname(link)
+              if result == '':
+                # --- link is not a full path but a local link, so the
+                # --- path needs to be prepended.
+                result = os.path.join(os.path.dirname(path),link)
+              path = result
             except OSError:
               pass
           return path
@@ -440,7 +446,7 @@ appropriate block for the machine.
            -ffast-math -mpowerpc-gpopt -force_cpusubtype_ALL \
            -fstrict-aliasing -mtune=G5 -mcpu=G5 -mpowerpc64'
 #      self.fopt = '-O3  -mtune=G5 -mcpu=G5 -mpowerpc64'
-      self.fopt = '-O3 -ftree-vectorize -ftree-vectorizer-verbose=1'
+      self.fopt = '-O3 -ftree-vectorize -ftree-vectorizer-verbose=2'
 #      self.extra_link_args = ['-flat_namespace','-lg2c']
       self.extra_link_args = ['-flat_namespace']
       flibroot = self.findgnulibroot('gfortran')
