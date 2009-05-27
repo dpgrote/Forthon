@@ -1,7 +1,7 @@
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 19, 1998
 # Parse the interface description file
-# $Id: interfaceparser.py,v 1.17 2009/01/29 22:15:08 dave Exp $
+# $Id: interfaceparser.py,v 1.18 2009/05/27 00:09:37 dave Exp $
 
 # This reads in the entire variable description file and extracts all of
 # the variable and subroutine information needed to create an interface
@@ -464,6 +464,7 @@ def processfile(packname,filename,othermacros=[],timeroutines=0):
     if v.comment:
       v.comment = re.sub(' +',' ',v.comment)
       v.comment = re.sub('"',"'",v.comment)
+      v.comment = v.comment.strip()
 
   # Do further processing on dims or arguments list, and check variable type
   for v in vlist: processvar(v)
