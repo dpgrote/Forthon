@@ -46,7 +46,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.52 2009/01/08 20:54:32 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.53 2009/05/27 00:45:01 dave Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling. These should be moved to C.
@@ -376,7 +376,7 @@ where the file name can not be determined - None is returned.
   if type(o) in [FunctionType,LambdaType]:
     return determineoriginatingfile(o.func_code)
   if type(o) in [BuiltinFunctionType,BuiltinMethodType]:
-    try: m = o.__module__
+    try: m = __import__(o.__module__)
     except AttributeError: return None
     if m is not None: return determineoriginatingfile(m)
     else:             return None
@@ -385,7 +385,7 @@ where the file name can not be determined - None is returned.
   if type(o) is InstanceType:
     return determineoriginatingfile(o.__class__)
   if type(o) in [ClassType,TypeType]:
-    return determineoriginatingfile(o.__module__)
+    return determineoriginatingfile(__import__(o.__module__))
 
 # --- Get size of an object, recursively including anything inside of it.
 def oldgetobjectsize(pkg,grp='',recursive=1):
