@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.62 2009/04/02 22:28:37 dave Exp $
+# $Id: wrappergenerator.py,v 1.63 2009/06/02 21:20:52 dave Exp $
 
 import sys
 import os.path
@@ -14,7 +14,11 @@ import getopt
 import pickle
 from cfinterface import *
 import wrappergen_derivedtypes
-import md5
+try:
+  import hashlib
+except ImportError:
+  # --- hashlib was not available in python earlier than 2.5.
+  import md5 as hashlib
 
 class PyWrap:
   """
@@ -67,7 +71,7 @@ Usage:
     """
     name = self.pname+prefix+suffix
     if len(name) < 32: return name
-    hash = string.translate(md5.new(name).digest(),PyWrap.transtable)
+    hash = string.translate(hashlib.md5(name).digest(),PyWrap.transtable)
     return name[:15] + hash
 
   def prefixdimsc(self,dim,sdict):

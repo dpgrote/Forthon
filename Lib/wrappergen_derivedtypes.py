@@ -1,7 +1,12 @@
 """Generates the wrapper for derived types.
 """
 import fvars
-import string,md5
+import string
+try:
+  import hashlib
+except ImportError:
+  # --- hashlib was not available in python earlier than 2.5.
+  import md5 as hashlib
 from cfinterface import *
 
 class ForthonDerivedType:
@@ -25,7 +30,7 @@ class ForthonDerivedType:
     """
     name = type.name+prefix+suffix
     if len(name) < 32 or not dohash: return name
-    hash = string.translate(md5.new(name).digest(),
+    hash = string.translate(hashlib.md5(name).digest(),
                             ForthonDerivedType.transtable)
     return name[:15] + hash
 
