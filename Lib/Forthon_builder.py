@@ -459,7 +459,8 @@ if machine == 'win32': includedirs+=['/usr/include']
 
 # --- On darwin machines, the python makefile mucks up the -arch argument.
 # --- This fixes it.
-if machine == 'darwin': os.environ['ARCHFLAGS'] = '-arch i386'
+if machine == 'darwin':
+  os.environ['ARCHFLAGS'] = '-arch %s'%os.environ['MACHTYPE']
 
 setup(name = pkg,
       ext_modules = [Extension(pkg+'py',
