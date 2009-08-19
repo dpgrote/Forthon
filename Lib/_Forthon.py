@@ -46,7 +46,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.53 2009/05/27 00:45:01 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.54 2009/08/19 20:15:40 dave Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling. These should be moved to C.
@@ -273,14 +273,22 @@ def nint(x):
     if x >= 0: return int(x+0.5)
     else: return -int(abs(x)+0.5)
 
-# --- These are replacements for array creation routines which create
-# --- arrays which have the proper ordering for fortran. When arrays created
-# --- with these commands are passed to a fortran subroutine, no copies are
-# --- needed to get the data into the proper order for fortran.
-def fones(shape,typecode='l'):
-  return ones(shape,dtype=typecode,order='FORTRAN')
-def fzeros(shape,typecode='l'):
-  return zeros(shape,dtype=typecode,order='FORTRAN')
+def fones(shape,*args):
+  """This is a replacement for the array creation routine, ones, which
+creates arrays which have the proper ordering for fortran. When arrays
+created with this are passed to a fortran subroutine, no copies are needed to
+get the data into the proper order for fortran. It takes the same arguments
+as ones, except for 'order' which is set to FORTRAN.
+  """
+  return ones(shape,order='FORTRAN',*args)
+def fzeros(shape,*args):
+  """This is a replacement for the array creation routine, zeros, which
+creates arrays which have the proper ordering for fortran. When arrays
+created with this are passed to a fortran subroutine, no copies are needed to
+get the data into the proper order for fortran. It takes the same arguments
+as zeros, except for 'order' which is set to FORTRAN.
+  """
+  return zeros(shape,order='FORTRAN',*args)
 
 def doc(f,printit=1):
   """
