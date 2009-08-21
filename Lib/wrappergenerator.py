@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.63 2009/06/02 21:20:52 dave Exp $
+# $Id: wrappergenerator.py,v 1.64 2009/08/21 16:27:24 dave Exp $
 
 import sys
 import os.path
@@ -14,9 +14,9 @@ import getopt
 import pickle
 from cfinterface import *
 import wrappergen_derivedtypes
-try:
+if sys.hexversion >= 0x20501f0:
   import hashlib
-except ImportError:
+else:
   # --- hashlib was not available in python earlier than 2.5.
   import md5 as hashlib
 
@@ -437,7 +437,7 @@ of scalars and arrays.
     for f in self.flist:
       # --- Write out the documentation first.
       docstring = ('static char doc_'+self.cname(f.name)+'[] = "'+f.name+
-                   f.dimstring+repr(f.comment)[1:-1]+'";')
+                   f.dimstring+' '+repr(f.comment)[1:-1]+'";')
       # --- Replaces newlines with '\\n' so that the string is all on one line
       # --- in the C coding.
       docstring = re.sub(r'\

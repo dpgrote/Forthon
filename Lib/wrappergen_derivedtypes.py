@@ -1,10 +1,11 @@
 """Generates the wrapper for derived types.
 """
+import sys
 import fvars
 import string
-try:
+if sys.hexversion >= 0x20501f0:
   import hashlib
-except ImportError:
+else:
   # --- hashlib was not available in python earlier than 2.5.
   import md5 as hashlib
 from cfinterface import *
