@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.70 2009/04/03 17:00:30 dave Exp $ */
+/* $Id: Forthon.h,v 1.71 2009/09/08 18:01:56 dave Exp $ */
 
 #include <Python.h>
 
@@ -518,6 +518,20 @@ static PyObject *Forthon_getscalarcdouble(ForthonObject *self,void *closure)
                                ((double *)fscalar->data)[1]);
 }
 /* ------------------------------------------------------------------------- */
+static PyObject *Forthon_getscalarfloat(ForthonObject *self,void *closure)
+{
+  Fortranscalar *fscalar = &(self->fscalars[(long)closure]);
+  return Py_BuildValue("f",*((float *)(fscalar->data)));
+}
+/* ------------------------------------------------------------------------- */
+static PyObject *Forthon_getscalarcfloat(ForthonObject *self,void *closure)
+{
+  Fortranscalar *fscalar = &(self->fscalars[(long)closure]);
+  /* THIS IS NOT RIGHT!!!! */
+  return PyComplex_FromDoubles((double)(((float *)fscalar->data)[0]),
+                               (double)(((float *)fscalar->data)[1]));
+}
+/* ------------------------------------------------------------------------- */
 static PyObject *Forthon_getscalarinteger(ForthonObject *self,void *closure)
 {
   Fortranscalar *fscalar = &(self->fscalars[(long)closure]);
@@ -624,6 +638,45 @@ static int Forthon_setscalarcdouble(ForthonObject *self,PyObject *value,
   if (e) {
     if (fscalar->setaction != NULL) fscalar->setaction(&lv);
     memcpy((fscalar->data),&lv,2*sizeof(double));}
+  else {
+    PyErr_SetString(ErrorObject,"Right hand side has incorrect type");
+    return -1;}
+  return 0;
+}
+/* ------------------------------------------------------------------------- */
+static int Forthon_setscalarfloat(ForthonObject *self,PyObject *value,
+                                   void *closure)
+{
+  Fortranscalar *fscalar = &(self->fscalars[(long)closure]);
+  float lv;
+  int e;
+  if (value == NULL) {
+    PyErr_SetString(PyExc_TypeError, "Cannot delete the attribute");
+    return -1;}
+  e = PyArg_Parse(value,"f",&lv);
+  if (e) {
+    if (fscalar->setaction != NULL) fscalar->setaction(&lv);
+    memcpy((fscalar->data),&lv,sizeof(float));}
+  else {
+    PyErr_SetString(ErrorObject,"Right hand side has incorrect type");
+    return -1;}
+  return 0;
+}
+/* ------------------------------------------------------------------------- */
+static int Forthon_setscalarcfloat(ForthonObject *self,PyObject *value,
+                                    void *closure)
+{
+  /* This is probably not correct!!! */
+  Fortranscalar *fscalar = &(self->fscalars[(long)closure]);
+  Py_complex lv;
+  int e;
+  if (value == NULL) {
+    PyErr_SetString(PyExc_TypeError, "Cannot delete the attribute");
+    return -1;}
+  e = PyArg_Parse(value,"D",&lv);
+  if (e) {
+    if (fscalar->setaction != NULL) fscalar->setaction(&lv);
+    memcpy((fscalar->data),&lv,2*sizeof(float));}
   else {
     PyErr_SetString(ErrorObject,"Right hand side has incorrect type");
     return -1;}
@@ -985,6 +1038,10 @@ static PyObject *ForthonPackage_getdict(PyObject *_self_,PyObject *args)
       v = Forthon_getscalardouble(self,(void *)j);}
     else if (s->type == PyArray_CDOUBLE) {
       v = Forthon_getscalarcdouble(self,(void *)j);}
+    else if (s->type == PyArray_FLOAT) {
+      v = Forthon_getscalarfloat(self,(void *)j);}
+    else if (s->type == PyArray_CFLOAT) {
+      v = Forthon_getscalarcfloat(self,(void *)j);}
     else if (s->type == PyArray_OBJECT) {
       v = Forthon_getscalarderivedtype(self,(void *)j);}
     else {
@@ -1222,6 +1279,10 @@ static PyObject *ForthonPackage_gallot(PyObject *_self_,PyObject *args)
           for (j=0;j<PyArray_SIZE(self->farrays[i].pya);j++)
             *((double *)(PyArray_BYTES(self->farrays[i].pya))+j) = self->farrays[i].initvalue;
           }
+        else if (self->farrays[i].type == PyArray_FLOAT) {
+          for (j=0;j<PyArray_SIZE(self->farrays[i].pya);j++)
+            *((float *)(PyArray_BYTES(self->farrays[i].pya))+j) = (float)self->farrays[i].initvalue;
+          }
         /* Add the array size to totmembytes. */
         totmembytes += (long)PyArray_NBYTES(self->farrays[i].pya);
         if (iverbose) printf("%s.%s %d\n",self->name,self->farrays[i].name,
@@ -1328,6 +1389,10 @@ static PyObject *ForthonPackage_gchange(PyObject *_self_,PyObject *args)
         else if (self->farrays[i].type == PyArray_DOUBLE) {
           for (j=0;j<PyArray_SIZE(ax);j++)
             *((double *)(PyArray_BYTES(ax))+j) = self->farrays[i].initvalue;
+          }
+        else if (self->farrays[i].type == PyArray_FLOAT) {
+          for (j=0;j<PyArray_SIZE(ax);j++)
+            *((float *)(PyArray_BYTES(ax))+j) = (float)self->farrays[i].initvalue;
           }
         /* Copy the existing data to the new space. The       */
         /* minimum of each dimension is found and put into    */
@@ -1850,6 +1915,10 @@ static PyObject *ForthonPackage_getvartype(PyObject *_self_,PyObject *args)
       return PyString_FromString("double");}
     else if (self->fscalars[i].type == PyArray_CDOUBLE) {
       return PyString_FromString("double complex");}
+    else if (self->fscalars[i].type == PyArray_FLOAT) {
+      return PyString_FromString("float");}
+    else if (self->fscalars[i].type == PyArray_CFLOAT) {
+      return PyString_FromString("float complex");}
     }
 
   /* Get index for variable from array dictionary */
@@ -1867,6 +1936,10 @@ static PyObject *ForthonPackage_getvartype(PyObject *_self_,PyObject *args)
       return PyString_FromString("double");}
     else if (self->farrays[i].type == PyArray_CDOUBLE) {
       return PyString_FromString("double complex");}
+    else if (self->farrays[i].type == PyArray_FLOAT) {
+      return PyString_FromString("float");}
+    else if (self->farrays[i].type == PyArray_CFLOAT) {
+      return PyString_FromString("float complex");}
     }
 
   returnnone;
@@ -1910,6 +1983,10 @@ static PyObject *ForthonPackage_listvar(PyObject *_self_,PyObject *args)
       PyString_ConcatAndDel(&doc,PyString_FromString("double"));}
     else if (self->fscalars[i].type == PyArray_CDOUBLE) {
       PyString_ConcatAndDel(&doc,PyString_FromString("double complex"));}
+    else if (self->fscalars[i].type == PyArray_FLOAT) {
+      PyString_ConcatAndDel(&doc,PyString_FromString("float"));}
+    else if (self->fscalars[i].type == PyArray_CFLOAT) {
+      PyString_ConcatAndDel(&doc,PyString_FromString("float complex"));}
     PyString_ConcatAndDel(&doc,PyString_FromString("\nAddress:    "));
     if (self->fscalars[i].type == PyArray_OBJECT)
       ForthonPackage_updatederivedtype(self,i,1);
@@ -1954,6 +2031,10 @@ static PyObject *ForthonPackage_listvar(PyObject *_self_,PyObject *args)
       PyString_ConcatAndDel(&doc,PyString_FromString("double"));}
     else if (self->farrays[i].type == PyArray_CDOUBLE) {
       PyString_ConcatAndDel(&doc,PyString_FromString("double complex"));}
+    else if (self->farrays[i].type == PyArray_FLOAT) {
+      PyString_ConcatAndDel(&doc,PyString_FromString("float"));}
+    else if (self->farrays[i].type == PyArray_CFLOAT) {
+      PyString_ConcatAndDel(&doc,PyString_FromString("float complex"));}
 
     PyString_ConcatAndDel(&doc,PyString_FromString("\nAddress:    "));
     if (self->farrays[i].pya == NULL) {
@@ -2163,6 +2244,10 @@ static PyObject *Forthon_getattro(ForthonObject *self,PyObject *oname)
       return Forthon_getscalardouble(self,(void *)i);}
     else if (self->fscalars[i].type == PyArray_CDOUBLE) {
       return Forthon_getscalarcdouble(self,(void *)i);}
+    else if (self->fscalars[i].type == PyArray_FLOAT) {
+      return Forthon_getscalarfloat(self,(void *)i);}
+    else if (self->fscalars[i].type == PyArray_CFLOAT) {
+      return Forthon_getscalarcfloat(self,(void *)i);}
     else if (self->fscalars[i].type == PyArray_OBJECT) {
       return Forthon_getscalarderivedtype(self,(void *)i);}
     else {
@@ -2221,6 +2306,10 @@ static int Forthon_setattro(ForthonObject *self,PyObject *oname,PyObject *v)
       return Forthon_setscalardouble(self,v,(void *)i);}
     else if (self->fscalars[i].type == PyArray_CDOUBLE) {
       return Forthon_setscalarcdouble(self,v,(void *)i);}
+    else if (self->fscalars[i].type == PyArray_FLOAT) {
+      return Forthon_setscalarfloat(self,v,(void *)i);}
+    else if (self->fscalars[i].type == PyArray_CFLOAT) {
+      return Forthon_setscalarcfloat(self,v,(void *)i);}
     else if (self->fscalars[i].type == PyArray_OBJECT) {
       return Forthon_setscalarderivedtype(self,v,(void *)i);}
     else {

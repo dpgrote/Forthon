@@ -269,6 +269,8 @@ class ForthonDerivedType:
 #     for i in range(len(slist)):
 #       s = slist[i]
 #       if s.type == 'real': gstype = 'double'
+#       elif s.type == 'double': gstype = 'double'
+#       elif s.type == 'float': gstype = 'float'
 #       elif s.type == 'integer': gstype = 'integer'
 #       elif s.type == 'complex': gstype = 'cdouble'
 #       else:                    gstype = 'derivedtype'

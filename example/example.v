@@ -171,3 +171,13 @@ printchar8(cccc:string) subroutine
 action1 integer GET SET # This variable is used to get set and get actions
 action2 Type2 # This variable is used to get set and get actions in a
               # derived type
+
+****** RTypes:
+rrr real /7./
+ddd double /7./
+fff float /7./
+arr(10) _real /7./
+add(10) _double /7./
+aff(10) _float /7./
+printrtypes() subroutine
+

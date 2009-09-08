@@ -1,39 +1,20 @@
 # Created by David P. Grote, March 6, 1998
-# $Id: cfinterface.py,v 1.14 2009/04/02 22:18:04 dave Exp $
+# $Id: cfinterface.py,v 1.15 2009/09/08 18:01:56 dave Exp $
 
 # Routines which allows c functions to be callable by fortran
 import sys
-import getopt
 import string
 import re
 import struct
 
-# Set default values of inputs
-machine = sys.platform
-f90 = 1
-underscoring = 1 # On many systems, the standard is to append an underscore
-                 # on the end of fortran routines.
-twounderscores = 0 # When true, names with underscores in them have an extra
-                   # underscore appedend to the fortran name
+from Forthon_options import options,args
 
-# Get system name from the command line
-try:
-  optlist,args = getopt.getopt(sys.argv[1:],'ad:t:F:',
-                     ['f90','f77',
-                      'underscoring','nounderscoring',
-                      '2underscores','no2underscores',
-                      'nowritemodules','timeroutines','macros=',
-                      'noimplicitnone','with-numpy'])
-  for o in optlist:
-    if o[0] == '-t': machine = o[1]
-    elif o[0] == '--f90': f90 = 1
-    elif o[0] == '--f77': f90 = 0
-    elif o[0] == '--underscoring': underscoring = 1
-    elif o[0] == '--nounderscoring': underscoring = 0
-    elif o[0] == '--2underscores': twounderscores = 1
-    elif o[0] == '--no2underscores': twounderscores = 0
-except (getopt.error,IndexError):
-  pass
+# Set default values of inputs
+machine = options.machine
+f90 = options.f90
+realsize = options.realsize
+underscoring = options.underscoring
+twounderscores = options.twounderscores
 
 #----------------------------------------------------------------------------
 # Set size of fortran integers and logicals. This is almost alway 4.
@@ -42,6 +23,10 @@ if machine in ['AXP','T3E','J90']:
   isz = 'kind=8'
 if struct.calcsize('l') == 8:
   isz = 'kind=8'
+
+#----------------------------------------------------------------------------
+# Set the size of floating point numbers
+fpsize = 'kind=%s'%realsize
 
 #----------------------------------------------------------------------------
 # Creates a function which converts a C name into a Fortran name

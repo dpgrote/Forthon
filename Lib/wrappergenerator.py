@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.64 2009/08/21 16:27:24 dave Exp $
+# $Id: wrappergenerator.py,v 1.65 2009/09/08 18:01:56 dave Exp $
 
 import sys
 import os.path
@@ -10,8 +10,8 @@ from interfaceparser import processfile
 import string
 import re
 import fvars
-import getopt
 import pickle
+from Forthon_options import options,args
 from cfinterface import *
 import wrappergen_derivedtypes
 if sys.hexversion >= 0x20501f0:
@@ -409,6 +409,8 @@ of scalars and arrays.
 #   for i in range(len(self.slist)):
 #     s = self.slist[i]
 #     if s.type == 'real': gstype = 'double'
+#     elif s.type == 'double': gstype = 'double'
+#     elif s.type == 'float': gstype = 'float'
 #     elif s.type == 'integer': gstype = 'integer'
 #     elif s.type == 'complex': gstype = 'cdouble'
 #     else:                    gstype = 'derivedtype'
@@ -881,6 +883,8 @@ of scalars and arrays.
     self.cw('  PyModule_AddObject(m,"'+self.pname+'error", ErrorObject);')
     self.cw('  PyModule_AddObject(m,"fcompname",'+
                'PyString_FromString("'+self.fcompname+'"));')
+    self.cw('  PyModule_AddObject(m,"realsize",'+
+               'PyInt_FromLong((long)'+realsize+'));')
     self.cw('  if (PyErr_Occurred()) {')
     self.cw('    PyErr_Print();')
     self.cw('    Py_FatalError("can not initialize module '+self.pname+'");')
@@ -1198,14 +1202,6 @@ def get_another_scalar_dict(file_name,other_scalar_vars):
   f.close()
 
 def wrappergenerator_main(argv=None,writef90modulesonly=0):
-  if argv is None: argv = sys.argv[1:]
-  optlist,args=getopt.getopt(argv,'at:d:F:',
-                     ['f90','f77',
-                      'underscoring','nounderscoring',
-                      '2underscores','no2underscores',
-                      'nowritemodules',
-                      'timeroutines','with-numpy','macros='])
-
   # --- Get package name from argument list
   try:
     pname = args[0]
@@ -1218,26 +1214,17 @@ def wrappergenerator_main(argv=None,writef90modulesonly=0):
     sys.exit(1)
 
   # --- get other command line options and default actions
-  initialgallot = 0
-  fcompname = None
-  f90 = 1
-  writemodules = 1
-  timeroutines = 0
-  otherinterfacefiles = []
+  initialgallot = options.initialgallot
+  fcompname = options.fcomp
+  f90 = options.f90
+  writemodules = options.writemodules
+  timeroutines = options.timeroutines
+  otherinterfacefiles = options.othermacros
 
   # --- a list of scalar dictionaries from other modules.
   other_scalar_vars = []
-
-  for o in optlist:
-    if o[0]=='-a': initialgallot = 1
-    elif o[0]=='-t': machine = o[1]
-    elif o[0]=='-F': fcompname = o[1]
-    elif o[0]=='--f90': f90 = 1
-    elif o[0]=='--f77': f90 = 0
-    elif o[0]=='-d': get_another_scalar_dict (o[1],other_scalar_vars)
-    elif o[0]=='--nowritemodules': writemodules = 0
-    elif o[0]=='--timeroutines': timeroutines = 1
-    elif o[0]=='--macros': otherinterfacefiles.append(o[1])
+  for d in options.dependencies:
+    get_another_scalar_dict(d,other_scalar_vars)
 
   cc = PyWrap(ifile,pname,f90,initialgallot,writemodules,
               otherinterfacefiles,other_scalar_vars,timeroutines,

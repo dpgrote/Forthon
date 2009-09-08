@@ -1,5 +1,5 @@
 # Created by David P. Grote, March 6, 1998
-# $Id: fvars.py,v 1.7 2009/01/29 22:15:08 dave Exp $
+# $Id: fvars.py,v 1.8 2009/09/08 18:01:56 dave Exp $
 
 import cfinterface
 
@@ -46,16 +46,25 @@ class Ftype:
     for v in s.vlist:
       print '  ',v.name,'  ',v.type
 
-ftoc_dict = {'integer':'long', 'real':'double', 'logical':'long',
+ftoc_dict = {'integer':'long', 'logical':'long',
+             'real':{'8':'double','4':'float'}[cfinterface.realsize],
+             'double':'double', 'float':'float',
              'character':'FSTRING', 'string':'FSTRING',
              'void':'void','Filedes':'long','complex':'Py_complex'}
-ftop_dict = {'integer':'LONG', 'real':'DOUBLE', 'logical':'LONG',
+ftop_dict = {'integer':'LONG', 'logical':'LONG',
+             'real':{'8':'DOUBLE','4':'FLOAT'}[cfinterface.realsize],
+             'double':'DOUBLE', 'float':'FLOAT',
              'character':'STRING','string':'STRING','void':'VOID',
              'Filedes':'LONG','complex':'CDOUBLE'}
-fto1 = {'integer':'l',   'real':'d',      'logical':'l',   'character':'s',
+fto1 = {'integer':'l', 'logical':'l',
+        'real':{'8':'d','4':'f'}[cfinterface.realsize],
+        'double':'d', 'float':'f',
+        'character':'s',
         'string':'s','Filedes':'l','complex':'D'}
 ftof_dict = {'integer':'integer('+cfinterface.isz+')',
-             'real':'real(kind=8)',
+             'real':'real(KIND=%s)'%cfinterface.realsize,
+             'double':'real(kind=8)',
+             'float':'real(kind=4)',
              'logical':'logical('+cfinterface.isz+')',
              'character':'character',
              'string':'character',

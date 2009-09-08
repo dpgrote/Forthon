@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # Created by David P. Grote, March 6, 1998
-# $Id: preprocess.py,v 1.8 2009/04/02 22:18:04 dave Exp $
+# $Id: preprocess.py,v 1.9 2009/09/08 18:01:56 dave Exp $
 
 from cfinterface import *
 import sys
-import getopt
+from Forthon_options import args
 
 def py_ifelse(m,v,t,f=''):
   if m==v:
@@ -13,12 +13,6 @@ def py_ifelse(m,v,t,f=''):
     return f
 
 def main():
-  optlist,args=getopt.getopt(sys.argv[1:],'at:F:',
-                             ['f90',',f77',
-                              'underscoring','nounderscoring',
-                              '2underscores','no2underscores',
-                              'nowritemodules','with-numpy'])
-
   file = open(args[0],'r')
   text = file.readlines()
   sys.stdout = open(args[1],'w')

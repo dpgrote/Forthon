@@ -1,7 +1,7 @@
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 19, 1998
 # Parse the interface description file
-# $Id: interfaceparser.py,v 1.18 2009/05/27 00:09:37 dave Exp $
+# $Id: interfaceparser.py,v 1.19 2009/09/08 18:01:56 dave Exp $
 
 # This reads in the entire variable description file and extracts all of
 # the variable and subroutine information needed to create an interface
@@ -158,6 +158,18 @@ def processfile(packname,filename,othermacros=[],timeroutines=0):
     elif re.match('real\s',text):
       v.type = 'real'
       i = 3
+      readyfortype = 0
+
+    # Check if type is double
+    elif re.match('double\s',text):
+      v.type = 'double'
+      i = 5
+      readyfortype = 0
+
+    # Check if type is float
+    elif re.match('float\s',text):
+      v.type = 'float'
+      i = 4
       readyfortype = 0
 
     # Check if type is integer
@@ -439,6 +451,7 @@ def processfile(packname,filename,othermacros=[],timeroutines=0):
         if ma.group() == ':':
           fa.type = a[ma.start()+1:]
         else:
+          # --- Use implicit typing if the type was not specified
           fa.type = 'real'
           if 'i' <= fa.name[0] and fa.name[0] <= 'n':
             fa.type = 'integer'
