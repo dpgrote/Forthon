@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.65 2009/09/08 18:01:56 dave Exp $
+# $Id: wrappergenerator.py,v 1.66 2009/09/09 18:10:54 dave Exp $
 
 import sys
 import os.path
@@ -313,29 +313,17 @@ of scalars and arrays.
       self.cw('extern Fortranscalar '+other_dict['_module_name_']+
               '_fscalars[];')
 
+    # --- Note that the pointers to the subroutines set and getpointer and
+    # --- set and get action are at first set to NULL. The data is then setup
+    # --- in a seperate call to the declarevars. This is done since it is not
+    # --- standard C to have function pointers in structure initializers.
+
     # --- Scalars
     self.cw('int '+self.pname+'nscalars = '+repr(len(self.slist))+';')
     if len(self.slist) > 0:
       self.cw('Fortranscalar '+self.pname+'_fscalars['+repr(len(self.slist))+']={')
       for i in range(len(self.slist)):
         s = self.slist[i]
-        if (self.f90) and s.derivedtype:
-          setpointer = '*'+fname(self.fsub('setpointer',s.name))
-          if s.dynamic:
-            getpointer = '*'+fname(self.fsub('getpointer',s.name))
-          else:
-            getpointer = 'NULL'
-        else:
-          setpointer = 'NULL'
-          getpointer = 'NULL'
-        if s.setaction is None:
-          setaction = 'NULL'
-        else:
-          setaction = '*'+fname(self.fsub('setaction',s.name))
-        if s.getaction is None:
-          getaction = 'NULL'
-        else:
-          getaction = '*'+fname(self.fsub('getaction',s.name))
         self.cw('{PyArray_%s,'%fvars.ftop(s.type) + 
                  '"%s",'%s.type +
                  '"%s",'%s.name + 
@@ -344,10 +332,10 @@ of scalars and arrays.
                  '"%s",'%s.attr + 
                  '"%s",'%string.replace(repr(s.comment)[1:-1],'"','\\"') + 
                  '%i,'%s.dynamic + 
-                 '%s,'%setpointer + 
-                 '%s,'%getpointer +
-                 '%s,'%setaction + 
-                 '%s'%getaction +
+                 'NULL,' + # setpointer
+                 'NULL,' + # getpointer
+                 'NULL,' + # setaction
+                 'NULL' + # getaction
                  '}',noreturn=1)
         if i < len(self.slist)-1: self.cw(',')
       self.cw('};')
@@ -361,22 +349,6 @@ of scalars and arrays.
               self.pname+'_farrays['+repr(len(self.alist))+']={')
       for i in range(len(self.alist)):
         a = self.alist[i]
-        if (self.f90) and a.dynamic:
-          setpointer = '*'+fname(self.fsub('setpointer',a.name))
-        else:
-          setpointer = 'NULL'
-        if (self.f90) and re.search('fassign',a.attr):
-          getpointer = '*'+fname(self.fsub('getpointer',a.name))
-        else:
-          getpointer = 'NULL'
-        if a.setaction is None:
-          setaction = 'NULL'
-        else:
-          setaction = '*'+fname(self.fsub('setaction',a.name))
-        if a.getaction is None:
-          getaction = 'NULL'
-        else:
-          getaction = '*'+fname(self.fsub('getaction',a.name))
         if a.data and a.dynamic:
           initvalue = a.data[1:-1]
         else:
@@ -387,10 +359,10 @@ of scalars and arrays.
                   'NULL,' +
                   '"%s",'%a.name +
                   '{NULL},' +
-                  '%s,'%setpointer +
-                  '%s,'%getpointer +
-                  '%s,'%setaction + 
-                  '%s,'%getaction +
+                  'NULL,' + # setpointer
+                  'NULL,' + # getpointer
+                  'NULL,' + # setaction 
+                  'NULL,' + # getaction
                   '%s,'%initvalue +
                   'NULL,' +
                   '"%s",'%a.group +
@@ -401,6 +373,44 @@ of scalars and arrays.
       self.cw('};')
     else:
       self.cw('static Fortranarray *'+self.pname+'_farrays=NULL;')
+
+    #########################################################################
+    # --- Write declarations of c pointers to fortran variables
+    self.cw('void '+self.pname+'declarevars(ForthonObject *obj) {')
+
+    # --- Scalars
+    for i in range(len(self.slist)):
+      s = self.slist[i]
+      if (self.f90) and s.derivedtype:
+        setpointer = '*'+fname(self.fsub('setpointer',s.name))
+        self.cw('obj->fscalars[%d].setpointer = %s;'%(i,setpointer))
+        if s.dynamic:
+          getpointer = '*'+fname(self.fsub('getpointer',s.name))
+          self.cw('obj->fscalars[%d].getpointer = %s;'%(i,getpointer))
+      if s.setaction is not None:
+        setaction = '*'+fname(self.fsub('setaction',s.name))
+        self.cw('obj->fscalars[%d].setaction = %s;'%(i,setaction))
+      if s.getaction is not None:
+        getaction = '*'+fname(self.fsub('getaction',s.name))
+        self.cw('obj->fscalars[%d].getaction = %s;'%(i,getaction))
+
+    # --- Arrays
+    for i in range(len(self.alist)):
+      a = self.alist[i]
+      if (self.f90) and a.dynamic:
+        setpointer = '*'+fname(self.fsub('setpointer',a.name))
+        self.cw('obj->farrays[%d].setpointer = %s;'%(i,setpointer))
+      if (self.f90) and re.search('fassign',a.attr):
+        getpointer = '*'+fname(self.fsub('getpointer',a.name))
+        self.cw('obj->farrays[%d].getpointer = %s;'%(i,getpointer))
+      if a.setaction is not None:
+        setaction = '*'+fname(self.fsub('setaction',a.name))
+        self.cw('obj->farrays[%d].setaction = %s;'%(i,setaction))
+      if a.getaction is not None:
+        getaction = '*'+fname(self.fsub('getaction',a.name))
+        self.cw('obj->farrays[%d].getaction = %s;'%(i,getaction))
+
+    self.cw('}')
 
 # Some extra work is needed to get the getset attribute access scheme working.
 #   # --- Write out the table of getset routines
@@ -890,6 +900,7 @@ of scalars and arrays.
     self.cw('    Py_FatalError("can not initialize module '+self.pname+'");')
     self.cw('    }')
     self.cw('  import_array();')
+    self.cw('  '+self.pname+'declarevars('+self.pname+'Object);')
     self.cw('  Forthon_BuildDicts('+self.pname+'Object);')
     self.cw('  ForthonPackage_allotdims('+self.pname+'Object);')
     self.cw('  '+fname(self.fsub('passpointers'))+'();')
