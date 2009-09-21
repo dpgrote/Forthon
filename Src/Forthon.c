@@ -329,15 +329,45 @@ void
 void
 %fname('callpythonfunc')+'(FSTRING fname,FSTRING mname SL1 SL2)'
 {
-  char *cfname,*cmname;
+  char *cfname,*cmname,*cpname;
+  PyObject *modules;
   PyObject *m,*d,*f,*r;
+  int m_is_borrowed = 1;
   cfname = (char *) malloc((FSTRLEN1(fname)+1)*sizeof(char));
   cmname = (char *) malloc((FSTRLEN2(mname)+1)*sizeof(char));
+  // Copy the module and function names from the fortran data. Note that
+  // strings in fortran do not have a null termination and it must be
+  // explicitly added here.
   memcpy(cfname,FSTRPTR(fname),FSTRLEN1(fname));
   memcpy(cmname,FSTRPTR(mname),FSTRLEN2(mname));
   cfname[FSTRLEN1(fname)] = (char)0;
   cmname[FSTRLEN2(mname)] = (char)0;
-  m = PyImport_ImportModule(cmname);
+  // Some fancy footwork is needed to find the module to import. Depending
+  // on how the modules are setup, the module's name in python could either
+  // be modulename or warp.modulename. The latter if using an egg or if the
+  // warp scripts are installed in site-packages. The module should have
+  // already been imported, so get it from ModuleDict (same as sys.modules).
+  // First look for it under the name modulename. If it is not found try
+  // warp.modulename. If it is still not found, then try importing it.
+  // Note that the module reference from the module dict is borrowed (and
+  // should not be decremented), but the one from ImportModule is new (and
+  // should be decremented). Once the module is found, the function can
+  // be called.
+  modules = PyImport_GetModuleDict();
+  m = PyDict_GetItemString(modules,cmname);
+  if (m == NULL) {
+    // Try warp.modulename
+    cpname = (char *) malloc((FSTRLEN2(mname)+1+5)*sizeof(char));
+    strcpy(cpname,"warp.");
+    strcat(cpname,cmname);
+    m = PyDict_GetItemString(modules,cpname);
+    free(cpname);
+    }
+  if (m == NULL) {
+    // Still not found, so try directly importing
+    m = PyImport_ImportModule(cmname);
+    m_is_borrowed = 0;
+    }
   r = NULL;
   if (m != NULL) {
     d = PyModule_GetDict(m);
@@ -348,7 +378,8 @@ void
   }}}
   free(cfname);
   free(cmname);
-  Py_XDECREF(m);
+  if (!m_is_borrowed) {
+    Py_XDECREF(m);}
   if (r == NULL) {
     longjmp(stackenvironment,1);
   }
