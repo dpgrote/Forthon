@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.66 2009/09/09 18:10:54 dave Exp $
+# $Id: wrappergenerator.py,v 1.67 2009/10/25 01:09:50 dave Exp $
 
 import sys
 import os.path
@@ -894,7 +894,7 @@ of scalars and arrays.
     self.cw('  PyModule_AddObject(m,"fcompname",'+
                'PyString_FromString("'+self.fcompname+'"));')
     self.cw('  PyModule_AddObject(m,"realsize",'+
-               'PyInt_FromLong((long)'+realsize+'));')
+               'PyInt_FromLong((long)%s'%realsize+'));')
     self.cw('  if (PyErr_Occurred()) {')
     self.cw('    PyErr_Print();')
     self.cw('    Py_FatalError("can not initialize module '+self.pname+'");')

@@ -1,5 +1,5 @@
 # Created by David P. Grote, March 6, 1998
-# $Id: cfinterface.py,v 1.15 2009/09/08 18:01:56 dave Exp $
+# $Id: cfinterface.py,v 1.16 2009/10/25 01:09:50 dave Exp $
 
 # Routines which allows c functions to be callable by fortran
 import sys
@@ -17,12 +17,10 @@ underscoring = options.underscoring
 twounderscores = options.twounderscores
 
 #----------------------------------------------------------------------------
-# Set size of fortran integers and logicals. This is almost alway 4.
-isz = 'kind=4'
-if machine in ['AXP','T3E','J90']:
-  isz = 'kind=8'
-if struct.calcsize('l') == 8:
-  isz = 'kind=8'
+# Set size of fortran integers and logicals, which is the same size as a
+# C long integer. This is always either 4 or 8.
+intsize = '%d'%struct.calcsize('l')
+isz = 'kind=%s'%intsize
 
 #----------------------------------------------------------------------------
 # Set the size of floating point numbers

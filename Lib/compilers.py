@@ -5,7 +5,7 @@ for it.
 import sys,os,re
 import string
 import struct
-from cfinterface import realsize
+from cfinterface import realsize,intsize
 
 class FCompiler:
   """
@@ -151,8 +151,10 @@ appropriate block for the machine.
       # --- Intel8
       self.f90free  = 'ifort -nofor_main -free -DIFC -fpp -fPIC'
       self.f90fixed = 'ifort -nofor_main -132 -DIFC -fpp -fPIC'
-      self.f90free  += ' -r%s -Zp%s'%(realsize,realsize)
-      self.f90fixed += ' -r%s -Zp%s'%(realsize,realsize)
+      self.f90free  += ' -DFPSIZE=%s -r%s -Zp%s'%(realsize,realsize,realsize)
+      self.f90fixed += ' -DFPSIZE=%s -r%s -Zp%s'%(realsize,realsize,realsize)
+      self.f90free  += ' -DISZ=%s -i%s'%(intsize,intsize)
+      self.f90fixed += ' -DISZ=%s -i%s'%(intsize,intsize)
       if self.implicitnone:
         self.f90free  += ' -implicitnone'
         self.f90fixed += ' -implicitnone'
@@ -167,14 +169,11 @@ appropriate block for the machine.
         self.fopt = '-O3 -ip -unroll -prefetch'
       elif self.processor == 'ia64':
         self.fopt = '-O3 -ip -unroll -tpp2'
-        # --- The IA64 is needed for top.h - ISZ must be 8.
-        self.f90free = self.f90free + ' -fpic -DIA64 -i8'
-        self.f90fixed = self.f90fixed + ' -fpic -DIA64 -i8'
+        self.f90free = self.f90free + ' -fpic'
+        self.f90fixed = self.f90fixed + ' -fpic'
         self.libs.remove('svml')
       elif struct.calcsize('l') == 8:
         self.fopt = '-O3 -xW -tpp7 -ip -unroll -prefetch'
-        self.f90free = self.f90free + ' -DISZ=8 -i8'
-        self.f90fixed = self.f90fixed + ' -DISZ=8 -i8'
       else:
         self.fopt = '-O3 -xN -tpp7 -ip -unroll -prefetch'
       return 1
@@ -186,8 +185,10 @@ appropriate block for the machine.
       # --- Intel
       self.f90free  = 'ifc -132 -DIFC -fpp -C90'
       self.f90fixed = 'ifc -132 -DIFC -fpp -C90'
-      self.f90free  += ' -r%s -Zp%s'%(realsize,realsize)
-      self.f90fixed += ' -r%s -Zp%s'%(realsize,realsize)
+      self.f90free  += ' -DFPSIZE=%s -r%s -Zp%s'%(realsize,realsize,realsize)
+      self.f90fixed += ' -DFPSIZE=%s -r%s -Zp%s'%(realsize,realsize,realsize)
+      self.f90free  += ' -DISZ=%s -i%s'%(intsize,intsize)
+      self.f90fixed += ' -DISZ=%s -i%s'%(intsize,intsize)
       if self.implicitnone:
         self.f90free  += ' -implicitnone'
         self.f90fixed += ' -implicitnone'
@@ -210,8 +211,10 @@ appropriate block for the machine.
       self.fcompname = 'g95'
       self.f90free  = 'g95 -ffree-form -fPIC -Wno=155 -fshort-circuit'
       self.f90fixed = 'g95 -ffixed-line-length-132 -fPIC -fshort-circuit'
-      self.f90free  += ' -r%s'%(realsize)
-      self.f90fixed += ' -r%s'%(realsize)
+      self.f90free  += ' -DFPSIZE=%s -r%s'%(realsize,realsize)
+      self.f90fixed += ' -DFPSIZE=%s -r%s'%(realsize,realsize)
+      self.f90free  += ' -DISZ=%s -i%s'%(intsize,intsize)
+      self.f90fixed += ' -DISZ=%s -i%s'%(intsize,intsize)
       if self.implicitnone:
         self.f90free  += ' -fimplicit-none'
         self.f90fixed += ' -fimplicit-none'
@@ -232,8 +235,6 @@ appropriate block for the machine.
         self.fopt = '-O3'
       elif struct.calcsize('l') == 8:
         self.fopt = '-O3 -mfpmath=sse -ftree-vectorize -ftree-vectorizer-verbose=5 -funroll-loops -fstrict-aliasing -fsched-interblock -falign-loops=16 -falign-jumps=16 -falign-functions=16 -ffast-math -fstrict-aliasing'
-        self.f90free += ' -DISZ=8 -i8'
-        self.f90fixed += ' -DISZ=8 -i8'
       else:
         self.fopt = '-O3'
       return 1
@@ -244,9 +245,16 @@ appropriate block for the machine.
       self.fcompname = 'gfortran'
       self.f90free  = 'gfortran -fPIC'
       self.f90fixed = 'gfortran -fPIC -ffixed-line-length-132'
+      self.f90free  += ' -DFPSIZE=%s'%(realsize)
+      self.f90fixed += ' -DFPSIZE=%s'%(realsize)
       if realsize == '8':
         self.f90free  += ' -fdefault-real-8 -fdefault-double-8'
         self.f90fixed += ' -fdefault-real-8 -fdefault-double-8'
+      self.f90free  += ' -DISZ=%s'%(intsize)
+      self.f90fixed += ' -DISZ=%s'%(intsize)
+      if intsize == 8:
+        self.f90free  += ' -fdefault-integer-8'
+        self.f90fixed += ' -fdefault-integer-8'
       if self.implicitnone:
         self.f90free  += ' -fimplicit-none'
         self.f90fixed += ' -fimplicit-none'
@@ -260,9 +268,6 @@ appropriate block for the machine.
       self.libdirs = [flibroot]
       self.libs = ['gfortran']
       self.fopt = '-O3 -ftree-vectorize -ftree-vectorizer-verbose=1'
-      if struct.calcsize('l') == 8:
-        self.f90free += ' -DISZ=8 -fdefault-integer-8'
-        self.f90fixed += ' -DISZ=8 -fdefault-integer-8'
       return 1
 
   def linux_pg(self):
@@ -272,8 +277,10 @@ appropriate block for the machine.
       # --- Portland group
       self.f90free  = 'pgf90 -Mextend -Mdclchk'
       self.f90fixed = 'pgf90 -Mextend -Mdclchk'
-      self.f90free  += ' -r%s'%(realsize)
-      self.f90fixed += ' -r%s'%(realsize)
+      self.f90free  += ' -DFPSIZE=%s -r%s'%(realsize,realsize)
+      self.f90fixed += ' -DFPSIZE=%s -r%s'%(realsize,realsize)
+      self.f90free  += ' -DISZ=%s -i%s'%(intsize,intsize)
+      self.f90fixed += ' -DISZ=%s -i%s'%(intsize,intsize)
       self.popt = '-Mcache_align'
       flibroot,b = os.path.split(self.findfile('pgf90'))
       self.libdirs = [flibroot+'/lib']
@@ -288,8 +295,11 @@ appropriate block for the machine.
       # --- Absoft
       self.f90free  = 'f90 -B108 -N113 -W132 -YCFRL=1 -YEXT_NAMES=ASIS'
       self.f90fixed = 'f90 -B108 -N113 -W132 -YCFRL=1 -YEXT_NAMES=ASIS'
-      #self.f90free  += ' -r%s'%(realsize) ???
-      #self.f90fixed += ' -r%s'%(realsize) ???
+      self.f90free  += ' -DFPSIZE=%s'%(realsize) # ???
+      self.f90fixed += ' -DFPSIZE=%s'%(realsize) # ???
+      self.f90free  += ' -DISZ=%s -i%s'%(intsize,intsize)
+      self.f90fixed += ' -DISZ=%s -i%s'%(intsize,intsize)
+      self.popt = '-Mcache_align'
       self.forthonargs = ['--2underscores'] # --- This needs to be fixed XXX
       flibroot,b = os.path.split(self.findfile('f90'))
       self.libdirs = [flibroot+'/lib']
@@ -309,8 +319,11 @@ appropriate block for the machine.
       # ap = preserve arithmetic precision
       self.f90free  = 'lf95 --nfix --dbl --mlcdecl'
       self.f90fixed = 'lf95 --fix --wide --dbl --mlcdecl'
-      #self.f90free  += ' -r%s'%(realsize) ???
-      #self.f90fixed += ' -r%s'%(realsize) ???
+      self.f90free  += ' -DFPSIZE=%s'%(realsize) # ???
+      self.f90fixed += ' -DFPSIZE=%s'%(realsize) # ???
+      self.f90free  += ' -DISZ=%s -i%s'%(intsize,intsize)
+      self.f90fixed += ' -DISZ=%s -i%s'%(intsize,intsize)
+      self.popt = '-Mcache_align'
       if self.implicitnone:
         self.f90free  += ' --in'
         self.f90fixed += ' --in'
@@ -335,8 +348,10 @@ appropriate block for the machine.
       # --- Intel8
       self.f90free  = self.fcompname + ' -freeform -DPATHF90 -ftpp -fPIC -woff1615'
       self.f90fixed = self.fcompname + ' -fixedform -extend_source -DPATHF90 -ftpp -fPIC -woff1615'
-      self.f90free  += ' -r%s'%(realsize)
-      self.f90fixed += ' -r%s'%(realsize)
+      self.f90free  += ' -DFPSIZE=%s -r%s'%(realsize,realsize)
+      self.f90fixed += ' -DFPSIZE=%s -r%s'%(realsize,realsize)
+      self.f90free  += ' -DISZ=%s -i%s'%(intsize,intsize)
+      self.f90fixed += ' -DISZ=%s -i%s'%(intsize,intsize)
       if self.twounderscores:
         self.f90free  += ' -fsecond-underscore'
         self.f90fixed += ' -fsecond-underscore'
@@ -356,8 +371,6 @@ appropriate block for the machine.
         self.fopt = '-O3'
       elif struct.calcsize('l') == 8:
         self.fopt = '-O3 -OPT:Ofast -fno-math-errno'
-        self.f90free = self.f90free + ' -DISZ=8 -i8'
-        self.f90fixed = self.f90fixed + ' -DISZ=8 -i8'
       else:
         self.fopt = '-Ofast'
       return 1
@@ -367,11 +380,13 @@ appropriate block for the machine.
         (self.fcompname is None and self.findfile('xlf95_r'))):
       self.fcompname = 'xlf'
       intsize = struct.calcsize('l')
-      f90  = 'xlf95_r -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -WF,-DISZ=%(intsize)s -qintsize=%(intsize)s -qsave=defaultinit -WF,-DESSL'%locals()
+      f90  = 'xlf95_r -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qsave=defaultinit -WF,-DESSL'%locals()
       self.f90free  = f90 + ' -qsuffix=f=f90:cpp=F90 -qfree=f90'
       self.f90fixed = f90 + ' -qfixed=132'
-      #self.f90free  += ' -r%s'%(realsize) ???
-      #self.f90fixed += ' -r%s'%(realsize) ???
+      self.f90free  += ' -WF,-DFPSIZE=%s'%(realsize) # ???
+      self.f90fixed += ' -WF,-DFPSIZE=%s'%(realsize) # ???
+      self.f90free  += ' -WF,-DISZ=%s -qintsize%s'%(intsize,intsize)
+      self.f90fixed += ' -WF,-DISZ=%s -qintsize%s'%(intsize,intsize)
       self.ld = 'xlf95_r -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp'%locals()
       if self.implicitnone:
         self.f90free  += ' -u'
@@ -394,8 +409,10 @@ appropriate block for the machine.
       # --- g95
       self.f90free  = 'g95'
       self.f90fixed = 'g95 -ffixed-line-length-132'
-      self.f90free  += ' -r%s'%(realsize)
-      self.f90fixed += ' -r%s'%(realsize)
+      self.f90free  += ' -DFPSIZE=%s -r%s'%(realsize,realsize)
+      self.f90fixed += ' -DFPSIZE=%s -r%s'%(realsize,realsize)
+      self.f90free  += ' -DISZ=%s -i%s'%(intsize,intsize)
+      self.f90fixed += ' -DISZ=%s -i%s'%(intsize,intsize)
       if self.twounderscores:
         self.f90free  += ' -fsecond-underscore'
         self.f90fixed += ' -fsecond-underscore'
@@ -424,8 +441,10 @@ appropriate block for the machine.
       # --- g95
       self.f90free  = 'g95 -fzero -ffree-form -Wno=155'
       self.f90fixed = 'g95 -fzero -ffixed-line-length-132'
-      self.f90free  += ' -r%s'%(realsize)
-      self.f90fixed += ' -r%s'%(realsize)
+      self.f90free  += ' -DFPSIZE=%s -r%s'%(realsize,realsize)
+      self.f90fixed += ' -DFPSIZE=%s -r%s'%(realsize,realsize)
+      self.f90free  += ' -DISZ=%s -i%s'%(intsize,intsize)
+      self.f90fixed += ' -DISZ=%s -i%s'%(intsize,intsize)
       if self.implicitnone:
         self.f90free  += ' -fimplicit-none'
         self.f90fixed += ' -fimplicit-none'
@@ -454,9 +473,16 @@ appropriate block for the machine.
       # --- gfortran
       self.f90free  = 'gfortran'
       self.f90fixed = 'gfortran -ffixed-line-length-132'
+      self.f90free  += ' -DFPSIZE=%s'%(realsize)
+      self.f90fixed += ' -DFPSIZE=%s'%(realsize)
       if realsize == '8':
         self.f90free  += ' -fdefault-real-8 -fdefault-double-8'
         self.f90fixed += ' -fdefault-real-8 -fdefault-double-8'
+      self.f90free  += ' -DISZ=%s'%(intsize)
+      self.f90fixed += ' -DISZ=%s'%(intsize)
+      if intsize == 8:
+        self.f90free  += ' -fdefault-integer-8'
+        self.f90fixed += ' -fdefault-integer-8'
       if self.implicitnone:
         self.f90free  += ' -fimplicit-none'
         self.f90fixed += ' -fimplicit-none'
@@ -486,10 +512,12 @@ appropriate block for the machine.
         (self.fcompname in ['xlf','xlf90'] or self.fcompname is None)):
       self.fcompname = 'xlf'
       # --- XLF
-      self.f90free  = 'xlf95 -WF,-DXLF -qsuffix=f=f90:cpp=F90 -qextname -qautodbl=dbl4 -qintsize=4 -qdpc=e -bmaxdata:0x70000000 -bmaxstack:0x10000000 -qinitauto'
-      self.f90fixed = 'xlf95 -WF,-DXLF -qextname -qfixed=132 -qautodbl=dbl4 -qintsize=4 -qdpc=e -bmaxdata:0x70000000 -bmaxstack:0x10000000 -qinitauto'
-      #self.f90free  += ' -r%s'%(realsize) ???
-      #self.f90fixed += ' -r%s'%(realsize) ???
+      self.f90free  = 'xlf95 -WF,-DXLF -qsuffix=f=f90:cpp=F90 -qextname -qautodbl=dbl4 -qdpc=e -bmaxdata:0x70000000 -bmaxstack:0x10000000 -qinitauto'
+      self.f90fixed = 'xlf95 -WF,-DXLF -qextname -qfixed=132 -qautodbl=dbl4 -qdpc=e -bmaxdata:0x70000000 -bmaxstack:0x10000000 -qinitauto'
+      self.f90free  += ' -WF,-DFPSIZE=%s'%(realsize) # ???
+      self.f90fixed += ' -WF,-DFPSIZE=%s'%(realsize) # ???
+      self.f90free  += ' -WF,-DISZ=%s -qintsize%s'%(intsize,intsize)
+      self.f90fixed += ' -WF,-DISZ=%s -qintsize%s'%(intsize,intsize)
       if self.implicitnone:
         self.f90free  += ' -u'
         self.f90fixed += ' -u'
@@ -513,8 +541,10 @@ appropriate block for the machine.
       self.f90fixed = 'f90 -f fixed -W 132 -N11 -N113 -YEXT_NAMES=LCS -YEXT_SFX=_'
 #      self.f90free  = 'f90 -ffree -YEXT_NAMES=LCS -YEXT_SFX=_'
 #      self.f90fixed = 'f90 -ffixed -W 132 -YEXT_NAMES=LCS -YEXT_SFX=_'
-      #self.f90free  += ' -r%s'%(realsize) ???
-      #self.f90fixed += ' -r%s'%(realsize) ???
+      self.f90free  += ' -DFPSIZE=%s'%(realsize) # ???
+      self.f90fixed += ' -DFPSIZE=%s'%(realsize) # ???
+      self.f90free  += ' -DISZ=%s -i%s'%(intsize,intsize)
+      self.f90fixed += ' -DISZ=%s -i%s'%(intsize,intsize)
       flibroot,b = os.path.split(self.findfile('f90'))
       self.libdirs = [flibroot+'/lib']
       self.extra_link_args = ['-flat_namespace','-Wl,-undefined,suppress']
@@ -531,8 +561,10 @@ appropriate block for the machine.
       self.f90fixed = 'f95 -132 -fpp -u -Wp,-macro=no_com -Wp,-fixed -fixed -Wc,-O3 -Wc,-funroll-loops -PIC -w -mismatch_all -kind=byte'
       self.f90free  = 'f95 -132 -fpp -Wp,-macro=no_com -free -PIC -u -w -mismatch_all -kind=byte -Oassumed=contig'
       self.f90fixed = 'f95 -132 -fpp -Wp,-macro=no_com -Wp,-fixed -fixed -PIC -u -w -mismatch_all -kind=byte -Oassumed=contig'
-      self.f90free  += ' -r%s'%(realsize)
-      self.f90fixed += ' -r%s'%(realsize)
+      self.f90free  += ' -DFPSIZE=%s -r%s'%(realsize,realsize)
+      self.f90fixed += ' -DFPSIZE=%s -r%s'%(realsize,realsize)
+      self.f90free  += ' -DISZ=%s -i%s'%(intsize,intsize)
+      self.f90fixed += ' -DISZ=%s -i%s'%(intsize,intsize)
       flibroot,b = os.path.split(self.findfile('f95'))
       self.extra_link_args = ['-flat_namespace','-framework vecLib','/usr/local/lib/NAGWare/quickfit.o','/usr/local/lib/NAGWare/libf96.a']
       self.libs = ['m']
@@ -549,8 +581,10 @@ appropriate block for the machine.
       # --- GNU
       self.f90free  = 'f95 -132 -fpp -Wp,-macro=no_com -free -PIC -w -mismatch_all -kind=byte'
       self.f90fixed = 'f95 -132 -fpp -Wp,-macro=no_com -Wp,-fixed -fixed -PIC -w -mismatch_all -kind=byte'
-      self.f90free  += ' -r%s'%(realsize)
-      self.f90fixed += ' -r%s'%(realsize)
+      self.f90free  += ' -DFPSIZE=%s -r%s'%(realsize,realsize)
+      self.f90fixed += ' -DFPSIZE=%s -r%s'%(realsize,realsize)
+      self.f90free  += ' -DISZ=%s -i%s'%(intsize,intsize)
+      self.f90fixed += ' -DISZ=%s -i%s'%(intsize,intsize)
       self.f90free  = 'g95'
       self.f90fixed = 'g95 -ffixed-form -ffixed-line-length-132'
       flibroot,b = os.path.split(self.findfile('g95'))
@@ -568,8 +602,10 @@ appropriate block for the machine.
       # --- Portland group
       self.f90free  = 'pgf90 -Mextend -Mdclchk'
       self.f90fixed = 'pgf90 -Mextend -Mdclchk'
-      self.f90free  += ' -r%s'%(realsize)
-      self.f90fixed += ' -r%s'%(realsize)
+      self.f90free  += ' -DFPSIZE=%s -r%s'%(realsize,realsize)
+      self.f90fixed += ' -DFPSIZE=%s -r%s'%(realsize,realsize)
+      self.f90free  += ' -DISZ=%s -i%s'%(intsize,intsize)
+      self.f90fixed += ' -DISZ=%s -i%s'%(intsize,intsize)
       self.popt = '-Mcache_align'
       flibroot,b = os.path.split(self.findfile('pgf90'))
       self.libdirs = [flibroot+'/Lib']
@@ -584,8 +620,10 @@ appropriate block for the machine.
       # --- Intel
       self.f90free  = 'ifl -Qextend_source -Qautodouble -DIFC -FR -Qfpp -4Yd -C90 -Zp8 -Qlowercase -us -MT -Zl -static'
       self.f90fixed = 'ifl -Qextend_source -Qautodouble -DIFC -FI -Qfpp -4Yd -C90 -Zp8 -Qlowercase -us -MT -Zl -static'
-      #self.f90free  += ' -r%s'%(realsize) ???
-      #self.f90fixed += ' -r%s'%(realsize) ???
+      self.f90free  += ' -DFPSIZE=%s'%(realsize) # ???
+      self.f90fixed += ' -DFPSIZE=%s'%(realsize) # ???
+      self.f90free  += ' -DISZ=%s -i%s'%(intsize,intsize)
+      self.f90fixed += ' -DISZ=%s -i%s'%(intsize,intsize)
       flibroot,b = os.path.split(self.findfile('ifl'))
       self.libdirs = [flibroot+'/Lib']
       self.libs = ['CEPCF90MD','F90MD','intrinsMD']
@@ -602,11 +640,13 @@ appropriate block for the machine.
       intsize = struct.calcsize('l')
       if intsize == 4: bmax = '-bmaxdata:0x70000000 -bmaxstack:0x10000000'
       else:            bmax = '-q64'
-      f90 = 'xlf95 -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -WF,-DISZ=%(intsize)s -qintsize=%(intsize)s -qsave=defaultinit -WF,-DESSL %(bmax)s'%locals()
+      f90 = 'xlf95 -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qsave=defaultinit -WF,-DESSL %(bmax)s'%locals()
       self.f90free  = f90 + ' -qsuffix=f=f90:cpp=F90 -qfree=f90'
       self.f90fixed = f90 + ' -qfixed=132'
-      #self.f90free  += ' -r%s'%(realsize) ???
-      #self.f90fixed += ' -r%s'%(realsize) ???
+      self.f90free  += ' -WF,-DFPSIZE=%s'%(realsize) # ???
+      self.f90fixed += ' -WF,-DFPSIZE=%s'%(realsize) # ???
+      self.f90free  += ' -WF,-DISZ=%s -qintsize%s'%(intsize,intsize)
+      self.f90fixed += ' -WF,-DISZ=%s -qintsize%s'%(intsize,intsize)
       self.ld = 'xlf -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp %(bmax)s'%locals()
       self.popt = '-O'
       self.extra_link_args = [bmax]
@@ -626,11 +666,13 @@ appropriate block for the machine.
       intsize = struct.calcsize('l')
       if intsize == 4: bmax = '-bmaxdata:0x70000000 -bmaxstack:0x10000000'
       else:            bmax = '-q64'
-      f90 = 'mpxlf95 -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -WF,-DISZ=%(intsize)s -qintsize=%(intsize)s -qsave=defaultinit -WF,-DMPIPARALLEL -WF,-DESSL %(bmax)s'%locals()
+      f90 = 'mpxlf95 -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qsave=defaultinit -WF,-DMPIPARALLEL -WF,-DESSL %(bmax)s'%locals()
       self.f90free  = f90 + ' -qsuffix=f=f90:cpp=F90 -qfree=f90'
       self.f90fixed = f90 + ' -qfixed=132'
-      #self.f90free  += ' -r%s'%(realsize) ???
-      #self.f90fixed += ' -r%s'%(realsize) ???
+      self.f90free  += ' -WF,-DFPSIZE=%s'%(realsize) # ???
+      self.f90fixed += ' -WF,-DFPSIZE=%s'%(realsize) # ???
+      self.f90free  += ' -WF,-DISZ=%s -qintsize%s'%(intsize,intsize)
+      self.f90fixed += ' -WF,-DISZ=%s -qintsize%s'%(intsize,intsize)
       self.ld = 'mpxlf_r -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp %(bmax)s'%locals()
       if self.implicitnone:
         self.f90free  += ' -u'
@@ -651,11 +693,13 @@ appropriate block for the machine.
       intsize = struct.calcsize('l')
       if intsize == 4: bmax = '-bmaxdata:0x70000000 -bmaxstack:0x10000000'
       else:            bmax = '-q64'
-      f90  = 'xlf95_r -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -WF,-DISZ=%(intsize)s -qintsize=%(intsize)s -qsave=defaultinit -WF,-DESSL %(bmax)s'%locals()
+      f90  = 'xlf95_r -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qsave=defaultinit -WF,-DESSL %(bmax)s'%locals()
       self.f90free  = f90 + ' -qsuffix=f=f90:cpp=F90 -qfree=f90'
       self.f90fixed = f90 + ' -qfixed=132'
-      #self.f90free  += ' -r%s'%(realsize) ???
-      #self.f90fixed += ' -r%s'%(realsize) ???
+      self.f90free  += ' -WF,-DFPSIZE=%s'%(realsize) # ???
+      self.f90fixed += ' -WF,-DFPSIZE=%s'%(realsize) # ???
+      self.f90free  += ' -WF,-DISZ=%s -qintsize%s'%(intsize,intsize)
+      self.f90fixed += ' -WF,-DISZ=%s -qintsize%s'%(intsize,intsize)
       self.ld = 'xlf95_r -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp %(bmax)s'%locals()
       if self.implicitnone:
         self.f90free  += ' -u'
@@ -675,11 +719,13 @@ appropriate block for the machine.
       intsize = struct.calcsize('l')
       if intsize == 4: bmax = '-bmaxdata:0x70000000 -bmaxstack:0x10000000'
       else:            bmax = '-q64'
-      f90 = 'mpxlf95_r -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -WF,-DISZ=%(intsize)s -qintsize=8 -qsave=defaultinit -WF,-DMPIPARALLEL -WF,-DESSL %(bmax)s'%locals()
+      f90 = 'mpxlf95_r -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qsave=defaultinit -WF,-DMPIPARALLEL -WF,-DESSL %(bmax)s'%locals()
       self.f90free  = f90 + ' -qsuffix=f=f90:cpp=F90 -qfree=f90'
       self.f90fixed = f90 + ' -qfixed=132'
-      #self.f90free  += ' -r%s'%(realsize) ???
-      #self.f90fixed += ' -r%s'%(realsize) ???
+      self.f90free  += ' -WF,-DFPSIZE=%s'%(realsize) # ???
+      self.f90fixed += ' -WF,-DFPSIZE=%s'%(realsize) # ???
+      self.f90free  += ' -WF,-DISZ=%s -qintsize%s'%(intsize,intsize)
+      self.f90fixed += ' -WF,-DISZ=%s -qintsize%s'%(intsize,intsize)
       self.ld = 'mpxlf95_r -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp %(bmax)s'%locals()
       if self.implicitnone:
         self.f90free  += ' -u'
@@ -699,8 +745,10 @@ appropriate block for the machine.
       # --- Portland group
       self.f90free  = 'pghpf -Mextend -Mdclchk'
       self.f90fixed = 'pghpf -Mextend -Mdclchk'
-      self.f90free  += ' -r%s'%(realsize)
-      self.f90fixed += ' -r%s'%(realsize)
+      self.f90free  += ' -DFPSIZE=%s -r%s'%(realsize,realsize)
+      self.f90fixed += ' -DFPSIZE=%s -r%s'%(realsize,realsize)
+      self.f90free  += ' -DISZ=%s -i%s'%(intsize,intsize)
+      self.f90fixed += ' -DISZ=%s -i%s'%(intsize,intsize)
       self.popt = '-Mcache_align'
       flibroot,b = os.path.split(self.findfile('pghpf'))
       self.libdirs = [flibroot+'/lib']
