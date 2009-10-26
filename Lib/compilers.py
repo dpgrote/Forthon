@@ -252,7 +252,7 @@ appropriate block for the machine.
         self.f90fixed += ' -fdefault-real-8 -fdefault-double-8'
       self.f90free  += ' -DISZ=%s'%(intsize)
       self.f90fixed += ' -DISZ=%s'%(intsize)
-      if intsize == 8:
+      if intsize == '8':
         self.f90free  += ' -fdefault-integer-8'
         self.f90fixed += ' -fdefault-integer-8'
       if self.implicitnone:
@@ -480,7 +480,7 @@ appropriate block for the machine.
         self.f90fixed += ' -fdefault-real-8 -fdefault-double-8'
       self.f90free  += ' -DISZ=%s'%(intsize)
       self.f90fixed += ' -DISZ=%s'%(intsize)
-      if intsize == 8:
+      if intsize == '8':
         self.f90free  += ' -fdefault-integer-8'
         self.f90fixed += ' -fdefault-integer-8'
       if self.implicitnone:
@@ -638,8 +638,8 @@ appropriate block for the machine.
       self.fcompname = 'xlf'
       # --- IBM SP, serial
       intsize = struct.calcsize('l')
-      if intsize == 4: bmax = '-bmaxdata:0x70000000 -bmaxstack:0x10000000'
-      else:            bmax = '-q64'
+      if intsize == '4': bmax = '-bmaxdata:0x70000000 -bmaxstack:0x10000000'
+      else:              bmax = '-q64'
       f90 = 'xlf95 -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qsave=defaultinit -WF,-DESSL %(bmax)s'%locals()
       self.f90free  = f90 + ' -qsuffix=f=f90:cpp=F90 -qfree=f90'
       self.f90fixed = f90 + ' -qfixed=132'
@@ -664,8 +664,8 @@ appropriate block for the machine.
       self.fcompname = 'xlf'
       # --- IBM SP, parallel
       intsize = struct.calcsize('l')
-      if intsize == 4: bmax = '-bmaxdata:0x70000000 -bmaxstack:0x10000000'
-      else:            bmax = '-q64'
+      if intsize == '4': bmax = '-bmaxdata:0x70000000 -bmaxstack:0x10000000'
+      else:              bmax = '-q64'
       f90 = 'mpxlf95 -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qsave=defaultinit -WF,-DMPIPARALLEL -WF,-DESSL %(bmax)s'%locals()
       self.f90free  = f90 + ' -qsuffix=f=f90:cpp=F90 -qfree=f90'
       self.f90fixed = f90 + ' -qfixed=132'
@@ -691,8 +691,8 @@ appropriate block for the machine.
       self.fcompname = 'xlf'
       # --- IBM SP, OpenMP
       intsize = struct.calcsize('l')
-      if intsize == 4: bmax = '-bmaxdata:0x70000000 -bmaxstack:0x10000000'
-      else:            bmax = '-q64'
+      if intsize == '4': bmax = '-bmaxdata:0x70000000 -bmaxstack:0x10000000'
+      else:              bmax = '-q64'
       f90  = 'xlf95_r -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qsave=defaultinit -WF,-DESSL %(bmax)s'%locals()
       self.f90free  = f90 + ' -qsuffix=f=f90:cpp=F90 -qfree=f90'
       self.f90fixed = f90 + ' -qfixed=132'
@@ -717,8 +717,8 @@ appropriate block for the machine.
       self.fcompname = 'xlf'
       # --- IBM SP, parallel
       intsize = struct.calcsize('l')
-      if intsize == 4: bmax = '-bmaxdata:0x70000000 -bmaxstack:0x10000000'
-      else:            bmax = '-q64'
+      if intsize == '4': bmax = '-bmaxdata:0x70000000 -bmaxstack:0x10000000'
+      else:              bmax = '-q64'
       f90 = 'mpxlf95_r -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qsave=defaultinit -WF,-DMPIPARALLEL -WF,-DESSL %(bmax)s'%locals()
       self.f90free  = f90 + ' -qsuffix=f=f90:cpp=F90 -qfree=f90'
       self.f90fixed = f90 + ' -qfixed=132'
