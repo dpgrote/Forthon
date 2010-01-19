@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.71 2009/09/08 18:01:56 dave Exp $ */
+/* $Id: Forthon.h,v 1.72 2010/01/19 22:48:21 dave Exp $ */
 
 #include <Python.h>
 
@@ -617,7 +617,10 @@ static int Forthon_setscalardouble(ForthonObject *self,PyObject *value,
     return -1;}
   e = PyArg_Parse(value,"d",&lv);
   if (e) {
-    if (fscalar->setaction != NULL) fscalar->setaction(&lv);
+    if (fscalar->setaction != NULL) {
+      if (self->fobj == NULL) fscalar->setaction(&lv);
+      else                    fscalar->setaction((self->fobj),&lv);
+      }
     memcpy((fscalar->data),&lv,sizeof(double));}
   else {
     PyErr_SetString(ErrorObject,"Right hand side has incorrect type");
@@ -636,7 +639,10 @@ static int Forthon_setscalarcdouble(ForthonObject *self,PyObject *value,
     return -1;}
   e = PyArg_Parse(value,"D",&lv);
   if (e) {
-    if (fscalar->setaction != NULL) fscalar->setaction(&lv);
+    if (fscalar->setaction != NULL) {
+      if (self->fobj == NULL) fscalar->setaction(&lv);
+      else                    fscalar->setaction((self->fobj),&lv);
+      }
     memcpy((fscalar->data),&lv,2*sizeof(double));}
   else {
     PyErr_SetString(ErrorObject,"Right hand side has incorrect type");
@@ -655,7 +661,10 @@ static int Forthon_setscalarfloat(ForthonObject *self,PyObject *value,
     return -1;}
   e = PyArg_Parse(value,"f",&lv);
   if (e) {
-    if (fscalar->setaction != NULL) fscalar->setaction(&lv);
+    if (fscalar->setaction != NULL) {
+      if (self->fobj == NULL) fscalar->setaction(&lv);
+      else                    fscalar->setaction((self->fobj),&lv);
+      }
     memcpy((fscalar->data),&lv,sizeof(float));}
   else {
     PyErr_SetString(ErrorObject,"Right hand side has incorrect type");
@@ -675,7 +684,10 @@ static int Forthon_setscalarcfloat(ForthonObject *self,PyObject *value,
     return -1;}
   e = PyArg_Parse(value,"D",&lv);
   if (e) {
-    if (fscalar->setaction != NULL) fscalar->setaction(&lv);
+    if (fscalar->setaction != NULL) {
+      if (self->fobj == NULL) fscalar->setaction(&lv);
+      else                    fscalar->setaction((self->fobj),&lv);
+      }
     memcpy((fscalar->data),&lv,2*sizeof(float));}
   else {
     PyErr_SetString(ErrorObject,"Right hand side has incorrect type");
@@ -694,7 +706,10 @@ static int Forthon_setscalarinteger(ForthonObject *self,PyObject *value,
     return -1;}
   e = PyArg_Parse(value,"l",&lv);
   if (e) {
-    if (fscalar->setaction != NULL) fscalar->setaction(&lv);
+    if (fscalar->setaction != NULL) {
+      if (self->fobj == NULL) fscalar->setaction(&lv);
+      else                    fscalar->setaction((self->fobj),&lv);
+      }
     memcpy((fscalar->data),&lv,sizeof(long));}
   else {
     PyErr_SetString(ErrorObject,"Right hand side has incorrect type");
@@ -755,8 +770,12 @@ static int Forthon_setscalarderivedtype(ForthonObject *self,PyObject *value,
     Py_XDECREF(oldobj);
   }
 
-  if (fscalar->setaction != NULL)
-    fscalar->setaction(((ForthonObject *)value)->fobj);
+  if (fscalar->setaction != NULL) {
+    if (self->fobj == NULL)
+      fscalar->setaction(((ForthonObject *)value)->fobj);
+    else
+      fscalar->setaction((self->fobj),((ForthonObject *)value)->fobj);
+    }
 
   /* This does the assignment in Fortran. */
   nullit = 0;
@@ -833,7 +852,12 @@ static int Forthon_setarray(ForthonObject *self,PyObject *value,
         setit=0;
       }
     if (setit) {
-      if (farray->setaction != NULL) farray->setaction(PyArray_BYTES(ax));
+      if (farray->setaction != NULL) {
+        if (self->fobj == NULL)
+          farray->setaction(PyArray_BYTES(ax));
+        else
+          farray->setaction((self->fobj),PyArray_BYTES(ax));
+        }
       if (farray->pya != NULL) {Py_XDECREF(farray->pya);}
       farray->pya = ax;
       /* Note that pya->dimensions are in the correct fortran order, but */
@@ -2239,7 +2263,10 @@ static PyObject *Forthon_getattro(ForthonObject *self,PyObject *oname)
   pyi = PyDict_GetItem(self->scalardict,oname);
   if (pyi != NULL) {
     PyArg_Parse(pyi,"l",&i);
-    if (self->fscalars[i].getaction != NULL) self->fscalars[i].getaction();
+    if (self->fscalars[i].getaction != NULL) {
+      if (self->fobj == NULL) self->fscalars[i].getaction();
+      else                    self->fscalars[i].getaction((self->fobj));
+      }
     if (self->fscalars[i].type == PyArray_DOUBLE) {
       return Forthon_getscalardouble(self,(void *)i);}
     else if (self->fscalars[i].type == PyArray_CDOUBLE) {
@@ -2259,7 +2286,10 @@ static PyObject *Forthon_getattro(ForthonObject *self,PyObject *oname)
   pyi = PyDict_GetItem(self->arraydict,oname);
   if (pyi != NULL) {
     PyArg_Parse(pyi,"l",&i);
-    if (self->farrays[i].getaction != NULL) self->farrays[i].getaction();
+    if (self->farrays[i].getaction != NULL) {
+      if (self->fobj == NULL) self->farrays[i].getaction();
+      else                    self->farrays[i].getaction((self->fobj));
+      }
     return Forthon_getarray(self,(void *)i);}
 
   /* Now convert oname into the actual string, checking for errors. */

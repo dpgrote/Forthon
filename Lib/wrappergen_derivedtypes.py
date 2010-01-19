@@ -166,17 +166,17 @@ class ForthonDerivedType:
       for s in slist:
         if s.setaction is not None:
           self.cw('extern void '+fname(self.fsub(t,'setaction',s.name))+
-                  '('+fvars.ftoc_dict[s.type]+' *v);')
+                  '(char *fobj,'+fvars.ftoc_dict[s.type]+' *v);')
         if s.getaction is not None:
           self.cw('extern void '+fname(self.fsub(t,'getaction',s.name))+
-                  '(void);')
+                  '(char *fobj);')
       for a in alist:
         if a.setaction is not None:
           self.cw('extern void '+fname(self.fsub(t,'setaction',a.name))+
-                  '('+fvars.ftoc_dict[a.type]+' *v);')
+                  '(char *fobj,'+fvars.ftoc_dict[a.type]+' *v);')
         if a.getaction is not None:
           self.cw('extern void '+fname(self.fsub(t,'getaction',a.name))+
-                  '(void);')
+                  '(char *fobj);')
       self.cw('')
 
       #########################################################################
@@ -234,11 +234,11 @@ class ForthonDerivedType:
           getpointer = '*'+fname(self.fsub(t,'getpointer',a.name))
         else:
           getpointer = 'NULL'
-        if s.setaction is None:
+        if a.setaction is None:
           setaction = 'NULL'
         else:
           setaction = '*'+fname(self.fsub(t,'setaction',a.name))
-        if s.getaction is None:
+        if a.getaction is None:
           getaction = 'NULL'
         else:
           getaction = '*'+fname(self.fsub(t,'getaction',a.name))
