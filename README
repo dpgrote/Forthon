@@ -11,6 +11,13 @@ written in the much more versatile Python language.
 
 Release Notes:
 
+0.8.2: February 18, 2010
+ - In Forthon_builder, put the check of MACHTYPE in a try/except
+   in case it is not defined.
+ - Fixes and changes to get and setaction for derived types
+ - Added the fcompexec option, which allows specifying the fortran compiler
+   executable name.
+
 0.8.1: October 26, 2009
  - Now supports single precision scalars and arrays.
  - In compilers.py, the macro ISZ is set appropriately for all compilers
