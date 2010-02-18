@@ -183,8 +183,8 @@ appropriate block for the machine.
         self.fopt = '-O3 -ip -unroll -prefetch'
       elif self.processor == 'ia64':
         self.fopt = '-O3 -ip -unroll -tpp2'
-        self.f90free = self.f90free + ' -fpic'
-        self.f90fixed = self.f90fixed + ' -fpic'
+        self.f90free += ' -fpic'
+        self.f90fixed += ' -fpic'
         self.libs.remove('svml')
       elif struct.calcsize('l') == 8:
         self.fopt = '-O3 -xW -tpp7 -ip -unroll -prefetch'
@@ -282,12 +282,11 @@ appropriate block for the machine.
       return 1
 
   def linux_pg(self):
-    if (self.findfile('pgf90') and
-        (self.fcompname=='pg' or self.fcompname is None)):
-      self.fcompname = 'pgi'
+    if self.usecompiler('pg','pgf90'):
       # --- Portland group
-      self.f90free  = 'pgf90 -Mextend -Mdclchk'
-      self.f90fixed = 'pgf90 -Mextend -Mdclchk'
+      self.fcompname = 'pgi'
+      self.f90free  += ' -Mextend -Mdclchk'
+      self.f90fixed += ' -Mextend -Mdclchk'
       self.f90free  += ' -DFPSIZE=%s -r%s'%(realsize,realsize)
       self.f90fixed += ' -DFPSIZE=%s -r%s'%(realsize,realsize)
       self.f90free  += ' -DISZ=%s -i%s'%(intsize,intsize)
@@ -350,13 +349,9 @@ appropriate block for the machine.
       return 1
 
   def linux_pathscale(self):
-    if ((self.findfile('pathf90') or self.findfile('pathf95')) and
-        self.fcompname in [None,'pathf90','pathf95','pathscale']):
-      if self.findfile('pathf95'): self.fcompname = 'pathf95'
-      else:                        self.fcompname = 'pathf90'
-      # --- Intel8
-      self.f90free  = self.fcompname + ' -freeform -DPATHF90 -ftpp -fPIC -woff1615'
-      self.f90fixed = self.fcompname + ' -fixedform -extend_source -DPATHF90 -ftpp -fPIC -woff1615'
+    if usecompiler('pathscale','pathf95'):
+      self.f90free  += ' -freeform -DPATHF90 -ftpp -fPIC -woff1615'
+      self.f90fixed += ' -fixedform -extend_source -DPATHF90 -ftpp -fPIC -woff1615'
       self.f90free  += ' -DFPSIZE=%s -r%s'%(realsize,realsize)
       self.f90fixed += ' -DFPSIZE=%s -r%s'%(realsize,realsize)
       self.f90free  += ' -DISZ=%s -i%s'%(intsize,intsize)
@@ -519,9 +514,6 @@ appropriate block for the machine.
         self.f90free  += ' -u'
         self.f90fixed += ' -u'
       self.fopt = '-O5'
-#      self.fopt = '-O1'
-      #self.f90free  = 'xlf95 -qsuffix=f=F90'
-      #self.f90fixed = 'xlf95 -qsuffix=f=F90'
       self.extra_link_args = ['-flat_namespace']#,'-Wl,-undefined,suppress']#,'-Wl,-stack_size,10000000']
       flibroot,b = os.path.split(self.findfile('xlf95'))
       self.libdirs = [flibroot+'/lib']
@@ -567,14 +559,11 @@ appropriate block for the machine.
   def macosx_gnu(self):
     if self.usecompiler('gnu','g95'):
       self.fcompname = 'gnu'
-      self.f90free  += ' -132 -fpp -Wp,-macro=no_com -free -PIC -w -mismatch_all -kind=byte'
-      self.f90fixed += ' -132 -fpp -Wp,-macro=no_com -Wp,-fixed -fixed -PIC -w -mismatch_all -kind=byte'
+      self.f90fixed += ' -ffixed-form -ffixed-line-length-132'
       self.f90free  += ' -DFPSIZE=%s -r%s'%(realsize,realsize)
       self.f90fixed += ' -DFPSIZE=%s -r%s'%(realsize,realsize)
       self.f90free  += ' -DISZ=%s -i%s'%(intsize,intsize)
       self.f90fixed += ' -DISZ=%s -i%s'%(intsize,intsize)
-      self.f90free  = 'g95'
-      self.f90fixed = 'g95 -ffixed-form -ffixed-line-length-132'
       flibroot,b = os.path.split(self.findfile('g95'))
       self.libdirs = [flibroot+'/lib']
       self.libs = ['???']
