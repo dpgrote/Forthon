@@ -22,6 +22,7 @@ initialgallot  = options.initialgallot
 dependencies   = options.dependencies
 defines        = options.defines
 fcomp          = options.fcomp
+fcompexec      = options.fcompexec
 f90            = options.f90
 writemodules   = options.writemodules
 timeroutines   = options.timeroutines
@@ -134,6 +135,7 @@ interfacefile = fixpath(os.path.join(upbuilddir,interfacefile))
 fcompiler = FCompiler(machine=machine,
                       debug=debug,
                       fcompname=fcomp,
+                      fcompexec=fcompexec,
                       static=static,
                       implicitnone=implicitnone,
                       twounderscores=twounderscores)

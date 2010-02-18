@@ -40,7 +40,9 @@ parser.add_option('--fargs',action='append',dest='fargslist',default=[],
                   metavar="FARGS",
                   help='Additional options for the fortran compiler. For example to turn on profiling. If there are any spaces in options, it must be surrounded in double quotes.')
 parser.add_option('-F','--fcomp',
-                  help='Fortran compiler. Will automatically be determined if not supplied. It can be one of the following, depending on the machine: intel8, intel, pg, absort, nag, xlf, mpxlf, xlf_r.')
+                  help='Fortran compiler. Will automatically be determined if not supplied. It can be one of the following, depending on the machine: intel8, intel, pg, absort, nag, xlf, mpxlf, xlf_r, g95, gfortran.')
+parser.add_option('--fcompexec',
+                  help='The executable name of the fortran compiler, if it is different and the compiler name. The -F (--fcomp) option must also be specified.')
 parser.add_option('--fixed_suffix',default='F',
                   help='Suffix to use for fortran files in fixed format. Defaults to F')
 parser.add_option('-f','--fortranfile',

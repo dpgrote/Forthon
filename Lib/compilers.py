@@ -10,22 +10,24 @@ from cfinterface import realsize,intsize
 class FCompiler:
   """
 Determines which compiler to use and sets up description of how to use it.
-To add a new compiler, create a new method which a name using the format
+To add a new compiler, create a new method with a name using the format
 machine_compiler. The first lines of the function must be of the following form
-    if (self.findfile(compexec) and
-        (self.fcompname==compname or self.fcompname is None)):
-      self.fcompname = compname
-where compexec is the executable name of the compiler and compname is a
+
+    if usecompiler(fcompname,fcompexec):
+      self.fcompname = fcompname
+      self.f90free  += ' -fortran arguments for free format'
+      self.f90fixed += ' -fortran arguments for fixed format'
+
+where fcompexec is the executable name of the compiler and fcompname is a
 descriptive (or company) name for the compiler. They can be the same.
-In the function, the two attributes f90free and f90fixed must be defined. Note
-that the final linking is done with gcc, so any fortran libraries will need to
-be added to libs (and their locations to libdirs).
+Note that the final linking is done with gcc, so any fortran libraries will
+need to be added to libs (and their locations to libdirs).
 Also, the new function must be included in the while loop below in the
 appropriate block for the machine.
   """
 
-  def __init__(self,machine=None,debug=0,fcompname=None,static=0,implicitnone=1,
-                    twounderscores=0):
+  def __init__(self,machine=None,debug=0,fcompname=None,fcompexec=None,
+                    static=0,implicitnone=1,twounderscores=0):
     if machine is None: machine = sys.platform
     self.machine = machine
     if self.machine <> 'win32':
@@ -35,6 +37,7 @@ appropriate block for the machine.
     self.paths = string.split(os.environ['PATH'],os.pathsep)
 
     self.fcompname = fcompname
+    self.fcompexec = fcompexec
     self.static = static
     self.implicitnone = implicitnone
     self.twounderscores = twounderscores
@@ -101,6 +104,19 @@ appropriate block for the machine.
     # --- Add the compiler name to the forthon arguments
     self.forthonargs += ['-F '+self.fcompname]
 
+  def usecompiler(self,fcompname,fcompexec):
+    'Check if the specified compiler is found'
+    if self.fcompexec is None:
+      result = (self.findfile(fcompexec) and
+                (self.fcompname==fcompname or self.fcompname is None))
+      if result: self.fcompexec = fcompexec
+    else:
+      result = self.fcompname==fcompname and self.findfile(self.fcompexec)
+    if result:
+      self.f90free  = self.fcompexec
+      self.f90fixed = self.fcompexec
+    return result
+
   def findfile(self,file,followlinks=1):
     if self.machine == 'win32': file = file + '.exe'
     for path in self.paths:
@@ -127,10 +143,10 @@ appropriate block for the machine.
   # --- Machine generic utilities
 
   # --- For g95 and gfortran
-  def findgnulibroot(self,fcompname):
+  def findgnulibroot(self,fcompname,fcompexec):
     # --- Find the lib root for gnu based compilers.
     # --- Get the full name of the compiler executable.
-    fcomp = os.path.join(self.findfile(fcompname,followlinks=0),fcompname)
+    fcomp = os.path.join(self.findfile(fcompexec,followlinks=0),fcompexec)
     # --- Map the compiler name to the library needed.
     flib = {'gfortran':'gfortran','g95':'f95'}[fcompname]
     # --- Run it with the appropriate option to return the library path name
@@ -145,12 +161,10 @@ appropriate block for the machine.
   #-----------------------------------------------------------------------------
   # --- LINUX
   def linux_intel8(self):
-    if (self.findfile('ifort') and
-        (self.fcompname=='intel8' or self.fcompname is None)):
+    if self.usecompiler('intel8','ifort'):
       self.fcompname = 'ifort'
-      # --- Intel8
-      self.f90free  = 'ifort -nofor_main -free -DIFC -fpp -fPIC'
-      self.f90fixed = 'ifort -nofor_main -132 -DIFC -fpp -fPIC'
+      self.f90free  += ' -nofor_main -free -DIFC -fpp -fPIC'
+      self.f90fixed += ' -nofor_main -132 -DIFC -fpp -fPIC'
       self.f90free  += ' -DFPSIZE=%s -r%s -Zp%s'%(realsize,realsize,realsize)
       self.f90fixed += ' -DFPSIZE=%s -r%s -Zp%s'%(realsize,realsize,realsize)
       self.f90free  += ' -DISZ=%s -i%s'%(intsize,intsize)
@@ -179,12 +193,11 @@ appropriate block for the machine.
       return 1
 
   def linux_intel(self):
-    if (self.findfile('ifc') and
-        (self.fcompname=='intel' or self.fcompname is None)):
+    if self.usecompiler('intel','ifc'):
       self.fcompname = 'ifc'
       # --- Intel
-      self.f90free  = 'ifc -132 -DIFC -fpp -C90'
-      self.f90fixed = 'ifc -132 -DIFC -fpp -C90'
+      self.f90free  += ' -132 -DIFC -fpp -C90'
+      self.f90fixed += ' -132 -DIFC -fpp -C90'
       self.f90free  += ' -DFPSIZE=%s -r%s -Zp%s'%(realsize,realsize,realsize)
       self.f90fixed += ' -DFPSIZE=%s -r%s -Zp%s'%(realsize,realsize,realsize)
       self.f90free  += ' -DISZ=%s -i%s'%(intsize,intsize)
@@ -206,11 +219,10 @@ appropriate block for the machine.
       return 1
 
   def linux_g95(self):
-    if (self.findfile('g95') and
-        (self.fcompname=='g95' or self.fcompname is None)):
+    if self.usecompiler('g95','g95'):
       self.fcompname = 'g95'
-      self.f90free  = 'g95 -ffree-form -fPIC -Wno=155 -fshort-circuit'
-      self.f90fixed = 'g95 -ffixed-line-length-132 -fPIC -fshort-circuit'
+      self.f90free  += ' -ffree-form -fPIC -Wno=155 -fshort-circuit'
+      self.f90fixed += ' -ffixed-line-length-132 -fPIC -fshort-circuit'
       self.f90free  += ' -DFPSIZE=%s -r%s'%(realsize,realsize)
       self.f90fixed += ' -DFPSIZE=%s -r%s'%(realsize,realsize)
       self.f90free  += ' -DISZ=%s -i%s'%(intsize,intsize)
@@ -225,7 +237,7 @@ appropriate block for the machine.
         self.f90free  += ' -fno-second-underscore'
         self.f90fixed += ' -fno-second-underscore'
       self.popt = '-O'
-      flibroot = self.findgnulibroot('g95')
+      flibroot = self.findgnulibroot('g95',self.fcompexec)
       self.libdirs = [flibroot]
       self.libs = ['f95']
       cpuinfo = open('/proc/cpuinfo','r').read()
@@ -240,11 +252,10 @@ appropriate block for the machine.
       return 1
 
   def linux_gfortran(self):
-    if (self.findfile('gfortran') and
-        (self.fcompname=='gfortran' or self.fcompname is None)):
+    if self.usecompiler('gfortran','gfortran'):
       self.fcompname = 'gfortran'
-      self.f90free  = 'gfortran -fPIC'
-      self.f90fixed = 'gfortran -fPIC -ffixed-line-length-132'
+      self.f90free  += ' -fPIC'
+      self.f90fixed += ' -fPIC -ffixed-line-length-132'
       self.f90free  += ' -DFPSIZE=%s'%(realsize)
       self.f90fixed += ' -DFPSIZE=%s'%(realsize)
       if realsize == '8':
@@ -264,7 +275,7 @@ appropriate block for the machine.
       else:
         self.f90free  += ' -fno-second-underscore'
         self.f90fixed += ' -fno-second-underscore'
-      flibroot = self.findgnulibroot('gfortran')
+      flibroot = self.findgnulibroot('gfortran',self.fcompexec)
       self.libdirs = [flibroot]
       self.libs = ['gfortran']
       self.fopt = '-O3 -ftree-vectorize -ftree-vectorizer-verbose=1'
@@ -289,12 +300,11 @@ appropriate block for the machine.
       return 1
 
   def linux_absoft(self):
-    if (self.findfile('f90') and
-        (self.fcompname=='absoft' or self.fcompname is None)):
+    if self.usecompiler('absoft','f90'):
       self.fcompname = 'absoft'
       # --- Absoft
-      self.f90free  = 'f90 -B108 -N113 -W132 -YCFRL=1 -YEXT_NAMES=ASIS'
-      self.f90fixed = 'f90 -B108 -N113 -W132 -YCFRL=1 -YEXT_NAMES=ASIS'
+      self.f90free  += ' -B108 -N113 -W132 -YCFRL=1 -YEXT_NAMES=ASIS'
+      self.f90fixed += ' -B108 -N113 -W132 -YCFRL=1 -YEXT_NAMES=ASIS'
       self.f90free  += ' -DFPSIZE=%s'%(realsize) # ???
       self.f90fixed += ' -DFPSIZE=%s'%(realsize) # ???
       self.f90free  += ' -DISZ=%s -i%s'%(intsize,intsize)
@@ -308,8 +318,7 @@ appropriate block for the machine.
       return 1
 
   def linux_lahey(self):
-    if (self.findfile('lf95') and
-        (self.fcompname=='lahey' or self.fcompname is None)):
+    if self.usecompiler('lahey','lf95'):
       self.fcompname = 'lahey'
       # --- Lahey
       # in = implicit none
@@ -317,8 +326,8 @@ appropriate block for the machine.
       # [n]fix = fixed or free form
       # wide = column width longer than 72
       # ap = preserve arithmetic precision
-      self.f90free  = 'lf95 --nfix --dbl --mlcdecl'
-      self.f90fixed = 'lf95 --fix --wide --dbl --mlcdecl'
+      self.f90free  += ' --nfix --dbl --mlcdecl'
+      self.f90fixed += ' --fix --wide --dbl --mlcdecl'
       self.f90free  += ' -DFPSIZE=%s'%(realsize) # ???
       self.f90fixed += ' -DFPSIZE=%s'%(realsize) # ???
       self.f90free  += ' -DISZ=%s -i%s'%(intsize,intsize)
@@ -376,13 +385,12 @@ appropriate block for the machine.
       return 1
 
   def linux_xlf_r(self):
-    if (self.fcompname=='xlf_r' or
-        (self.fcompname is None and self.findfile('xlf95_r'))):
+    if self.usecompiler('xlf_r','xlf95_r'):
       self.fcompname = 'xlf'
       intsize = struct.calcsize('l')
-      f90  = 'xlf95_r -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qsave=defaultinit -WF,-DESSL'%locals()
-      self.f90free  = f90 + ' -qsuffix=f=f90:cpp=F90 -qfree=f90'
-      self.f90fixed = f90 + ' -qfixed=132'
+      f90  = ' -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qsave=defaultinit -WF,-DESSL'%locals()
+      self.f90free  += f90 + ' -qsuffix=f=f90:cpp=F90 -qfree=f90'
+      self.f90fixed += f90 + ' -qfixed=132'
       self.f90free  += ' -WF,-DFPSIZE=%s'%(realsize) # ???
       self.f90fixed += ' -WF,-DFPSIZE=%s'%(realsize) # ???
       self.f90free  += ' -WF,-DISZ=%s -qintsize%s'%(intsize,intsize)
@@ -403,12 +411,9 @@ appropriate block for the machine.
   #-----------------------------------------------------------------------------
   # --- CYGWIN
   def cygwin_g95(self):
-    if (self.findfile('g95') and
-        (self.fcompname=='g95' or self.fcompname is None)):
+    if self.usecompiler('g95','g95'):
       self.fcompname = 'g95'
-      # --- g95
-      self.f90free  = 'g95'
-      self.f90fixed = 'g95 -ffixed-line-length-132'
+      self.f90fixed += ' -ffixed-line-length-132'
       self.f90free  += ' -DFPSIZE=%s -r%s'%(realsize,realsize)
       self.f90fixed += ' -DFPSIZE=%s -r%s'%(realsize,realsize)
       self.f90free  += ' -DISZ=%s -i%s'%(intsize,intsize)
@@ -427,7 +432,7 @@ appropriate block for the machine.
 #           -fstrict-aliasing'
 #      self.extra_link_args = ['-flat_namespace','-undefined suppress','-lg2c']
       self.extra_link_args = ['-flat_namespace','--allow-shlib-undefined','-Wl,--export-all-symbols','-Wl,-export-dynamic','-Wl,--unresolved-symbols=ignore-all','-lg2c']
-      flibroot = self.findgnulibroot('g95')
+      flibroot = self.findgnulibroot('g95',self.fcompexec)
       self.libdirs = [flibroot,'/lib/w32api']
       self.libs = ['f95']
       return 1
@@ -435,12 +440,10 @@ appropriate block for the machine.
   #-----------------------------------------------------------------------------
   # --- MAC OSX
   def macosx_g95(self):
-    if (self.findfile('g95') and
-        (self.fcompname=='g95' or self.fcompname is None)):
+    if self.usecompiler('g95','g95'):
       self.fcompname = 'g95'
-      # --- g95
-      self.f90free  = 'g95 -fzero -ffree-form -Wno=155'
-      self.f90fixed = 'g95 -fzero -ffixed-line-length-132'
+      self.f90free  += ' -fzero -ffree-form -Wno=155'
+      self.f90fixed += ' -fzero -ffixed-line-length-132'
       self.f90free  += ' -DFPSIZE=%s -r%s'%(realsize,realsize)
       self.f90fixed += ' -DFPSIZE=%s -r%s'%(realsize,realsize)
       self.f90free  += ' -DISZ=%s -i%s'%(intsize,intsize)
@@ -460,19 +463,15 @@ appropriate block for the machine.
            -ffast-math -fstrict-aliasing'
 #      self.fopt = '-O3  -mtune=G5 -mcpu=G5 -mpowerpc64'
       self.extra_link_args = ['-flat_namespace']
-      flibroot = self.findgnulibroot('g95')
+      flibroot = self.findgnulibroot('g95',self.fcompexec)
       self.libdirs = [flibroot]
       self.libs = ['f95']
       return 1
 
   def macosx_gfortran(self):
-    if (self.findfile('gfortran') and
-        (self.fcompname=='gfortran' or self.fcompname is None)):
+    if self.usecompiler('gfortran','gfortran'):
       self.fcompname = 'gfortran'
-#      print "WARNING: This compiler might cause a bus error."
-      # --- gfortran
-      self.f90free  = 'gfortran'
-      self.f90fixed = 'gfortran -ffixed-line-length-132'
+      self.f90fixed += ' -ffixed-line-length-132'
       self.f90free  += ' -DFPSIZE=%s'%(realsize)
       self.f90fixed += ' -DFPSIZE=%s'%(realsize)
       if realsize == '8':
@@ -502,18 +501,16 @@ appropriate block for the machine.
       self.fopt = '-O3 -ftree-vectorize -ftree-vectorizer-verbose=2'
 #      self.extra_link_args = ['-flat_namespace','-lg2c']
       self.extra_link_args = ['-flat_namespace']
-      flibroot = self.findgnulibroot('gfortran')
+      flibroot = self.findgnulibroot('gfortran',self.fcompexec)
       self.libdirs = [flibroot]
       self.libs = ['gfortran']
       return 1
 
   def macosx_xlf(self):
-    if (self.findfile('xlf90') and
-        (self.fcompname in ['xlf','xlf90'] or self.fcompname is None)):
+    if self.usecompiler('xlf','xlf95') or self.usecompiler('xlf90','xlf95'):
       self.fcompname = 'xlf'
-      # --- XLF
-      self.f90free  = 'xlf95 -WF,-DXLF -qsuffix=f=f90:cpp=F90 -qextname -qautodbl=dbl4 -qdpc=e -bmaxdata:0x70000000 -bmaxstack:0x10000000 -qinitauto'
-      self.f90fixed = 'xlf95 -WF,-DXLF -qextname -qfixed=132 -qautodbl=dbl4 -qdpc=e -bmaxdata:0x70000000 -bmaxstack:0x10000000 -qinitauto'
+      self.f90free  += ' -WF,-DXLF -qsuffix=f=f90:cpp=F90 -qextname -qautodbl=dbl4 -qdpc=e -bmaxdata:0x70000000 -bmaxstack:0x10000000 -qinitauto'
+      self.f90fixed += ' -WF,-DXLF -qextname -qfixed=132 -qautodbl=dbl4 -qdpc=e -bmaxdata:0x70000000 -bmaxstack:0x10000000 -qinitauto'
       self.f90free  += ' -WF,-DFPSIZE=%s'%(realsize) # ???
       self.f90fixed += ' -WF,-DFPSIZE=%s'%(realsize) # ???
       self.f90free  += ' -WF,-DISZ=%s -qintsize%s'%(intsize,intsize)
@@ -532,15 +529,10 @@ appropriate block for the machine.
       return 1
 
   def macosx_absoft(self):
-    if (self.findfile('f90') and
-        (self.fcompname=='absoft' or self.fcompname is None)):
+    if self.usecompiler('absoft','f90'):
       self.fcompname = 'absoft'
-      print 'compiler is ABSOFT!'
-      # --- Absoft
-      self.f90free  = 'f90 -N11 -N113 -YEXT_NAMES=LCS -YEXT_SFX=_'
-      self.f90fixed = 'f90 -f fixed -W 132 -N11 -N113 -YEXT_NAMES=LCS -YEXT_SFX=_'
-#      self.f90free  = 'f90 -ffree -YEXT_NAMES=LCS -YEXT_SFX=_'
-#      self.f90fixed = 'f90 -ffixed -W 132 -YEXT_NAMES=LCS -YEXT_SFX=_'
+      self.f90free  += ' -N11 -N113 -YEXT_NAMES=LCS -YEXT_SFX=_'
+      self.f90fixed += ' -f fixed -W 132 -N11 -N113 -YEXT_NAMES=LCS -YEXT_SFX=_'
       self.f90free  += ' -DFPSIZE=%s'%(realsize) # ???
       self.f90fixed += ' -DFPSIZE=%s'%(realsize) # ???
       self.f90free  += ' -DISZ=%s -i%s'%(intsize,intsize)
@@ -553,14 +545,12 @@ appropriate block for the machine.
       return 1
 
   def macosx_nag(self):
-    if (self.findfile('f95') and
-        (self.fcompname=='nag' or self.fcompname is None)):
+    if self.usecompiler('nag','f95'):
       self.fcompname = 'nag'
-      # --- NAG
-      self.f90free  = 'f95 -132 -fpp -Wp,-macro=no_com -Wc,-O3 -Wc,-funroll-loops -free -PIC -u -w -mismatch_all -kind=byte'
-      self.f90fixed = 'f95 -132 -fpp -u -Wp,-macro=no_com -Wp,-fixed -fixed -Wc,-O3 -Wc,-funroll-loops -PIC -w -mismatch_all -kind=byte'
-      self.f90free  = 'f95 -132 -fpp -Wp,-macro=no_com -free -PIC -u -w -mismatch_all -kind=byte -Oassumed=contig'
-      self.f90fixed = 'f95 -132 -fpp -Wp,-macro=no_com -Wp,-fixed -fixed -PIC -u -w -mismatch_all -kind=byte -Oassumed=contig'
+      #self.f90free  += ' -132 -fpp -Wp,-macro=no_com -Wc,-O3 -Wc,-funroll-loops -free -PIC -u -w -mismatch_all -kind=byte'
+      #self.f90fixed += ' -132 -fpp -u -Wp,-macro=no_com -Wp,-fixed -fixed -Wc,-O3 -Wc,-funroll-loops -PIC -w -mismatch_all -kind=byte'
+      self.f90free  += ' -132 -fpp -Wp,-macro=no_com -free -PIC -u -w -mismatch_all -kind=byte -Oassumed=contig'
+      self.f90fixed += ' -132 -fpp -Wp,-macro=no_com -Wp,-fixed -fixed -PIC -u -w -mismatch_all -kind=byte -Oassumed=contig'
       self.f90free  += ' -DFPSIZE=%s -r%s'%(realsize,realsize)
       self.f90fixed += ' -DFPSIZE=%s -r%s'%(realsize,realsize)
       self.f90free  += ' -DISZ=%s -i%s'%(intsize,intsize)
@@ -575,12 +565,10 @@ appropriate block for the machine.
       return 1
 
   def macosx_gnu(self):
-    if (self.findfile('g95') and
-        (self.fcompname=='gnu' or self.fcompname is None)):
+    if self.usecompiler('gnu','g95'):
       self.fcompname = 'gnu'
-      # --- GNU
-      self.f90free  = 'f95 -132 -fpp -Wp,-macro=no_com -free -PIC -w -mismatch_all -kind=byte'
-      self.f90fixed = 'f95 -132 -fpp -Wp,-macro=no_com -Wp,-fixed -fixed -PIC -w -mismatch_all -kind=byte'
+      self.f90free  += ' -132 -fpp -Wp,-macro=no_com -free -PIC -w -mismatch_all -kind=byte'
+      self.f90fixed += ' -132 -fpp -Wp,-macro=no_com -Wp,-fixed -fixed -PIC -w -mismatch_all -kind=byte'
       self.f90free  += ' -DFPSIZE=%s -r%s'%(realsize,realsize)
       self.f90fixed += ' -DFPSIZE=%s -r%s'%(realsize,realsize)
       self.f90free  += ' -DISZ=%s -i%s'%(intsize,intsize)
@@ -596,12 +584,11 @@ appropriate block for the machine.
   #-----------------------------------------------------------------------------
   # --- WIN32
   def win32_pg(self):
-    if (self.findfile('pgf90') and
-        (self.fcompname=='pg' or self.fcompname is None)):
-      self.fcompname = 'pgi'
+    if self.usecompiler('pg','pgf90'):
       # --- Portland group
-      self.f90free  = 'pgf90 -Mextend -Mdclchk'
-      self.f90fixed = 'pgf90 -Mextend -Mdclchk'
+      self.fcompname = 'pgi'
+      self.f90free  += ' -Mextend -Mdclchk'
+      self.f90fixed += ' -Mextend -Mdclchk'
       self.f90free  += ' -DFPSIZE=%s -r%s'%(realsize,realsize)
       self.f90fixed += ' -DFPSIZE=%s -r%s'%(realsize,realsize)
       self.f90free  += ' -DISZ=%s -i%s'%(intsize,intsize)
@@ -614,12 +601,10 @@ appropriate block for the machine.
       return 1
 
   def win32_intel(self):
-    if (self.findfile('ifl') and
-        (self.fcompname=='intel' or self.fcompname is None)):
+    if self.usecompiler('intel','ifl'):
       self.fcompname = 'ifl'
-      # --- Intel
-      self.f90free  = 'ifl -Qextend_source -Qautodouble -DIFC -FR -Qfpp -4Yd -C90 -Zp8 -Qlowercase -us -MT -Zl -static'
-      self.f90fixed = 'ifl -Qextend_source -Qautodouble -DIFC -FI -Qfpp -4Yd -C90 -Zp8 -Qlowercase -us -MT -Zl -static'
+      self.f90free  += ' -Qextend_source -Qautodouble -DIFC -FR -Qfpp -4Yd -C90 -Zp8 -Qlowercase -us -MT -Zl -static'
+      self.f90fixed += ' -Qextend_source -Qautodouble -DIFC -FI -Qfpp -4Yd -C90 -Zp8 -Qlowercase -us -MT -Zl -static'
       self.f90free  += ' -DFPSIZE=%s'%(realsize) # ???
       self.f90fixed += ' -DFPSIZE=%s'%(realsize) # ???
       self.f90free  += ' -DISZ=%s -i%s'%(intsize,intsize)
@@ -633,16 +618,14 @@ appropriate block for the machine.
   #-----------------------------------------------------------------------------
   # --- AIX
   def aix_xlf(self):
-    if (self.fcompname=='xlf' or
-        (self.fcompname is None and self.findfile('xlf95'))):
+    if self.usecompiler('xlf','xlf95'):
       self.fcompname = 'xlf'
-      # --- IBM SP, serial
       intsize = struct.calcsize('l')
       if intsize == '4': bmax = '-bmaxdata:0x70000000 -bmaxstack:0x10000000'
       else:              bmax = '-q64'
-      f90 = 'xlf95 -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qsave=defaultinit -WF,-DESSL %(bmax)s'%locals()
-      self.f90free  = f90 + ' -qsuffix=f=f90:cpp=F90 -qfree=f90'
-      self.f90fixed = f90 + ' -qfixed=132'
+      f90 = ' -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qsave=defaultinit -WF,-DESSL %(bmax)s'%locals()
+      self.f90free  += f90 + ' -qsuffix=f=f90:cpp=F90 -qfree=f90'
+      self.f90fixed += f90 + ' -qfixed=132'
       self.f90free  += ' -WF,-DFPSIZE=%s'%(realsize) # ???
       self.f90fixed += ' -WF,-DFPSIZE=%s'%(realsize) # ???
       self.f90free  += ' -WF,-DISZ=%s -qintsize%s'%(intsize,intsize)
@@ -659,16 +642,14 @@ appropriate block for the machine.
       return 1
 
   def aix_mpxlf(self):
-    if (self.fcompname=='mpxlf' or
-        (self.fcompname is None and self.findfile('mpxlf95'))):
+    if self.usecompiler('mpxlf','mpxlf95'):
       self.fcompname = 'xlf'
-      # --- IBM SP, parallel
       intsize = struct.calcsize('l')
       if intsize == '4': bmax = '-bmaxdata:0x70000000 -bmaxstack:0x10000000'
       else:              bmax = '-q64'
-      f90 = 'mpxlf95 -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qsave=defaultinit -WF,-DMPIPARALLEL -WF,-DESSL %(bmax)s'%locals()
-      self.f90free  = f90 + ' -qsuffix=f=f90:cpp=F90 -qfree=f90'
-      self.f90fixed = f90 + ' -qfixed=132'
+      f90 = ' -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qsave=defaultinit -WF,-DMPIPARALLEL -WF,-DESSL %(bmax)s'%locals()
+      self.f90free  += f90 + ' -qsuffix=f=f90:cpp=F90 -qfree=f90'
+      self.f90fixed += f90 + ' -qfixed=132'
       self.f90free  += ' -WF,-DFPSIZE=%s'%(realsize) # ???
       self.f90fixed += ' -WF,-DFPSIZE=%s'%(realsize) # ???
       self.f90free  += ' -WF,-DISZ=%s -qintsize%s'%(intsize,intsize)
@@ -686,16 +667,15 @@ appropriate block for the machine.
       return 1
 
   def aix_xlf_r(self):
-    if (self.fcompname=='xlf_r' or
-        (self.fcompname is None and self.findfile('xlf95_r'))):
-      self.fcompname = 'xlf'
+    if self.usecompiler('xlf_r','xlf95_r'):
       # --- IBM SP, OpenMP
+      self.fcompname = 'xlf'
       intsize = struct.calcsize('l')
       if intsize == '4': bmax = '-bmaxdata:0x70000000 -bmaxstack:0x10000000'
       else:              bmax = '-q64'
-      f90  = 'xlf95_r -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qsave=defaultinit -WF,-DESSL %(bmax)s'%locals()
-      self.f90free  = f90 + ' -qsuffix=f=f90:cpp=F90 -qfree=f90'
-      self.f90fixed = f90 + ' -qfixed=132'
+      f90  = ' -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qsave=defaultinit -WF,-DESSL %(bmax)s'%locals()
+      self.f90free  += f90 + ' -qsuffix=f=f90:cpp=F90 -qfree=f90'
+      self.f90fixed += f90 + ' -qfixed=132'
       self.f90free  += ' -WF,-DFPSIZE=%s'%(realsize) # ???
       self.f90fixed += ' -WF,-DFPSIZE=%s'%(realsize) # ???
       self.f90free  += ' -WF,-DISZ=%s -qintsize%s'%(intsize,intsize)
@@ -712,16 +692,15 @@ appropriate block for the machine.
       return 1
 
   def aix_mpxlf64(self):
-    if (self.fcompname=='mpxlf64' or
-        (self.fcompname is None and self.findfile('mpxlf95'))):
-      self.fcompname = 'xlf'
+    if self.usecompiler('mpxlf64','mpxlf95'):
       # --- IBM SP, parallel
+      self.fcompname = 'xlf'
       intsize = struct.calcsize('l')
       if intsize == '4': bmax = '-bmaxdata:0x70000000 -bmaxstack:0x10000000'
       else:              bmax = '-q64'
-      f90 = 'mpxlf95_r -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qsave=defaultinit -WF,-DMPIPARALLEL -WF,-DESSL %(bmax)s'%locals()
-      self.f90free  = f90 + ' -qsuffix=f=f90:cpp=F90 -qfree=f90'
-      self.f90fixed = f90 + ' -qfixed=132'
+      f90 = ' -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qsave=defaultinit -WF,-DMPIPARALLEL -WF,-DESSL %(bmax)s'%locals()
+      self.f90free  += f90 + ' -qsuffix=f=f90:cpp=F90 -qfree=f90'
+      self.f90fixed += f90 + ' -qfixed=132'
       self.f90free  += ' -WF,-DFPSIZE=%s'%(realsize) # ???
       self.f90fixed += ' -WF,-DFPSIZE=%s'%(realsize) # ???
       self.f90free  += ' -WF,-DISZ=%s -qintsize%s'%(intsize,intsize)
@@ -739,12 +718,11 @@ appropriate block for the machine.
       return 1
 
   def aix_pghpf(self):
-    if (self.findfile('pghpf') and
-        (self.fcompname=='pghpf' or self.fcompname is None)):
-      self.fcompname = 'pghpf'
+    if self.usecompiler('pghpf','pghpf'):
       # --- Portland group
-      self.f90free  = 'pghpf -Mextend -Mdclchk'
-      self.f90fixed = 'pghpf -Mextend -Mdclchk'
+      self.fcompname = 'pghpf'
+      self.f90free  += ' -Mextend -Mdclchk'
+      self.f90fixed += ' -Mextend -Mdclchk'
       self.f90free  += ' -DFPSIZE=%s -r%s'%(realsize,realsize)
       self.f90fixed += ' -DFPSIZE=%s -r%s'%(realsize,realsize)
       self.f90free  += ' -DISZ=%s -i%s'%(intsize,intsize)
