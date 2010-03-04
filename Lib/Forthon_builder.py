@@ -323,7 +323,7 @@ if machine == 'win32': includedirs+=['/usr/include']
 # --- This fixes it.
 if machine == 'darwin':
   try:
-    if os.environ['MACHTYPE'] == 'i386':
+    if os.environ['MACHTYPE'] in ['i386','x86-64']:
       os.environ['ARCHFLAGS'] = '-arch i386'
     elif os.environ['MACHTYPE'] == 'powerpc':
       os.environ['ARCHFLAGS'] = '-arch ppc'
