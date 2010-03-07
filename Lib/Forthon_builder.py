@@ -328,7 +328,7 @@ if machine == 'darwin':
     elif os.environ['MACHTYPE'] == 'powerpc':
       os.environ['ARCHFLAGS'] = '-arch ppc'
   except KeyError:
-    pass
+    print "Darwin MACHTYPE not known.  Export MACHTYPE when building."
 
 setup(name = pkg,
       ext_modules = [Extension(pkg+'py',
