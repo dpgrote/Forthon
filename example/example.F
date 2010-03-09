@@ -108,13 +108,17 @@ c========================================================================
       return
       end
 c========================================================================
-      subroutine type2setactionxx(x)
+      subroutine type2setactionxx(action2,x)
+      use Type2module
+      type(Type2):: action2
       real(kind=8):: x
       print*,"Type2 xx being set to ",x
       return
       end
 c========================================================================
-      subroutine type2getactionxx()
+      subroutine type2getactionxx(action2)
+      use Type2module
+      type(Type2):: action2
       print*,"Type2 xx being get"
       return
       end
