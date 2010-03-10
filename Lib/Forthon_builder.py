@@ -9,6 +9,7 @@ from distutils.command.build import build
 
 from Forthon_options import options,args
 from Forthon.compilers import FCompiler
+print "IN FORTHON_BUILDER"
 
 # --- Get the package name and any other extra files
 pkg = args[0]
@@ -322,13 +323,27 @@ if machine == 'win32': includedirs+=['/usr/include']
 # --- On darwin machines, the python makefile mucks up the -arch argument.
 # --- This fixes it.
 if machine == 'darwin':
-  try:
-    if os.environ['MACHTYPE'] in ['i386','x86-64']:
+# --- Machines running csh/tcsh seem to have MACHTYPE defined and this is the safest way to set -arch.
+  if os.environ.has_key('MACHTYPE'):
+    if os.environ['MACHTYPE'] == 'i386':
       os.environ['ARCHFLAGS'] = '-arch i386'
+    elif os.environ['MACHTYPE'] == 'x86_64':
+      os.environ['ARCHFLAGS'] = '-arch x86_64'
     elif os.environ['MACHTYPE'] == 'powerpc':
       os.environ['ARCHFLAGS'] = '-arch ppc'
-  except KeyError:
-    print "Darwin MACHTYPE not known.  Export MACHTYPE when building."
+#---  If the shell is bash, MACHTYPE is undefined.  So get what we can from uname. We will assume that if
+#---  we are running Snow Leopard we are -arch x86-64 and if running Leopard on intel we are -arch i386.
+#---  This can be over-ridden by defining MACHTYPE.
+  else:
+    archtype = os.uname()[-1]
+    if archtype in ['Power Macintosh','ppc']:
+      os.environ['ARCHFLAGS'] = '-arch ppc'
+    elif archtype == 'i386':
+      kernel_major = eval(os.uname()[2].split('.')[0])
+      if kernel_major < 10 :
+        os.environ['ARCHFLAGS'] = '-arch i386'  # Leopard or earlier
+      else:
+        os.environ['ARCHFLAGS'] = '-arch x86_64'  # Snow Leopard
 
 setup(name = pkg,
       ext_modules = [Extension(pkg+'py',
