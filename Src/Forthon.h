@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.72 2010/01/19 22:48:21 dave Exp $ */
+/* $Id: Forthon.h,v 1.73 2010/04/27 22:34:31 dave Exp $ */
 
 #include <Python.h>
 
@@ -963,6 +963,7 @@ static int Forthon_clear(ForthonObject *self)
       }
     }
   for (i=0;i<self->narrays;i++) {
+    /* ForthonPackage_updatearray(self,(long)i); */
     if (self->farrays[i].pya != NULL) {
       /* Subtract the array size from totmembytes. */
       totmembytes -= (long)PyArray_NBYTES(self->farrays[i].pya);
@@ -981,6 +982,8 @@ static int Forthon_clear(ForthonObject *self)
     if (self->fobjdeallocate != NULL) {(self->fobjdeallocate)(self->fobj);}
     else                              {(self->nullifycobj)(self->fobj);}
     }
+
+  Py_DECREF(self->__module__);
 
   Forthon_DeleteDicts(self);
   return 0;
