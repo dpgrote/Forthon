@@ -11,6 +11,10 @@ written in the much more versatile Python language.
 
 Release Notes:
 
+0.8.4: May 19, 2010
+ - Fixed a memory leak for derived type objects, Decreffing __module__
+ - Fix in compilers.py findfile - checks if the thing it found is a file
+
 0.8.3: March 10, 2010
  - On Darwin, now accepts MACHTYPE x86-64
  - Also, if MACHTYPE is not defined, it uses uname to get the equivalent
