@@ -121,7 +121,7 @@ appropriate block for the machine.
     if self.machine == 'win32': file = file + '.exe'
     for path in self.paths:
       try:
-        if file in os.listdir(path):
+        if file in os.listdir(path) and os.path.isfile(os.path.join(path,file)):
           # --- Check if the path is a link
           if followlinks:
             try:
