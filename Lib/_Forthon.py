@@ -46,7 +46,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.54 2009/08/19 20:15:40 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.55 2010/06/28 23:51:44 dave Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling. These should be moved to C.
@@ -507,7 +507,7 @@ Gets the total size of a package or dictionary.
   else:
     try:
       ll = pkg.__dict__.keys()
-    except AttributeError:
+    except (AttributeError,NameError):
       ll = []
 
   if not recursive and len(grouplist) > 1:
