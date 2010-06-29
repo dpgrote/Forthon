@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.74 2010/06/29 21:58:34 dave Exp $ */
+/* $Id: Forthon.h,v 1.75 2010/06/29 22:01:01 dave Exp $ */
 
 #include <Python.h>
 
@@ -1560,7 +1560,7 @@ static PyObject *ForthonPackage_addvarattr(PyObject *_self_,PyObject *args)
   if (pyi != NULL) {
     PyArg_Parse(pyi,"i",&i);
     newattr = (char *)PyMem_Malloc(strlen(self->fscalars[i].attributes) +
-                             strlen(attr)+3);
+                                   strlen(attr)+3);
     strcpy(newattr,self->fscalars[i].attributes);
     strcat(newattr," ");
     strcat(newattr,attr);
@@ -1582,7 +1582,7 @@ static PyObject *ForthonPackage_addvarattr(PyObject *_self_,PyObject *args)
   if (pyi != NULL) {
     PyArg_Parse(pyi,"i",&i);
     newattr = (char *)PyMem_Malloc(strlen(self->farrays[i].attributes) +
-                             strlen(attr)+3);
+                                   strlen(attr)+3);
     memset(newattr,0,strlen(self->farrays[i].attributes) + strlen(attr)+2);
     strcpy(newattr,self->farrays[i].attributes);
     strcat(newattr," ");
@@ -1687,7 +1687,7 @@ static PyObject *ForthonPackage_delvarattr(PyObject *_self_,PyObject *args)
   if (pyi != NULL) {
     PyArg_Parse(pyi,"i",&i);
     newattr = (char *)PyMem_Malloc(strlen(self->fscalars[i].attributes) -
-                             strlen(attr) + 1);
+                                   strlen(attr) + 1);
     ind = strfind(attr,self->fscalars[i].attributes);
     /* Check if attr was found, and make sure it is surrounded by spaces. */
     if (ind == -1 ||
