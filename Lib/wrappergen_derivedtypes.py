@@ -186,7 +186,7 @@ class ForthonDerivedType:
       # --- Scalars
       self.cw('obj->nscalars = '+repr(len(slist))+';')
       if len(slist) > 0:
-        self.cw('obj->fscalars = malloc(obj->nscalars*sizeof(Fortranscalar));')
+        self.cw('obj->fscalars = PyMem_Malloc(obj->nscalars*sizeof(Fortranscalar));')
       else:
         self.cw('obj->fscalars = NULL;')
       for i in range(len(slist)):
@@ -221,7 +221,7 @@ class ForthonDerivedType:
       # --- Arrays
       self.cw('obj->narrays = '+repr(len(alist))+';')
       if len(alist) > 0:
-        self.cw('obj->farrays = malloc(obj->narrays*sizeof(Fortranarray));')
+        self.cw('obj->farrays = PyMem_Malloc(obj->narrays*sizeof(Fortranarray));')
       else:
         self.cw('obj->farrays = NULL;')
       for i in range(len(alist)):
