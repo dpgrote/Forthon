@@ -7,7 +7,7 @@
 static char* cstrfromfstr(char *fstr,int fstrlen)
 {
   char* cname;
-  cname = (char *) malloc((fstrlen+1)*sizeof(char));
+  cname = (char *) PyMem_Malloc((fstrlen+1)*sizeof(char));
   cname[fstrlen] = (char)0;
   memcpy(cname,fstr,fstrlen);
   return cname;
@@ -31,7 +31,7 @@ void
   }}}
   Py_XDECREF(m);
 
-  free(cname);
+  PyMem_Free(cname);
   if (PyErr_Occurred()) PyErr_Print();
 }
 
@@ -53,7 +53,7 @@ void
   }}}
   Py_XDECREF(m);
 
-  free(cname);
+  PyMem_Free(cname);
 }
 
 void
@@ -74,7 +74,7 @@ void
   }}}
   Py_XDECREF(m);
 
-  free(cname);
+  PyMem_Free(cname);
 }
 
 void
@@ -95,7 +95,7 @@ void
   }}}
   Py_XDECREF(m);
 
-  free(cname);
+  PyMem_Free(cname);
 }
 
 /* The following routines are used when dealing with fortran derived types. */
@@ -152,25 +152,25 @@ void
   pystdout = PySys_GetObject("stdout");
   PyFile_WriteString(ctext,pystdout);
   PyFile_WriteString("\n",pystdout);
-  free(ctext);
+  PyMem_Free(ctext);
 }
 
 void
 %fname('parsestr')+'(FSTRING fstr SL1)'
 {
   char *cfstr;
-  cfstr = (char *) malloc((FSTRLEN1(fstr)+1)*sizeof(char));
+  cfstr = (char *) PyMem_Malloc((FSTRLEN1(fstr)+1)*sizeof(char));
   memcpy(cfstr,FSTRPTR(fstr),FSTRLEN1(fstr));
   cfstr[FSTRLEN1(fstr)+0] = (char)0;
   PyRun_SimpleString(cfstr);
-  free(cfstr);
+  PyMem_Free(cfstr);
 }
 
 void
 %fname('execuser')+'(FSTRING fstr SL1)'
 {
   char *cfstr;
-  cfstr = (char *) malloc((FSTRLEN1(fstr)+3)*sizeof(char));
+  cfstr = (char *) PyMem_Malloc((FSTRLEN1(fstr)+3)*sizeof(char));
   memcpy(cfstr,FSTRPTR(fstr),FSTRLEN1(fstr));
   if (cfstr[FSTRLEN1(fstr)-1]==')') {
     cfstr[FSTRLEN1(fstr)+0] = (char)0;
@@ -181,7 +181,7 @@ void
     cfstr[FSTRLEN1(fstr)+2] = (char)0;
     }
   PyRun_SimpleString(cfstr);
-  free(cfstr);
+  PyMem_Free(cfstr);
 }
 
 int
@@ -317,7 +317,7 @@ void
   char *errormessage;
   errormessage = cstrfromfstr(FSTRPTR(message),FSTRLEN1(message));
   PyErr_SetString(PyExc_RuntimeError,errormessage);
-  free(errormessage);
+  PyMem_Free(errormessage);
   lstackenvironmentset = 0;
   longjmp(stackenvironment,1);
   /* exit(1); */
@@ -333,8 +333,8 @@ void
   PyObject *modules;
   PyObject *m,*d,*f,*r;
   int m_is_borrowed = 1;
-  cfname = (char *) malloc((FSTRLEN1(fname)+1)*sizeof(char));
-  cmname = (char *) malloc((FSTRLEN2(mname)+1)*sizeof(char));
+  cfname = (char *) PyMem_Malloc((FSTRLEN1(fname)+1)*sizeof(char));
+  cmname = (char *) PyMem_Malloc((FSTRLEN2(mname)+1)*sizeof(char));
   // Copy the module and function names from the fortran data. Note that
   // strings in fortran do not have a null termination and it must be
   // explicitly added here.
@@ -357,11 +357,11 @@ void
   m = PyDict_GetItemString(modules,cmname);
   if (m == NULL) {
     // Try warp.modulename
-    cpname = (char *) malloc((FSTRLEN2(mname)+1+5)*sizeof(char));
+    cpname = (char *) PyMem_Malloc((FSTRLEN2(mname)+1+5)*sizeof(char));
     strcpy(cpname,"warp.");
     strcat(cpname,cmname);
     m = PyDict_GetItemString(modules,cpname);
-    free(cpname);
+    PyMem_Free(cpname);
     }
   if (m == NULL) {
     // Still not found, so try directly importing
@@ -376,8 +376,8 @@ void
       if (f != NULL) {
         r = PyObject_CallFunction(f,NULL);
   }}}
-  free(cfname);
-  free(cmname);
+  PyMem_Free(cfname);
+  PyMem_Free(cmname);
   if (!m_is_borrowed) {
     Py_XDECREF(m);}
   if (r == NULL) {

@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.73 2010/04/27 22:34:31 dave Exp $ */
+/* $Id: Forthon.h,v 1.74 2010/06/29 21:58:34 dave Exp $ */
 
 #include <Python.h>
 
@@ -337,7 +337,7 @@ static void ForthonPackage_allotdims(ForthonObject *self)
 {
   int i;
   for (i=0;i<self->narrays;i++) {
-    self->farrays[i].dimensions=(npy_intp *)malloc(self->farrays[i].nd*sizeof(npy_intp));
+    self->farrays[i].dimensions=(npy_intp *)PyMem_Malloc(self->farrays[i].nd*sizeof(npy_intp));
     if (self->farrays[i].dimensions == NULL) {
       printf("Failure allocating space for array dimensions.\n");
       exit(EXIT_FAILURE);
@@ -379,7 +379,7 @@ static void ForthonPackage_staticarrays(ForthonObject *self)
         if (nd > 1) {nd -= 1;}
         else        {nd = 1;}
         /* Allocate the appropriate amount of space for the dimensions. */
-        dimensions = (npy_intp*)malloc(sizeof(npy_intp)*nd);
+        dimensions = (npy_intp*)PyMem_Malloc(sizeof(npy_intp)*nd);
         if (self->farrays[i].nd == 1) {
           /* This is really a scalar, so make its length 1. */
           dimensions[0] = 1;
@@ -403,7 +403,7 @@ static void ForthonPackage_staticarrays(ForthonObject *self)
                               self->farrays[i].type,NULL,
                               self->farrays[i].data.s,itemsize,NPY_CARRAY,NULL);
 
-      if (self->farrays[i].type == PyArray_STRING) free(dimensions);
+      if (self->farrays[i].type == PyArray_STRING) PyMem_Free(dimensions);
 
       /* Check if the allocation was unsuccessful. */
       if (self->farrays[i].pya==NULL) {
@@ -969,14 +969,14 @@ static int Forthon_clear(ForthonObject *self)
       totmembytes -= (long)PyArray_NBYTES(self->farrays[i].pya);
       Py_DECREF(self->farrays[i].pya);
       }
-    free(self->farrays[i].dimensions);
+    PyMem_Free(self->farrays[i].dimensions);
     }
   if (self->fobj != NULL) {
     /* Note that for package instance (as opposed to derived type */
     /* instances), the fscalars and farrays are statically defined and */
     /* can't be freed. */
-    if (self->fscalars != NULL) free(self->fscalars);
-    if (self->farrays  != NULL) free(self->farrays);
+    if (self->fscalars != NULL) PyMem_Free(self->fscalars);
+    if (self->farrays  != NULL) PyMem_Free(self->farrays);
     }
   if (self->fobj != NULL) {
     if (self->fobjdeallocate != NULL) {(self->fobjdeallocate)(self->fobj);}
@@ -1187,7 +1187,7 @@ static PyObject *ForthonPackage_forceassign(PyObject *_self_,PyObject *args)
       /* This code ensures that the dimensions of ax        */
       /* remain intact since there may be other references  */
       /* to it.                                             */
-      d = (npy_intp *)malloc(self->farrays[i].nd*sizeof(npy_intp));
+      d = (npy_intp *)PyMem_Malloc(self->farrays[i].nd*sizeof(npy_intp));
       for (j=0;j<PyArray_NDIM(ax);j++) {
         if (PyArray_DIMS(self->farrays[i].pya)[j] < PyArray_DIMS(ax)[j]) {
           d[j] = PyArray_DIMS(self->farrays[i].pya)[j];}
@@ -1201,7 +1201,7 @@ static PyObject *ForthonPackage_forceassign(PyObject *_self_,PyObject *args)
       r = PyArray_CopyInto(self->farrays[i].pya,ax);
       PyArray_DIMS(self->farrays[i].pya) = pyadims;
       PyArray_DIMS(ax) = axdims;
-      free(d);
+      PyMem_Free(d);
       Py_XDECREF(ax);
       if (r == 0) {
         returnnone;}
@@ -1433,7 +1433,7 @@ static PyObject *ForthonPackage_gchange(PyObject *_self_,PyObject *args)
         /* remain intact since there may be other references  */
         /* to it.                                             */
         if (self->farrays[i].pya != NULL) {
-          d = (npy_intp *)malloc(self->farrays[i].nd*sizeof(npy_intp));
+          d = (npy_intp *)PyMem_Malloc(self->farrays[i].nd*sizeof(npy_intp));
           for (j=0;j<self->farrays[i].nd;j++) {
             if (PyArray_DIMS(ax)[j] < PyArray_DIMS(self->farrays[i].pya)[j]) {
               d[j] = PyArray_DIMS(ax)[j];}
@@ -1450,7 +1450,7 @@ static PyObject *ForthonPackage_gchange(PyObject *_self_,PyObject *args)
                    self->farrays[i].name);
           PyArray_DIMS(self->farrays[i].pya) = pyadims;
           PyArray_DIMS(ax) = axdims;
-          free(d);
+          PyMem_Free(d);
           }
         /* Free the old array */
         Forthon_freearray(self,(void *)i);
@@ -1559,7 +1559,7 @@ static PyObject *ForthonPackage_addvarattr(PyObject *_self_,PyObject *args)
   pyi = PyDict_GetItemString(self->scalardict,name);
   if (pyi != NULL) {
     PyArg_Parse(pyi,"i",&i);
-    newattr = (char *)malloc(strlen(self->fscalars[i].attributes) +
+    newattr = (char *)PyMem_Malloc(strlen(self->fscalars[i].attributes) +
                              strlen(attr)+3);
     strcpy(newattr,self->fscalars[i].attributes);
     strcat(newattr," ");
@@ -1572,7 +1572,7 @@ static PyObject *ForthonPackage_addvarattr(PyObject *_self_,PyObject *args)
     /* option is to create the attribute memory different, explicitly using */
     /* malloc.  This is such a tiny memory leak without the free that the   */
     /* effort is not worth it.                                              */
-    /* free(self->fscalars[i].attributes); */
+    /* PyMem_Free(self->fscalars[i].attributes); */
     self->fscalars[i].attributes = newattr;
     returnnone;}
 
@@ -1581,7 +1581,7 @@ static PyObject *ForthonPackage_addvarattr(PyObject *_self_,PyObject *args)
   pyi = PyDict_GetItemString(self->arraydict,name);
   if (pyi != NULL) {
     PyArg_Parse(pyi,"i",&i);
-    newattr = (char *)malloc(strlen(self->farrays[i].attributes) +
+    newattr = (char *)PyMem_Malloc(strlen(self->farrays[i].attributes) +
                              strlen(attr)+3);
     memset(newattr,0,strlen(self->farrays[i].attributes) + strlen(attr)+2);
     strcpy(newattr,self->farrays[i].attributes);
@@ -1595,7 +1595,7 @@ static PyObject *ForthonPackage_addvarattr(PyObject *_self_,PyObject *args)
     /* option is to create the attribute memory different, explicitly using */
     /* malloc.  This is such a tiny memory leak without the free that the   */
     /* effort is not worth it.                                              */
-    /* free(self->farrays[i].attributes); */
+    /* PyMem_Free(self->farrays[i].attributes); */
     self->farrays[i].attributes = newattr;
     returnnone;
     }
@@ -1650,8 +1650,8 @@ static PyObject *ForthonPackage_setvarattr(PyObject *_self_,PyObject *args)
   if (pyi != NULL) {
     PyArg_Parse(pyi,"i",&i);
     /* See comments in addvarattr why the free is commented out */
-    /* free(self->fscalars[i].attributes); */
-    self->fscalars[i].attributes = (char *)malloc(strlen(attr) + 1);
+    /* PyMem_Free(self->fscalars[i].attributes); */
+    self->fscalars[i].attributes = (char *)PyMem_Malloc(strlen(attr) + 1);
     strcpy(self->fscalars[i].attributes,attr);
     returnnone;}
 
@@ -1661,8 +1661,8 @@ static PyObject *ForthonPackage_setvarattr(PyObject *_self_,PyObject *args)
   if (pyi != NULL) {
     PyArg_Parse(pyi,"i",&i);
     /* See comments in addvarattr why the free is commented out */
-    /* free(self->farrays[i].attributes); */
-    self->farrays[i].attributes = (char *)malloc(strlen(attr) + 1);
+    /* PyMem_Free(self->farrays[i].attributes); */
+    self->farrays[i].attributes = (char *)PyMem_Malloc(strlen(attr) + 1);
     strcpy(self->farrays[i].attributes,attr);
     returnnone;}
 
@@ -1686,7 +1686,7 @@ static PyObject *ForthonPackage_delvarattr(PyObject *_self_,PyObject *args)
   pyi = PyDict_GetItemString(self->scalardict,name);
   if (pyi != NULL) {
     PyArg_Parse(pyi,"i",&i);
-    newattr = (char *)malloc(strlen(self->fscalars[i].attributes) -
+    newattr = (char *)PyMem_Malloc(strlen(self->fscalars[i].attributes) -
                              strlen(attr) + 1);
     ind = strfind(attr,self->fscalars[i].attributes);
     /* Check if attr was found, and make sure it is surrounded by spaces. */
@@ -1702,7 +1702,7 @@ static PyObject *ForthonPackage_delvarattr(PyObject *_self_,PyObject *args)
     if ((ind+strlen(attr)) < strlen(self->fscalars[i].attributes))
       strcat(newattr,self->fscalars[i].attributes+ind+strlen(attr));
     /* See comments in addvarattr why the free is commented out */
-    /* free(self->fscalars[i].attributes); */
+    /* PyMem_Free(self->fscalars[i].attributes); */
     self->fscalars[i].attributes = newattr;
     returnnone;}
 
@@ -1711,7 +1711,7 @@ static PyObject *ForthonPackage_delvarattr(PyObject *_self_,PyObject *args)
   pyi = PyDict_GetItemString(self->arraydict,name);
   if (pyi != NULL) {
     PyArg_Parse(pyi,"i",&i);
-    newattr = (char *)malloc(strlen(self->farrays[i].attributes) -
+    newattr = (char *)PyMem_Malloc(strlen(self->farrays[i].attributes) -
                              strlen(attr) + 1);
     ind = strfind(attr,self->farrays[i].attributes);
     /* Check if attr was found, and make sure it is surrounded by spaces. */
@@ -1727,7 +1727,7 @@ static PyObject *ForthonPackage_delvarattr(PyObject *_self_,PyObject *args)
     if ((ind+strlen(attr)) < strlen(self->farrays[i].attributes))
     strcat(newattr,self->farrays[i].attributes+ind+strlen(attr));
     /* See comments in addvarattr why the free is commented out */
-    /* free(self->farrays[i].attributes); */
+    /* PyMem_Free(self->farrays[i].attributes); */
     self->farrays[i].attributes = newattr;
     returnnone;}
 
@@ -1813,10 +1813,10 @@ static PyObject *ForthonPackage_getstrides(PyObject *_self_,PyObject *args)
   ax = (PyArrayObject *)pyobj;
 
   /* Note that the second argument gives the dimensions of the 1-d array. */
-  dims = (npy_intp *)malloc(sizeof(npy_intp));
+  dims = (npy_intp *)PyMem_Malloc(sizeof(npy_intp));
   dims[0] = (npy_intp)(PyArray_NDIM(ax));
   result = PyArray_SimpleNew((int)1,dims,PyArray_LONG);
-  free(dims);
+  PyMem_Free(dims);
 
   strides = (long *)PyArray_BYTES(result);
   for (i=0;i<PyArray_NDIM(ax);i++)
@@ -2128,7 +2128,7 @@ static PyObject *ForthonPackage_setdict(PyObject *_self_,PyObject *args)
   /* There is something wrong with this code XXX */
   /* Set the object name if it is now "pointee"*/
   /* if (strcmp(self->name,"pointee") == 0) { */
-    /* free(self->name); */
+    /* PyMem_Free(self->name); */
     /* self->name = PyString_AsString(PyDict_GetItemString(dict,"_name")); */
     /* } */
   /* First set the scalars so that the array dimensions are set. */
