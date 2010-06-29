@@ -46,7 +46,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.55 2010/06/28 23:51:44 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.56 2010/06/29 21:59:34 dave Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling. These should be moved to C.
@@ -1159,7 +1159,7 @@ def Forthondoc():
 package(): sets active package or returns list of all packages
 gallot(): allocates all dynamic arrays in a group
 gchange(): changes all dynamic arrays in a group if needed
-gfree(): free all dynamica arrays in a group
+gfree(): free all dynamic arrays in a group
 gsetdims(): setups up dynamic arrays sizes in datebase
 forceassign(): forces assignment to a dynamic array, resizing if necessary
 listvar(): prints information about a variable
