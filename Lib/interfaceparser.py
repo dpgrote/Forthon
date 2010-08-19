@@ -1,7 +1,7 @@
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 19, 1998
 # Parse the interface description file
-# $Id: interfaceparser.py,v 1.19 2009/09/08 18:01:56 dave Exp $
+# $Id: interfaceparser.py,v 1.20 2010/08/19 23:17:39 dave Exp $
 
 # This reads in the entire variable description file and extracts all of
 # the variable and subroutine information needed to create an interface
@@ -41,8 +41,19 @@ def processfile(packname,filename,othermacros=[],timeroutines=0):
 
   # Check to make sure that the package name is correct
   if packname != line:
-    print 'Warning: the package name in the file does not agree'
-    print 'with the file name.'
+    print """
+
+Warning: the package name in the file does not agree
+with the file name. Make sure that the first line of the
+variable description file is the package name.
+
+One possible reason this error is that the variable description
+file is in dos format. If this is so, change the format to match
+your system. (This can be done in vi by opening the file and
+typing ":set fileformat=unix" and then saving the file.)
+
+
+"""
     return []
 
   # Remove all line continuation marks
@@ -111,6 +122,11 @@ def processfile(packname,filename,othermacros=[],timeroutines=0):
     # Check if group
     if text[0] == '*':
       istype = 0
+      # Check the syntax
+      g = re.match('\*+ (\w+)((?:[ \t]+\w+)*):',text)
+      if g is None:
+        g = re.match('(.*)',text)
+        raise SyntaxError('Line defining the group is invalid\n%s'%g.group(1))
       # Then get new group name
       i = re.search(':',text).start()
       g = string.split(text[:i])
