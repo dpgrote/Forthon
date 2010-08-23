@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.67 2009/10/25 01:09:50 dave Exp $
+# $Id: wrappergenerator.py,v 1.68 2010/08/23 20:08:58 dave Exp $
 
 import sys
 import os.path
@@ -91,7 +91,7 @@ Usage:
                         '_fscalars['+repr(other_dict[ss])+'].data',dim,count=1)
               break
           else:
-            raise ss + ' is not declared in the interface file'
+            raise SyntaxError(ss + ' is not declared in the interface file')
     return string.lower(dim)
 
   # --- Convert dimensions for unspecified arrays
@@ -121,7 +121,7 @@ Usage:
               groups.append(other_list[other_dict[ss]].group)
               break
           else:
-            raise ss + ' is not declared in the interface file'
+            raise SyntaxError(ss + ' is not declared in the interface file')
     return groups
 
   def cw(self,text,noreturn=0):
@@ -1204,7 +1204,7 @@ of scalars and arrays.
 module_prefix_pat = re.compile ('([a-zA-Z_][a-zA-Z0-9_]*)\.scalars')
 def get_another_scalar_dict(file_name,other_scalar_vars):
   m = module_prefix_pat.search(file_name)
-  if m.start() == -1: raise 'expect a .scalars file'
+  if m.start() == -1: raise SyntaxError('expect a .scalars file')
   f = open(file_name,'r')
   vars = []
   vars.append(pickle.load(f))

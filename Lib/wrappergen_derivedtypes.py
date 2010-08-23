@@ -44,7 +44,7 @@ class ForthonDerivedType:
           dim = re.sub(ss,'*(long *)obj->fscalars['+repr(sdict[ss])+'].data',
                        dim,count=1)
         else:
-          raise ss + ' is not declared in a .v file'
+          raise SyntaxError(ss + ' is not declared in a .v file')
     return string.lower(dim)
 
   # --- Convert variable names in to type elements
