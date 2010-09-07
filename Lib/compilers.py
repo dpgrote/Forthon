@@ -56,7 +56,6 @@ appropriate block for the machine.
     # --- machine name.
     while 1:
       if self.machine == 'linux2':
-        if self.linux_intel8() is not None: break
         if self.linux_intel() is not None: break
         if self.linux_g95() is not None: break
         if self.linux_gfortran() is not None: break
@@ -160,8 +159,8 @@ appropriate block for the machine.
 
   #-----------------------------------------------------------------------------
   # --- LINUX
-  def linux_intel8(self):
-    if self.usecompiler('intel8','ifort'):
+  def linux_intel(self):
+    if self.usecompiler('intel','ifort') or self.usecompiler('intel8','ifort'):
       self.fcompname = 'ifort'
       self.f90free  += ' -nofor_main -free -DIFC -fpp -fPIC'
       self.f90fixed += ' -nofor_main -132 -DIFC -fpp -fPIC'
@@ -190,32 +189,6 @@ appropriate block for the machine.
         self.fopt = '-O3 -xW -tpp7 -ip -unroll -prefetch'
       else:
         self.fopt = '-O3 -xN -tpp7 -ip -unroll -prefetch'
-      return 1
-
-  def linux_intel(self):
-    if self.usecompiler('intel','ifc'):
-      self.fcompname = 'ifc'
-      # --- Intel
-      self.f90free  += ' -132 -DIFC -fpp -C90'
-      self.f90fixed += ' -132 -DIFC -fpp -C90'
-      self.f90free  += ' -DFPSIZE=%s -r%s -Zp%s'%(realsize,realsize,realsize)
-      self.f90fixed += ' -DFPSIZE=%s -r%s -Zp%s'%(realsize,realsize,realsize)
-      self.f90free  += ' -DISZ=%s -i%s'%(intsize,intsize)
-      self.f90fixed += ' -DISZ=%s -i%s'%(intsize,intsize)
-      if self.implicitnone:
-        self.f90free  += ' -implicitnone'
-        self.f90fixed += ' -implicitnone'
-      self.popt = '-O'
-      flibroot,b = os.path.split(self.findfile('ifc'))
-      self.libdirs = [flibroot+'/lib']
-      self.libs = ['IEPCF90','CEPCF90','F90','intrins','imf','svml','irc','cxa']
-      cpuinfo = open('/proc/cpuinfo','r').read()
-      if re.search('Pentium III',cpuinfo):
-        self.fopt = '-O3 -xK -tpp6 -ip -unroll -prefetch'
-      elif re.search('AMD Athlon',cpuinfo):
-        self.fopt = '-O3 -ip -unroll -prefetch'
-      else:
-        self.fopt = '-O3 -xW -tpp7 -ip -unroll -prefetch'
       return 1
 
   def linux_g95(self):
@@ -349,7 +322,7 @@ appropriate block for the machine.
       return 1
 
   def linux_pathscale(self):
-    if usecompiler('pathscale','pathf95'):
+    if self.usecompiler('pathscale','pathf95'):
       self.f90free  += ' -freeform -DPATHF90 -ftpp -fPIC -woff1615'
       self.f90fixed += ' -fixedform -extend_source -DPATHF90 -ftpp -fPIC -woff1615'
       self.f90free  += ' -DFPSIZE=%s -r%s'%(realsize,realsize)
