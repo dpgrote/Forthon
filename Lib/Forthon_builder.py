@@ -11,9 +11,21 @@ from Forthon_options import options,args
 from Forthon.compilers import FCompiler
 print "IN FORTHON_BUILDER"
 
-# --- Get the package name and any other extra files
+# --- Get the package name, which is assumed to be the first argument.
 pkg = args[0]
-extrafiles = args[1:]
+del args[0]
+
+# --- Get any extra fortran, C or object files listed.
+# --- This scans through args until the end or until it finds an option
+# --- argument (that begins with a '-'). Any remaining option arguments
+# --- are passed to distutils.
+extrafiles = []
+while len(args) > 0:
+  if args[0][0] != '-':
+    extrafiles += [args[0]]
+    del args[0]
+  else:
+    break
 
 # --- Default values for command line options
 machine        = options.machine
@@ -115,11 +127,18 @@ forthonhome = os.path.dirname(fvars.__file__)
 forthonhome = fixpath(forthonhome)
 del fvars
 
+# --- Reset sys.argv removing the Forthon options and appending any extra
+# --- distutils options remaining in args.
+# --- This needs to be done for generating builddir since the distutils
+# --- options may affect its value.
+sys.argv = ['Forthon','build','--build-platlib','.'] + args
+
 # --- Find the location of the build directory. There must be a better way
 # --- of doing this.
 if builddir is None:
   dummydist = Distribution()
-  dummybuild = build(dummydist)
+  dummydist.parse_command_line()
+  dummybuild = dummydist.get_command_obj('build')
   dummybuild.finalize_options()
   builddir = dummybuild.build_temp
   bb = builddir.split(os.sep)
@@ -127,6 +146,12 @@ if builddir is None:
   del dummydist,dummybuild,bb
 else:
   upbuilddir = os.getcwd()
+
+# --- Add the build-temp option. This is needed since distutils would otherwise
+# --- put the object files from compiling the pkgnamepy.c file in a temp
+# --- directory relative to the file. build_temp defaults to an empty string,
+# --- so the .o files are put in the same place as the .c files.
+sys.argv += ['--build-temp',build_temp]
 
 # --- Add prefix to interfacefile since it will only be referenced from
 # --- the build directory.
@@ -314,7 +339,6 @@ addbuilddir = lambda p:os.path.join(builddir,p)
 cfiles = map(addbuilddir,[pkg+'pymodule.c','Forthon.c'])
 ofiles = map(addbuilddir,[fortranroot+osuffix,pkg+'_p'+osuffix]+
              extraobjectslist)
-sys.argv = ['Forthon','build','--build-platlib','.','--build-temp',build_temp]
 
 # --- DOS requires an extra argument and include directory to build properly
 if machine == 'win32': sys.argv.append('--compiler=mingw32')

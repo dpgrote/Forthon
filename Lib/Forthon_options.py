@@ -4,7 +4,7 @@ import sys
 import os.path
 import optparse
 
-usage = "Forthon [options] pkgname [extra Fortran or C files to be compiled or objects to link]"
+usage = "Forthon [options] pkgname [extra Fortran or C files to be compiled or objects to link] [options for distutils]"
 description = """
 pkgname is the name of the package.
 A complete package will have at least two files, the interface description
@@ -17,6 +17,14 @@ in the package.
 """
 
 parser = optparse.OptionParser(usage=usage,description=description)
+
+# --- This tells the optparser to stop parsing when it comes across a
+# --- non-option argument (i.e. one without the preceeding '-').
+# --- This first non-option argument should be the package name and possibly
+# --- extra files to be compiled. Having the parser stop there allows
+# --- additional arguments to be added to the command line, after the
+# --- extra files, that are passed to distutils during the call to setup.
+parser.disable_interspersed_args()
 
 parser.add_option('--builddir',
                   help='Location where the temporary compilation files (such as object files) should be placed. This defaults to build/temp-osname.')
