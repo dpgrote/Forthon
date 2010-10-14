@@ -46,7 +46,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.56 2010/06/29 21:59:34 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.57 2010/10/14 23:41:23 dave Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling. These should be moved to C.
@@ -1058,17 +1058,19 @@ def pyrestoreforthonobject(ff,gname,vlist,fobjdict,varsuffix,verbose,doarrays,
       fobj = ff.__getattr__("FOBJ@"+gpdbname)
     except:
       return
-    # --- First, check if the object has already be restored.
+    # --- First, check if the object has already been restored.
     if fobj in fobjdict:
       # --- If so, then point new variable to existing object
-      exec("%s = %s"%(gname,fobjdict[fobj]),__main__.__dict__)
+      __main__.__dict__[gname] = __main__.__dict__[fobjdict[fobj]]
+      #exec("%s = %s"%(gname,fobjdict[fobj]),__main__.__dict__)
       # return ???
     else:
       # --- Otherwise, create a new instance of the appropriate type,
       # --- and add it to the list of objects.
       typename = ff.__getattr__("TYPENAME@"+gpdbname)
       try:
-        exec("%s = %s()"%(gname,typename),__main__.__dict__)
+        __main__.__dict__[gname] = __main__.__dict__[typename]()
+        #exec("%s = %s()"%(gname,typename),__main__.__dict__)
       except:
         # --- If it gets here, it might mean that the name no longer exists.
         return
@@ -1084,6 +1086,17 @@ def pyrestoreforthonobject(ff,gname,vlist,fobjdict,varsuffix,verbose,doarrays,
   else:
     leafvars = []
 
+  # --- Fix the case when the variable ff appears in the main dictionary.
+  # --- This messes up the exec commands below
+  def doassignment(fullname,val):
+    # --- This loops over the attributes, finding the second to the last
+    # --- level. setattr is then used to assign the value to the leaf.
+    n = fullname.split('.')
+    v = __main__.__dict__[n[0]]
+    for a in n[1:-1]:
+      v = getattr(v,a)
+    setattr(v,n[-1],val)
+
   # --- Read in leafs.
   for vname in leafvars:
     if vname == 'FOBJ' or vname == 'TYPENAME': continue
@@ -1095,41 +1108,41 @@ def pyrestoreforthonobject(ff,gname,vlist,fobjdict,varsuffix,verbose,doarrays,
     if varsuffix is not None: fullname = vname + str(varsuffix)
 
     try:
-      if not isinstance(ff.__getattr__(vpdbname),ArrayType) and not doarrays:
+      val = ff.__getattr__(vpdbname)
+      if not isinstance(val,ArrayType) and not doarrays:
         # --- Simple assignment is done for scalars, using the exec command
         if verbose: print "reading in "+fullname
-        exec(fullname+'=ff.__getattr__(vpdbname)',locals(),__main__.__dict__)
-      elif isinstance(ff.__getattr__(vpdbname),ArrayType) and doarrays:
+        doassignment(fullname,val)
+      elif isinstance(val,ArrayType) and doarrays:
         pkg = eval(gname,__main__.__dict__)
         # --- forceassign is used, allowing the array read in to have a
         # --- different size than the current size of the warp array.
         if verbose: print "reading in "+fullname
         # --- Original version
-        #pkg.forceassign(vname,ff.__getattr__(vpdbname))
+        #pkg.forceassign(vname,val)
         # --- Newer version using convenient setattr routine. This can be
         # --- done this way since now all scalars are read in first so
         # --- the arrays will be of the correct size.
         if varsuffix is None:
-          if (len(str(ff.__getattr__(vpdbname).dtype)) > 1 and
-              str(ff.__getattr__(vpdbname).dtype)[1] == 'S' and
-              getattr(pkg,vname).shape != ff.__getattr__(vpdbname).shape):
+          if (len(str(val.dtype)) > 1 and
+              str(val.dtype)[1] == 'S' and
+              getattr(pkg,vname).shape != val.shape):
             # --- This is a crude fix for backwards compatibility. The way
             # --- strings are handled changed, so that they now have an
             # --- element size > 1. This coding converts old style strings
             # --- into a single string before doing the setattr. The change
             # --- affects restart dumps make before July 2008.
-            setattr(pkg,vname,string.join(ff.__getattr__(vpdbname),sep=''))
+            setattr(pkg,vname,string.join(val,sep=''))
           else:
-            setattr(pkg,vname,ff.__getattr__(vpdbname))
+            setattr(pkg,vname,val)
         else:
           # --- If varsuffix is specified, then put the variable directly into
           # --- the main dictionary.
-          exec(fullname+'=ff.__getattr__(vpdbname)',locals(),__main__.__dict__)
+          doassignment(fullname,val)
         # --- This does the same thing but is more sensitive to some types
         # --- of array sizing errors.
-        #v = ff.__getattr__(vpdbname)
-        #setattr(pkg,vname,fzeros(shape(v),gettypecode(v)))
-        #getattr(pkg,vname)[...] = v
+        #setattr(pkg,vname,fzeros(shape(val),gettypecode(val)))
+        #getattr(pkg,vname)[...] = val
     except:
       # --- The catches errors in cases where the variable is not an
       # --- actual warp variable, for example if it had been deleted
