@@ -18,6 +18,8 @@ import string
 import re
 import os
 import copy
+import warnings
+import cPickle
 try:
   from PyPDB import PW,PR
 except ImportError:
@@ -32,7 +34,11 @@ try:
   import PRpyt
 except ImportError:
   pass
-import cPickle
+try:
+  import PWpickle
+  import PRpickle
+except ImportError:
+  pass
 try:
   import inspect
 except ImportError:
@@ -46,7 +52,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.57 2010/10/14 23:41:23 dave Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.58 2011/03/14 22:15:31 grote Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling. These should be moved to C.
@@ -670,7 +676,8 @@ def pydumpforthonobject(ff,attr,objname,obj,varsuffix,writtenvars,fobjlist,
 # is put into a 'try' command since some variables cannot be written to
 # a pdb file.
 def pydump(fname=None,attr=["dump"],vars=[],serial=0,ff=None,varsuffix=None,
-           verbose=false,hdf=0,returnfobjlist=0,lonlymakespace=0):
+           verbose=false,hdf=0,returnfobjlist=0,lonlymakespace=0,
+           datawriter=None):
   """
 Dump data into a pdb file
   - fname: dump file name
@@ -682,64 +689,72 @@ Dump data into a pdb file
   - ff=None: Allows passing in of a file object so that pydump can be called
        multiple times to pass data into the same file. Note that
        the file must be explicitly closed by the user.
+       ff can be an instance of any class that conforms to the API of PW.
   - varsuffix=None: Suffix to add to the variable names. If none is specified,
        the suffix '@pkg' is used, where pkg is the package name that the
        variable is in. Note that if varsuffix is specified, the simulation
        cannot be restarted from the dump file.
   - verbose=false: When true, prints out the names of the variables as they are
        written to the dump file
-  - hdf=0: when true, dump into an HDF file rather than a PDB.
+  - hdf=0: (obsolete) this argument is ignored
   - returnfobjlist=0: when true, returns the list of fobjects that were
                       written to the file
+  - datawriter=PW: datawriter is the data writer class to use. This can be any
+                   class that conforms to the API of PW from the PyPDB package.
   """
   assert fname is not None or ff is not None,\
-         "Either a filename must be specified or a pdb file pointer"
+         "Either a filename must be specified or a data writer instance"
+  if hdf:
+    warnings.warn("the hdf argument is no longer used and is ignored")
   # --- Open the file if the file object was not passed in.
   # --- If the file object was passed in, then don't close it.
   if ff is None:
-    if not hdf:
-      # --- Try to open file with PDB format as requested.
+    if datawriter is None:
+      # --- PyPDB is the default data format.
       try:
-        ff = PW.PW(fname)
-        # --- With PDB, pickle dumps can only be done in ascii.
-        dumpsmode = 0
+        datawriter = PW.PW
+      except NameError:
+        pass
+
+    # --- Try each of the data file formats until one is found.
+    # --- datawriter will be either the default or the user supplied one.
+    if datawriter is not None:
+      try:
+        ff = datawriter(fname)
       except:
         pass
-    if hdf or ff is None:
-      # --- If HDF requested or PDB not available, try HDF.
+
+    if ff is None:
+      # --- If PDB not available, try pickle. Note that this should always work.
+      try:
+        ff = PWpickle.PW(fname)
+      except:
+        pass
+
+    if ff is None:
+      # --- If PDB not available, try HDF.
       try:
         ff = PWpyt.PW(fname)
-        # --- An advantage of HDF is that pickle dumps can be done in binary
-        dumpsmode = 1
       except:
         pass
-    if hdf and ff is None:
-      # --- If HDF was requested and didn't work, try PDB anyway.
-      try:
-        ff = PW.PW(fname)
-        # --- With PDB, pickle dumps can only be done in ascii.
-        dumpsmode = 0
-      except:
-        pass
+
     assert ff is not None,"Dump file cannot be opened, no data formats available"
     closefile = 1
   else:
-    try:
-      if ff.file_type == "HDF":
-        dumpsmode = 1
-      else:
-        dumpsmode = 0
-    except:
-      dumpsmode = 0
     closefile = 0
+
+  if verbose: print "Data will be written using %s format"%ff.file_type
+
   # --- Make sure the file has a file_type. Older versions of the pdb
   # --- wrapper did not define a file type.
   try:
     ff.file_type
   except:
     ff.file_type = 'oldPDB'
+
   # --- Convert attr into a list if needed
   if not (type(attr) == ListType): attr = [attr]
+
   # --- Loop through all of the packages (getting pkg object).
   # --- When varsuffix is specified, the list of variables already written
   # --- is created. This solves two problems. It gives proper precedence to
@@ -824,7 +839,7 @@ Dump data into a pdb file
       try:
         if verbose:
           print "writing python variable "+vname+" as "+vname+varsuffix+'@pickle'
-        ff.write(vname+varsuffix+'@pickle',cPickle.dumps(vval,dumpsmode))
+        ff.write(vname+varsuffix+'@pickle',cPickle.dumps(vval,-1))
         docontinue = 1
       except (cPickle.PicklingError,TypeError):
         pass
@@ -847,7 +862,8 @@ Dump data into a pdb file
 # More fancy foot work is done to get new variables read in into the
 # global dictionary.
 def pyrestore(filename=None,fname=None,verbose=0,skip=[],ff=None,
-              varsuffix=None,ls=0,lreturnfobjdict=0,lreturnff=0):
+              varsuffix=None,ls=0,lreturnfobjdict=0,lreturnff=0,
+              datareader=None):
   """
 Restores all of the variables in the specified file.
   - filename: file to read in from (assumes PDB format)
@@ -856,47 +872,69 @@ Restores all of the variables in the specified file.
   - ff=None: Allows passing in of a file object so that pydump can be called
        multiple times to pass data into the same file. Note that
        the file must be explicitly closed by the user.
+       ff can be an instance of any class that conforms to the API of PR.
   - varsuffix: when set, all variables read in will be given the suffix
                Note that fortran variables are then read into python vars
   - ls=0: when true, prints a list of the variables in the file
           when 1 prints as tuple
           when 2 prints in a column
+  - datareader=PR: data reader object, can be any class that conforms to the
+                   API of the PR class from PyPDB
 Note that it will automatically detect whether the file is PDB or HDF.
   """
-  assert filename is not None or fname is not None or ff is not None,\
-         "Either a filename must be specified or a pdb file pointer"
+  # --- fname is the old input argument name
+  if filename is None: filename = fname
+  assert filename is not None or ff is not None,\
+         "Either a filename must be specified or a data reader instance"
   if ff is None:
-    # --- The original had fname, but changed to filename to be consistent
-    # --- with restart and dump.
-    if filename is None: filename = fname
-    # --- Make sure a filename was input.
-    assert filename is not None,"A filename must be specified"
+    if datareader==None:
+      try:
+        datareader = PR.PR
+      except NameError:
+        pass
+
     # --- Check if file exists
     assert os.access(filename,os.F_OK),"File %s does not exist"%filename
-    # --- open file, trying PDB format first
+
+    # --- try opening file with either the default PR or user supplied reader
     try:
-      ff = PR.PR(filename)
+      ff = datareader(filename)
     except:
       pass
+
+    if ff is None:
+      # --- If that didn't work, try PRpickle
+      try:
+        ff = PRpickle.PR(filename)
+      except:
+        pass
+
     if ff is None:
       # --- If PDB didn't work, try pytables
       try:
         ff = PRpyt.PR(filename)
       except:
         pass
+
     assert ff is not None,"File %s could not be opened"%filename
     closefile = 1
   else:
     closefile = 0
+
   if lreturnff: closefile = 0
+
+  if verbose: print "Data will be read using %s format"%ff.file_type
+
   # --- Make sure the file has a file_type. Older versions of the pdb
   # --- wrapper did not define a file type.
   try:
     ff.file_type
   except:
     ff.file_type = 'oldPDB'
+
   # --- Get a list of all of the variables in the file, loop over that list
   vlist = ff.inquire_names()
+
   # --- Print list of variables
   if ls:
     if ls == 1:
