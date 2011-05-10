@@ -247,7 +247,7 @@ class ForthonDerivedType:
         self.cw('obj->farrays[%d].type = PyArray_%s;'%(i,fvars.ftop(a.type)))
         self.cw('obj->farrays[%d].dynamic = %d;'%(i,a.dynamic))
         self.cw('obj->farrays[%d].nd = %d;'%(i,len(a.dims)))
-        self.cw('obj->farrays[%d].dimensions = (npy_intp)NULL;'%i)
+        self.cw('obj->farrays[%d].dimensions = (npy_intp*)NULL;'%i)
         self.cw('obj->farrays[%d].name = "%s";'%(i,a.name))
         self.cw('obj->farrays[%d].data.s = (char *)NULL;'%i)
         self.cw('obj->farrays[%d].setpointer = %s;'%(i,setpointer))
