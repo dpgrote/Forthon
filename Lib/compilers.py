@@ -64,6 +64,7 @@ appropriate block for the machine.
         if self.linux_lahey() is not None: break
         if self.linux_pathscale() is not None: break
         if self.linux_xlf_r() is not None: break
+        if self.linux_cray() is not None: break
       elif self.machine == 'darwin':
         if self.macosx_xlf() is not None: break
         if self.macosx_g95() is not None: break
@@ -374,6 +375,35 @@ appropriate block for the machine.
       self.libdirs = ['/gpfs/software/linux-sles10-ppc64/apps/V1R3M0/ibmcmp-sep2008/opt/xlf/bg/11.1/lib','/gpfs/software/linux-sles10-ppc64/apps/V1R3M0/ibmcmp-sep2008/opt/xlsmp/bg/1.7/lib']
       self.libs = ['xlf90_r','xlsmp']
       self.fopt = '-O3 -qstrict -qarch=auto -qtune=auto -qsmp=omp'
+      return 1
+
+  def linux_cray(self):
+    if self.usecompiler('crayftn','crayftn'):
+      self.fcompname = 'crayftn'
+      self.f90free  += ' -f free'
+      self.f90fixed += ' -f fixed -N 132'
+      self.f90free  += ' -DFPSIZE=%s'%(realsize)
+      self.f90fixed += ' -DFPSIZE=%s'%(realsize)
+      if realsize == '8':
+        self.f90free  += ' -s real64'
+        self.f90fixed += ' -s real64'
+      self.f90free  += ' -DISZ=%s'%(intsize)
+      self.f90fixed += ' -DISZ=%s'%(intsize)
+      if intsize == '8':
+        self.f90free  += ' -s integer64'
+        self.f90fixed += ' -s integer64'
+      if self.implicitnone:
+        self.f90free  += ' -e I'
+        self.f90fixed += ' -e I'
+      if self.twounderscores:
+        self.f90free  += ' -h second_underscore'
+        self.f90fixed += ' -h second_underscore'
+      else:
+        self.f90free  += ' -h nosecond_underscore'
+        self.f90fixed += ' -h nosecond_underscore'
+      self.libdirs = []
+      self.libs = []
+      self.fopt = '-O3'
       return 1
 
   #-----------------------------------------------------------------------------
