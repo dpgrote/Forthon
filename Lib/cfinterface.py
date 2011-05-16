@@ -1,5 +1,5 @@
 # Created by David P. Grote, March 6, 1998
-# $Id: cfinterface.py,v 1.16 2009/10/25 01:09:50 dave Exp $
+# $Id: cfinterface.py,v 1.17 2011/05/16 18:55:26 grote Exp $
 
 # Routines which allows c functions to be callable by fortran
 import sys
@@ -49,7 +49,7 @@ elif machine in ['T3E','sn67112','C90','J90','SGI','irix646']:
   def fname(n):
     return string.upper(n)
 else:
-  raise 'Machine %s not supported'%machine
+  raise ValueError('Machine %s not supported'%machine)
 
 #----------------------------------------------------------------------------
 # Creates a function which returns the Fortran name of an object
@@ -74,7 +74,7 @@ else:
 #   def fnameofobj(f):
 #     return '__'+f.group+'_MOD_'+f.name
 # else:
-#   raise 'Machine %s not supported'%machine
+#   raise ValueError('Machine %s not supported'%machine)
 
 #----------------------------------------------------------------------------
 # Sets up C macros which are used to take the place of the length
@@ -165,7 +165,7 @@ elif machine in ['MAC']:
 """
 
 else:
-  raise 'Machine %s not supported'%machine
+  raise ValueError('Machine %s not supported'%machine)
 
 # --- Create the forthonf2c.h file
 ff = open('forthonf2c.h','w')

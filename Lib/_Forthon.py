@@ -52,7 +52,7 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.58 2011/03/14 22:15:31 grote Exp $"
+Forthon_version = "$Id: _Forthon.py,v 1.59 2011/05/16 18:55:25 grote Exp $"
 
 ##############################################################################
 # --- Functions needed for object pickling. These should be moved to C.
@@ -147,7 +147,7 @@ When optional argument iverbose is true, the variables allocated and their new s
   for pkg in _pkg_dict.values():
     r = pkg.gallot(group,iverbose)
     if r and (group != '*'): return
-  if group != '*': raise "No such group"
+  if group != '*': raise NameError("No such group")
 
 def gchange(group='*',iverbose=0):
   """Changes the allocation of all dynamic arrays in the specified group if it is needed.
@@ -157,7 +157,7 @@ When optional argument iverbose is true, the variables changed and their new siz
   for pkg in _pkg_dict.values():
     r = pkg.gchange(group,iverbose)
     if r and (group != '*'): return
-  if group != '*': raise "No such group"
+  if group != '*': raise NameError("No such group")
 
 def gfree(group='*'):
   """Frees the allocated memory of all dynamic arrays in the specified group.
@@ -166,7 +166,7 @@ If the group is not given or is '*', then all groups are freed.
   for pkg in _pkg_dict.values():
     r = pkg.gfree(group)
     if r and (group != '*'): return
-  if group != '*': raise "No such group"
+  if group != '*': raise NameError("No such group")
 
 def gsetdims(group='*'):
   """Sets the size in the python database of all dynamic arrays in the specified group.
@@ -175,7 +175,7 @@ If the group is not given or is '*', then it is done for all groups.
   for pkg in _pkg_dict.values():
     r = pkg.gsetdims(group)
     if r and (group != '*'): return
-  if group != '*': raise "No such group"
+  if group != '*': raise NameError("No such group")
 
 def forceassign(name,v):
   """Forces the assignment to an array, resizing the array is necessary.

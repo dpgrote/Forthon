@@ -9,7 +9,7 @@ disablelinetracing: disables line level tracing
 import sys,time
 import linecache
 
-ForthonTimer_version = "$Id: ForthonTimer.py,v 1.7 2007/02/21 01:51:23 dave Exp $"
+ForthonTimer_version = "$Id: ForthonTimer.py,v 1.8 2011/05/16 18:55:25 grote Exp $"
 
 def ForthonTimerdoc():
   import ForthonTimer
@@ -92,7 +92,7 @@ Argument:
   _ninstances = 0
   def __init__(self,trace=0,tracelevel=None):
     if ForthonProfiler._ninstances > 0:
-      raise "Only one instance allowed."
+      raise RuntimeError("Only one instance allowed.")
     ForthonProfiler._ninstances = 1
     self.trace = trace
     self.tracelevel = tracelevel

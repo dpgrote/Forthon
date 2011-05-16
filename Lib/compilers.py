@@ -93,7 +93,7 @@ appropriate block for the machine.
       self.f90fixed
     except:
       # --- Note that this error should never happed (except during debugging)
-      raise "The fortran compiler definition is not correct, f90free and f90fixed must be defined."
+      raise ValueError("The fortran compiler definition is not correct, f90free and f90fixed must be defined.")
 
     if debug:
       self.fopt = '-g'
