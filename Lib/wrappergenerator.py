@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.68 2010/08/23 20:08:58 dave Exp $
+# $Id: wrappergenerator.py,v 1.69 2011/05/20 00:09:35 grote Exp $
 
 import sys
 import os.path
@@ -130,18 +130,17 @@ Usage:
     else:
       self.cfile.write(text+'\n')
   def fw(self,text,noreturn=0):
-    if len(text) > 132 and text.find('&') == -1:
+    i = 0
+    while len(text[i:]) > 132 and text[i:].find('&') == -1:
       # --- If the line is too long, then break it up, adding line
       # --- continuation marks in between any variable names.
-      for i in range(132,len(text),132):
-        # --- \W matches anything but a letter or number.
-        #ss = re.search('\W',text[i::-1])
-        # --- This is the same as \W, but also skips %, since PG compilers
-        # --- don't seem to like a line continuation mark just before a %.
-        ss = re.search('[^a-zA-Z0-9_%]',text[i::-1])
-        assert ss is not None,\
-               "Forthon can't find a place to break up this line:\n"+text
-        text = text[:i-ss.start()] + '&\n' + text[i-ss.start():]
+      # --- This is the same as \W, but also skips %, since PG compilers
+      # --- don't seem to like a line continuation mark just before a %.
+      ss = re.search('[^a-zA-Z0-9_%]',text[i+130::-1])
+      assert ss is not None,\
+             "Forthon can't find a place to break up this line:\n"+text
+      text = text[:i+130-ss.start()] + '&\n' + text[i+130-ss.start():]
+      i += 130 - ss.start() + 1
     if noreturn:
       self.ffile.write(text)
     else:
@@ -368,7 +367,7 @@ of scalars and arrays.
                   '"%s",'%a.group +
                   '"%s",'%a.attr +
                   '"%s",'%string.replace(repr(a.comment)[1:-1],'"','\\"') +
-                  '"%s"}'%a.dimstring,noreturn=1)
+                  '"%s"}'%repr(a.dimstring)[1:-1],noreturn=1)
         if i < len(self.alist)-1: self.cw(',')
       self.cw('};')
     else:
@@ -449,12 +448,13 @@ of scalars and arrays.
     for f in self.flist:
       # --- Write out the documentation first.
       docstring = ('static char doc_'+self.cname(f.name)+'[] = "'+f.name+
-                   f.dimstring+' '+repr(f.comment)[1:-1]+'";')
+                   f.dimstring+'\n'+f.comment+'";')
       # --- Replaces newlines with '\\n' so that the string is all on one line
-      # --- in the C coding.
-      docstring = re.sub(r'\
-','\\\\n',docstring)
-      self.cw(docstring)
+      # --- in the C coding. Using repr does the same thing, but more easily.
+      # --- The [1:-1] strips off the single quotes that repr puts there.
+#      docstring = re.sub(r'\
+#','\\\\n',docstring)
+      self.cw(repr(docstring)[1:-1])
       # --- Now write out the wrapper
       self.cw('static PyObject *')
       self.cw(self.cname(f.name)+'(PyObject *self, PyObject *args)')
@@ -1094,7 +1094,7 @@ of scalars and arrays.
           self.fw('  integer('+self.isz+'):: cobj__')
           self.fw('  integer('+self.isz+'):: dims__('+repr(len(a.dims))+')')
           self.fw('  '+fvars.ftof(a.type)+',target:: p__'+
-                    self.prefixdimsf(a.dimstring))
+                    self.prefixdimsf(re.sub('[ \t\n]','',a.dimstring)))
           self.fw('  '+a.name+' => p__')
           self.fw('  return')
           self.fw('end')
@@ -1186,9 +1186,10 @@ of scalars and arrays.
           else:
             if a.type == 'character':
               self.fw('  character(len='+a.dims[0].high+')'+save+':: '+a.name+
-                      a.dimstring)
+                      re.sub('[ \t\n]','',a.dimstring))
             else:
-              self.fw('  '+fvars.ftof(a.type)+save+':: '+a.name+a.dimstring)
+              self.fw('  '+fvars.ftof(a.type)+save+':: '+
+                      a.name+re.sub('[ \t\n]','',a.dimstring))
             if a.data:
               # --- Add line continuation marks if the data line extends over
               # --- multiple lines.

@@ -80,18 +80,17 @@ class ForthonDerivedType:
     else:
       self.cfile.write(text+'\n')
   def fw(self,text,noreturn=0):
-    if len(text) > 132 and text.find('&') == -1:
+    i = 0
+    while len(text[i:]) > 132 and text[i:].find('&') == -1:
       # --- If the line is too long, then break it up, adding line
       # --- continuation marks in between any variable names.
-      for i in range(132,len(text),132):
-        # --- \W matches anything but a letter or number.
-        #ss = re.search('\W',text[i::-1])
-        # --- This is the same as \W, but also skips %, since PG compilers
-        # --- don't seem to like a line continuation mark just before a %.
-        ss = re.search('[^a-zA-Z0-9_%]',text[i::-1])
-        assert ss is not None,\
-               "Forthon can't find a place to break up this line:\n"+text
-        text = text[:i-ss.start()] + '&\n' + text[i-ss.start():]
+      # --- This is the same as \W, but also skips %, since PG compilers
+      # --- don't seem to like a line continuation mark just before a %.
+      ss = re.search('[^a-zA-Z0-9_%]',text[i+130::-1])
+      assert ss is not None,\
+             "Forthon can't find a place to break up this line:\n"+text
+      text = text[:i+130-ss.start()] + '&\n' + text[i+130-ss.start():]
+      i += 130 - ss.start() + 1
     if noreturn:
       self.ffile.write(text)
     else:

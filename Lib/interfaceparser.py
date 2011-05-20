@@ -1,7 +1,7 @@
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 19, 1998
 # Parse the interface description file
-# $Id: interfaceparser.py,v 1.21 2011/05/16 18:55:26 grote Exp $
+# $Id: interfaceparser.py,v 1.22 2011/05/20 00:09:34 grote Exp $
 
 # This reads in the entire variable description file and extracts all of
 # the variable and subroutine information needed to create an interface
@@ -357,7 +357,7 @@ typing ":set fileformat=unix" and then saving the file.)
     # Look for comment (and remove extra spaces)
     elif text[0] == '#':
       i = re.search('\n',text).start() - 1
-      v.comment = v.comment + text[1:i+2]
+      v.comment = v.comment + text[1:i+2].lstrip()
       readyfortype = 0
 
     # Look for private remark
@@ -484,7 +484,7 @@ typing ":set fileformat=unix" and then saving the file.)
       # --- above loop.
       for var in v.dimvars:
         if type(var) == type(''):
-          raise SyntaxError("%s: Only subroutine arguments can be specified as dimensions."%v.name)
+          raise SyntaxError("%s: Only subroutine arguments can be specified as dimensions. Bad argument name is %s"%(v.name,var))
       # --- Empty out dims which is no longer needed (so it won't cause
       # --- confusion later).
       v.dims = []
@@ -521,9 +521,7 @@ def convertdimstringtodims(dimstring):
   # --- Remove the beginning and ending parenthesis
   d = dimstring[1:-1]
   # --- Strip out all white space
-  d = re.sub(' ','',d)
-  d = re.sub('\t','',d)
-  d = re.sub('\n','',d)
+  d = re.sub('[ \t\n]','',d)
   # --- Remove optional argument signifying if it is the first character
   if len(d) > 0 and d[0] == ';':
     d = d[1:]
