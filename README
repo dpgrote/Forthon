@@ -11,13 +11,18 @@ written in the much more versatile Python language.
 
 Release Notes:
 
-0.8.5:
+0.8.5: June 30, 2011
  - Minor fix to getobjectsize, adding a check for NameError
  - Now uses PyMem_Malloc and PyMem_Free
  - Added some documentation and error checking in interfaceparser.py
  - Removed old intel compiler ifc
  - Changes to allow inclusion of extra arguments to pass to distutils
  - Changes in pyrestoreforthonobject for code clean up
+ - pydump and pyrestore can now use the PWpickle and PRpickle,
+   or with datawriter, any object with same API
+ - Updated the use of the raise statement
+ - cleaned up handling of online documentation
+ - allowed multiline dimension descriptoin for arrays
 
 0.8.4: May 19, 2010
  - Fixed a memory leak for derived type objects, Decreffing __module__
