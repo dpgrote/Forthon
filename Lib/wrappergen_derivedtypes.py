@@ -44,7 +44,7 @@ class ForthonDerivedType:
           dim = re.sub(ss,'*(long *)obj->fscalars['+repr(sdict[ss])+'].data',
                        dim,count=1)
         else:
-          raise SyntaxError(ss + ' is not declared in a .v file')
+          raise SyntaxError('%s from dim %s is not declared in a .v file'%(ss,dim))
     return string.lower(dim)
 
   # --- Convert variable names in to type elements
@@ -259,7 +259,7 @@ class ForthonDerivedType:
         self.cw('obj->farrays[%d].attributes = "%s";'%(i,a.attr))
         self.cw('obj->farrays[%d].comment = "%s";'%(i,
                             string.replace(repr(a.comment)[1:-1],'"','\\"')))
-        self.cw('obj->farrays[%d].dimstring = "%s";'%(i,a.dimstring))
+        self.cw('obj->farrays[%d].dimstring = "%s";'%(i,repr(a.dimstring)[1:-1]))
       self.cw('}')
 
 #     # --- Write out the table of getset routines
@@ -543,10 +543,10 @@ class ForthonDerivedType:
           else:
             if a.type == 'character':
               self.fw('    CHARACTER(LEN='+a.dims[0].high+'):: '+
-                      a.name+a.dimstring,noreturn=1)
+                      a.name+re.sub('[ \t\n]','',a.dimstring),noreturn=1)
             else:
               self.fw('    '+fvars.ftof(a.type)+':: '+
-                      a.name+a.dimstring)
+                      a.name+re.sub('[ \t\n]','',a.dimstring))
             # --- data statement is handle by the passpointer routine
             #if a.data:
             #  # --- Add line continuation marks if the data line extends over
@@ -885,7 +885,7 @@ class ForthonDerivedType:
           self.fw('  TYPE('+t.name+'):: obj__')
           self.fw('  integer('+isz+'):: dims__('+repr(len(a.dims))+')')
           self.fw('  '+fvars.ftof(a.type)+',target:: '+
-                  'p__'+self.prefixdimsf(a.dimstring,sdict)+'')
+                  'p__'+self.prefixdimsf(re.sub('[ \t\n]','',a.dimstring),sdict)+'')
           self.fw('  obj__%'+a.name+' => p__')
           self.fw('  RETURN')
           self.fw('END')
