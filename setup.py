@@ -83,6 +83,12 @@ GOTO Loop
 else:
   Forthon = 'Forthon'
 
+# --- Force the deletion of the build directory so that a fresh install is
+# --- done every time. This is needed since otherwise, after the first install,
+# --- each subsequent install would use the same Forthon script and not update
+# --- the python path in it appropriately.
+os.system("rm -rf build")
+
 setup (name = "Forthon",
        version = version.__doc__,
        author = 'David P. Grote',
