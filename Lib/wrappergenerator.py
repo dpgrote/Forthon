@@ -2,7 +2,7 @@
 # Python wrapper generation
 # Created by David P. Grote, March 6, 1998
 # Modified by T. B. Yang, May 21, 1998
-# $Id: wrappergenerator.py,v 1.69 2011/05/20 00:09:35 grote Exp $
+# $Id: wrappergenerator.py,v 1.70 2011/08/22 17:45:58 grote Exp $
 
 import sys
 import os.path
@@ -550,7 +550,7 @@ of scalars and arrays.
       # --- dimensions statements will be explicitly evaluated in C.
       if len(f.dimvars) > 0:
         self.cw('  {')
-        self.cw('  int _n;')
+        self.cw('  long _n;')
         # --- Declare the dimension variables.
         for var,i in f.dimvars:
           self.cw('  '+fvars.ftoc(var.type)+' '+var.name+'=*'+
@@ -597,7 +597,7 @@ of scalars and arrays.
                         noreturn=1)
               else:
                 self.cw('    if (!((',noreturn=1)
-              self.cw('_n == (int)(PyArray_DIMS(ax[%d])[%d])))) {'%(i,j))
+              self.cw('_n == (long)(PyArray_DIMS(ax[%d])[%d])))) {'%(i,j))
               self.cw('      sprintf(e,"Dimension '+repr(j+1)+' of argument '+
                                repr(i+1)+ ' in '+f.name+
                                ' has the wrong size");')
