@@ -362,7 +362,7 @@ if machine == 'darwin':
     archtype = os.uname()[-1]
     if archtype in ['Power Macintosh','ppc']:
       os.environ['ARCHFLAGS'] = '-arch ppc'
-    elif archtype == 'i386':
+    elif archtype in ['i386','x86_64']:
       kernel_major = eval(os.uname()[2].split('.')[0])
       if kernel_major < 10 :
         os.environ['ARCHFLAGS'] = '-arch i386'  # Leopard or earlier
