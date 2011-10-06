@@ -99,15 +99,11 @@ class ForthonDerivedType:
   # --- This is the routine that does all of the work for derived types
   def wrapderivedtypes(self,typelist,pname,f90,isz,writemodules,fcompname):
 
-    if len(typelist) > 0:
-      # --- Write out a static variable to hold the fixed name 'pointee' which
-      # --- is used for derived type objects not attached to a fortran
-      # --- variable. Only print this out if there are derived types defined.
-      self.cw('static char* pointee__ = "pointee";')
-
     for t in typelist:
       self.cw('')
       vlist = t.vlist[:]
+
+      self.cw('static char* %spointee__ = "%s";'%(t.name,t.name))
 
       # --- Select out all of the scalars and build a dictionary
       # --- The dictionary is used to get number of the variables use as
@@ -375,7 +371,7 @@ class ForthonDerivedType:
       self.cw('  obj=(ForthonObject *) PyObject_GC_New(ForthonObject,'+
                  '&ForthonType);')
       self.cw('  if (*i > 0) {obj->name = '+pname+'_fscalars[*i].name;}')
-      self.cw('  else        {obj->name = pointee__;}')
+      self.cw('  else        {obj->name = %spointee__;}'%t.name)
       self.cw('  obj->typename = "'+t.name+'";')
       self.cw('  '+t.name+'declarevars(obj);')
       self.cw('  obj->setdims = *'+t.name+'setdims;')
