@@ -1,5 +1,5 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.75 2010/06/29 22:01:01 dave Exp $ */
+/* $Id: Forthon.h,v 1.76 2011/10/11 00:07:53 grote Exp $ */
 
 #include <Python.h>
 
@@ -209,6 +209,18 @@ static int Forthon_checksubroutineargtype(PyObject *pyobj,int type_num)
     /* If the input argument is an array, make sure that it is of the */
     /* correct type. */
     ret = (PyArray_TYPE(pyobj) == type_num);
+    if (!ret) {
+      /* If it is not, do some more checking. In some cases, LONG and INT */
+      /* or DOUBLE and FLOAT may be equivalent. */
+      if (type_num == PyArray_LONG &&
+          PyArray_EquivTypenums(PyArray_LONG,PyArray_INT)) {
+        ret = (PyArray_TYPE(pyobj) == PyArray_INT);
+        }
+      else if (type_num == PyArray_DOUBLE &&
+          PyArray_EquivTypenums(PyArray_DOUBLE,PyArray_FLOAT)) {
+        ret = (PyArray_TYPE(pyobj) == PyArray_FLOAT);
+        }
+      }
     }
   else {
     /* Scalars can always be cast. Note that the data won't be returned */
