@@ -23,6 +23,7 @@ def update():
     updatefile('version.py',vvold,vvnew)
     updatefile('docs/index.html',vvold,vvnew)
     updatefile('Lib/__init__.py',vvold,vvnew)
+    updatefile('setup.py',vvold,vvnew)
 
 if __name__ == "__main__":
     print version.__doc__
