@@ -1,14 +1,18 @@
-#!/bin/env tcsh
-cvs update
+#!/usr/bin/env tcsh
+git pull
+
 python -c "import version;version.update()"
 set vvv=`python version.py`
-mkdir Forthon-$vvv
-cp -a docs README INSTALL Notice simpleexample example Forthon Lib setup.py Src version.py Forthon-$vvv
-tar --exclude build --exclude CVS --exclude \*.so --exclude .\* -czf Forthon-$vvv.tgz Forthon-$vvv
+
+git commit -a -m "version $vvv"
+git tag $vvv
+git push --tags
+
+git archive --worktree-attributes --format=tar --prefix=Forthon-$vvv/ $vvv | gzip > Forthon-$vvv.tgz
+
+
 scp Forthon-$vvv.tgz grote@hifweb:/web/html/Forthon
 scp docs/index.html grote@hifweb:/web/html/Forthon
 ssh hifweb "chmod -R go+rX /web/html/Forthon"
 rm -f Forthon-$vvv.tgz version.pyc
-mv Forthon-$vvv releases
-cvs diff
 
