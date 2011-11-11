@@ -1,0 +1,4 @@
+.gitattributes export-ignore
+update export-ignore
+example2/ export-ignore
+version.py export-ignore
