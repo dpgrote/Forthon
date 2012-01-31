@@ -1710,7 +1710,7 @@ static PyObject *ForthonPackage_delvarattr(PyObject *_self_,PyObject *args)
       return NULL;
       }
     strncpy(newattr,self->fscalars[i].attributes,ind);
-    newattr[ind] = (char) NULL;
+    newattr[ind] = '\0';
     if ((ind+strlen(attr)) < strlen(self->fscalars[i].attributes))
       strcat(newattr,self->fscalars[i].attributes+ind+strlen(attr));
     /* See comments in addvarattr why the free is commented out */
@@ -1735,7 +1735,7 @@ static PyObject *ForthonPackage_delvarattr(PyObject *_self_,PyObject *args)
       return NULL;
       }
     strncpy(newattr,self->farrays[i].attributes,ind);
-    newattr[ind] = (char) NULL;
+    newattr[ind] = '\0';
     if ((ind+strlen(attr)) < strlen(self->farrays[i].attributes))
     strcat(newattr,self->farrays[i].attributes+ind+strlen(attr));
     /* See comments in addvarattr why the free is commented out */
