@@ -530,7 +530,10 @@ Gets the total size of a package or dictionary.
     elif operator.isSequenceType(pkg):
       vv = v
     else:
-      vv = getattr(pkg,v)
+      try:
+        vv = getattr(pkg,v)
+      except AttributeError:
+        vv = 0
     result = result + getobjectsize(vv,'',recursive=recursive,grouplist=grouplist)
 
   # --- Return the result

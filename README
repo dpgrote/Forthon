@@ -11,6 +11,10 @@ written in the much more versatile Python language.
 
 Release Notes:
 
+0.8.7:
+ - updated compile options for intel compilers
+ - made getobjectsize more robust by trapping some errors
+
 0.8.6: October 28, 2011
  - Fix for OSX Lion when using bash
  - Fixed when checking arrays dimensions in Fortran calls

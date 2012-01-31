@@ -175,7 +175,7 @@ appropriate block for the machine.
       self.popt = '-O'
       flibroot,b = os.path.split(self.findfile('ifort'))
       self.libdirs = [flibroot+'/lib']
-      self.libs = ['ifcore','ifport','imf','svml','cxa','irc','unwind']
+      self.libs = ['ifcore','ifport','imf','svml','irc']
       cpuinfo = open('/proc/cpuinfo','r').read()
       if re.search('Pentium III',cpuinfo):
         self.fopt = '-O3 -xK -tpp6 -ip -unroll -prefetch'
@@ -187,9 +187,9 @@ appropriate block for the machine.
         self.f90fixed += ' -fpic'
         self.libs.remove('svml')
       elif struct.calcsize('l') == 8:
-        self.fopt = '-O3 -xW -tpp7 -ip -unroll -prefetch'
+        self.fopt = '-O3 -ip -unroll'
       else:
-        self.fopt = '-O3 -xN -tpp7 -ip -unroll -prefetch'
+        self.fopt = '-O3 -ip -unroll'
       return 1
 
   def linux_g95(self):
