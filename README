@@ -11,7 +11,7 @@ written in the much more versatile Python language.
 
 Release Notes:
 
-0.8.7:
+0.8.7: February 13, 2012
  - updated compile options for intel compilers
  - made getobjectsize more robust by trapping some errors
 
