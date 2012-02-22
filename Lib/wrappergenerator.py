@@ -465,7 +465,7 @@ of scalars and arrays.
       if len(f.args) > 0:
         self.cw('  PyObject * pyobj['+lv+'];')
         self.cw('  PyArrayObject * ax['+lv+'];')
-        self.cw('  int i,argno=0;')
+        self.cw('  int i;')
         self.cw('  char e[256];')
 
       if self.timeroutines:
@@ -501,7 +501,6 @@ of scalars and arrays.
       # --- in what can be passed to fortran functions.
       istr = 0
       for i in range(len(f.args)):
-        self.cw('  argno = %d;'%(i+1))
         if not fvars.isderivedtype(f.args[i]):
           self.cw('  if (!Forthon_checksubroutineargtype(pyobj['+repr(i)+'],'+
               'PyArray_'+fvars.ftop(f.args[i].type)+')) {')
@@ -560,8 +559,6 @@ of scalars and arrays.
         for arg in f.args:
           i += 1
           if len(arg.dims) > 0:
-            # --- Set argno in case there is an error
-            self.cw('  argno = %d;'%(i+1))
             # --- Check the rank of the input argument
             # --- For a 1-D argument, allow a scaler to be passed, which has
             # --- a number of dimensions (nd) == 0.
