@@ -76,7 +76,7 @@ parser.add_option('-L','--libdirs',action='append',default=[],
 parser.add_option('-l','--libs',action='append',default=[],
                   help="Additional libraries that are needed. Note that the prefix 'lib' and any suffixes should not be included.")
 parser.add_option('-t','--machine',default=sys.platform,
-                  help='Machine type. Will automatically be determined if not supplied. Can be one of linux2, aix4, aix5, darwin, win32.')
+                  help='Machine type. Will automatically be determined if not supplied. Can be one of linux2, linux3, aix4, aix5, darwin, win32.')
 parser.add_option('--macros',action='append',dest='othermacros',default=[],
                   metavar="MACROS",
                   help='Other interface files whose macros are needed')
