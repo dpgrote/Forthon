@@ -159,7 +159,7 @@ typedef struct {
   int allocated;
   int garbagecollected;
 } ForthonObject;
-staticforward PyTypeObject ForthonType;
+static PyTypeObject ForthonType;
 
 /* This is needed to settle circular dependencies */
 static PyObject *Forthon_getattro(ForthonObject *self,PyObject *name);
