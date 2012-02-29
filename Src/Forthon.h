@@ -1993,7 +1993,22 @@ static void stringconcatanddel(PyObject **left,char *right)
   PyObject *pyright;
   PyObject *result;
   pyright = PyUnicode_FromString(right);
-  result = PyUnicode_Concat(*left,right);
+  result = PyUnicode_Concat(*left,pyright);
+  Py_DECREF(pyright);
+  Py_DECREF(*left);
+  *left = result;
+}
+static void stringconcatanddellong(PyObject **left,long right)
+{
+  /* This is needed in order to properly handle the creation and destruction */
+  /* of python string objects. */
+  PyObject *pylong;
+  PyObject *pyright;
+  PyObject *result;
+  pylong = PyLong_FromLong(right);
+  pyright = PyObject_Str(pylong);
+  result = PyUnicode_Concat(*left,pyright);
+  Py_DECREF(pylong);
   Py_DECREF(pyright);
   Py_DECREF(*left);
   *left = result;
@@ -2006,7 +2021,7 @@ static PyObject *ForthonPackage_listvar(PyObject *_self_,PyObject *args)
 {
   ForthonObject *self = (ForthonObject *)_self_;
   PyObject *pyi;
-  PyObject *doc,*tmp;
+  PyObject *doc;
   int i,j,charsize;
   char *name;
   char charstring[50];
@@ -2043,7 +2058,7 @@ static PyObject *ForthonPackage_listvar(PyObject *_self_,PyObject *args)
     stringconcatanddel(&doc,"\nAddress:    ");
     if (self->fscalars[i].type == PyArray_OBJECT)
       ForthonPackage_updatederivedtype(self,i,1);
-    stringconcatanddel(&doc,PyObject_Str(PyLong_FromLong((long)(self->fscalars[i].data))));
+    stringconcatanddellong(&doc,(long)(self->fscalars[i].data));
     stringconcatanddel(&doc,"\nComment:\n");
     stringconcatanddel(&doc,self->fscalars[i].comment);
     return doc;
@@ -2065,7 +2080,7 @@ static PyObject *ForthonPackage_listvar(PyObject *_self_,PyObject *args)
     stringconcatanddel(&doc,self->farrays[i].dimstring);
     stringconcatanddel(&doc,"\n            (");
     for (j=0;j<self->farrays[i].nd;j++) {
-      stringconcatanddel(&doc,PyObject_Str(PyLong_FromLong((long)(self->farrays[i].dimensions[j]))));
+      stringconcatanddellong(&doc,(long)(self->farrays[i].dimensions[j]));
       if (j < self->farrays[i].nd-1)
         stringconcatanddel(&doc,", ");
       }
@@ -2076,7 +2091,7 @@ static PyObject *ForthonPackage_listvar(PyObject *_self_,PyObject *args)
       charsize = self->farrays[i].dimensions[self->farrays[i].nd-1];
       sprintf(charstring,"character(%d)",charsize);
       stringconcatanddel(&doc,charstring);
-      /* stringconcatanddel(&doc,PyObject_Str(PyLong_FromLong((long)(self->farrays[i].dimensions[0])))); */
+      /* stringconcatanddellong(&doc,(long)(self->farrays[i].dimensions[0])); */
       }
     else if (self->farrays[i].type == PyArray_LONG) {
       stringconcatanddel(&doc,"integer");}
@@ -2093,13 +2108,13 @@ static PyObject *ForthonPackage_listvar(PyObject *_self_,PyObject *args)
     if (self->farrays[i].pya == NULL) {
       stringconcatanddel(&doc,"unallocated");}
     else {
-      stringconcatanddel(&doc,PyObject_Str(PyLong_FromLong((long)(PyArray_BYTES(self->farrays[i].pya)))));}
+      stringconcatanddellong(&doc,(long)(PyArray_BYTES(self->farrays[i].pya)));}
 
     stringconcatanddel(&doc,"\nPyaddress:  ");
     if ((self->farrays[i].pya) == 0)
       stringconcatanddel(&doc,"unallocated");
     else
-      stringconcatanddel(&doc,PyObject_Str(PyLong_FromLong((long)(self->farrays[i].pya))));
+      stringconcatanddellong(&doc,(long)(self->farrays[i].pya));
 
     stringconcatanddel(&doc,"\nComment:\n");
     stringconcatanddel(&doc,self->farrays[i].comment);
