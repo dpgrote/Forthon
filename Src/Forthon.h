@@ -2332,7 +2332,11 @@ static PyObject *Forthon_getattro(ForthonObject *self,PyObject *oname)
     return Forthon_getarray(self,(void *)i);}
 
   /* Now convert oname into the actual string, checking for errors. */
+#if PY_MAJOR_VERSION >= 3
   name = PyUnicode_AS_DATA(oname);
+#else
+  name = PyString_AsString(oname);
+#endif
   if (name == NULL) return NULL;
 
   /* Check if asking for one of the dictionaries or other names*/
@@ -2414,8 +2418,7 @@ static PyObject *Forthon_repr(ForthonObject *self)
 /* ######################################################################### */
 /* # Package object declaration                                              */
 static PyTypeObject ForthonType = {
-  PyVarObject_HEAD_INIT(NULL, 0)
-  0,                                     /*ob_size*/
+  PyVarObject_HEAD_INIT(NULL, 0)         /*ob_size*/
   "Forthon",                             /*tp_name*/
   sizeof(ForthonObject),                 /*tp_basicsize*/
   0,                                     /*tp_itemsize*/
