@@ -442,6 +442,22 @@ of scalars and arrays.
 #   self.cw('{NULL}};')
 
     ###########################################################################
+    if self.timeroutines:
+      # --- This is written out here instead of just being in Forthon.h
+      # --- so that when it is not used, the compiler doesn't complain
+      # --- about cputime being unused.
+      self.cw('#include <sys/times.h>')
+      self.cw('#include <unistd.h>')
+      self.cw('static double cputime(void)')
+      self.cw('{')
+      self.cw('  struct tms usage;')
+      self.cw('  long hardware_ticks_per_second;')
+      self.cw('  (void) times(&usage);')
+      self.cw('  hardware_ticks_per_second = sysconf(_SC_CLK_TCK);')
+      self.cw('  return (double) usage.tms_utime/hardware_ticks_per_second;')
+      self.cw('}')
+
+    ###########################################################################
     ###########################################################################
     # --- Now, the fun part, writing out the wrapper for the subroutine and
     # --- function calls.

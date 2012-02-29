@@ -34,10 +34,6 @@ typedef int Py_ssize_t;
 #include <pythonrun.h>
 #include "forthonf2c.h"
 
-/* These are included for the cputime routine below. */
-#include <sys/times.h>
-#include <unistd.h>
-
 static PyObject *ErrorObject;
 #define onError(message)                                      \
    { PyErr_SetString(ErrorObject,message); return NULL;}
@@ -189,15 +185,6 @@ static int strfind(char *v,char *s)
     ls--;
     }
   return -1;
-}
-  
-static double cputime(void)
-{
-  struct tms usage;
-  long hardware_ticks_per_second;
-  (void) times(&usage);
-  hardware_ticks_per_second = sysconf(_SC_CLK_TCK);
-  return (double) usage.tms_utime/hardware_ticks_per_second;
 }
 
 /* ###################################################################### */
@@ -583,17 +570,21 @@ static PyObject *Forthon_getarray(ForthonObject *self,void *closure)
   return (PyObject *)farray->pya;
 }
 /* ------------------------------------------------------------------------- */
+/* --- Currently unused - needed for getset scheme
 static PyObject *Forthon_getscalardict(ForthonObject *self,void *closure)
 {
   Py_INCREF(self->scalardict);
   return self->scalardict;
 }
+*/
 /* ------------------------------------------------------------------------- */
+/* --- Currently unused - needed for getset scheme
 static PyObject *Forthon_getarraydict(ForthonObject *self,void *closure)
 {
   Py_INCREF(self->arraydict);
   return self->arraydict;
 }
+*/
 
 /* ######################################################################### */
 /* Memory allocation routines */
@@ -919,17 +910,21 @@ static int Forthon_setarray(ForthonObject *self,PyObject *value,
   return r;
 }
 /* ------------------------------------------------------------------------- */
+/* --- Currently unused - needed for getset scheme
 static int Forthon_setscalardict(ForthonObject *self,void *closure)
 {
   PyErr_SetString(PyExc_TypeError, "Cannot set the scalardict attribute");
   return -1;
 }
+*/
 /* ------------------------------------------------------------------------- */
+/* --- Currently unused - needed for getset scheme
 static int Forthon_setarraydict(ForthonObject *self,void *closure)
 {
   PyErr_SetString(PyExc_TypeError, "Cannot set the arraydict attribute");
   return -1;
 }
+*/
 
 /* ------------------------------------------------------------------------- */
 static int Forthon_traverse(ForthonObject *self,visitproc visit,void *arg)
