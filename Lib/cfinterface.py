@@ -32,7 +32,7 @@ fpsize = 'kind=%s'%realsize
 if machine in ['hp-uxB','aix4','aix5','win32','MAC']:
   def fname(n):
     return string.lower(n)
-elif machine in ['linux2','darwin','SOL','sunos5','AXP','osf1V4','DOS','cygwin']:
+elif machine in ['linux2','linux3','darwin','SOL','sunos5','AXP','osf1V4','DOS','cygwin']:
   if underscoring:
     if twounderscores:
       def fname(n):
@@ -60,7 +60,7 @@ if not f90:
 else:
   def fnameofobj(f):
     return fname(f.name)
-# if machine in ['hp-uxB','linux2', \
+# if machine in ['hp-uxB','linux2','linux3', \
 #                'SOL','sunos5','AXP','osf1V4','DOS','MAC']:
 #   def fnameofobj(f):
 #     return f.name+'_in_'+f.group
@@ -80,7 +80,7 @@ else:
 # Sets up C macros which are used to take the place of the length
 # of a string passed from Fortran to C.
 
-if machine in ['hp-uxB','linux2','darwin','SOL','sunos5','DOS','aix4','aix5','win32','cygwin']:
+if machine in ['hp-uxB','linux2','linux3','darwin','SOL','sunos5','DOS','aix4','aix5','win32','cygwin']:
   charlen_at_end = 1
   forthonf2c = """
 #define FSTRING char*
