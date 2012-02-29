@@ -766,7 +766,7 @@ static int Forthon_setscalarderivedtype(ForthonObject *self,PyObject *value,
       }
     }
 
-  if (strcmp("Forthon",value->ob_type->tp_name) != 0 ||
+  if (strcmp("Forthon",Py_TYPE(value)->tp_name) != 0 ||
       strcmp(((ForthonObject *)value)->typename,fscalar->typename) != 0) {
     PyErr_SetString(ErrorObject,"Right hand side has incorrect type");
     return -1;}
@@ -1068,7 +1068,7 @@ static PyObject *ForthonPackage_getdict(PyObject *_self_,PyObject *args)
       return NULL;}
     }
   /* There is something wrong with this code XXX */
-  /* n = PyString_FromString(self->name); */
+  /* n = PyUnicode_FromString(self->name); */
   /* PyDict_SetItemString(dict,"_name",n); */
   /* Py_DECREF(n); */
   for (j=0;j<self->nscalars;j++) {
@@ -1938,7 +1938,7 @@ static PyObject *ForthonPackage_getvartype(PyObject *_self_,PyObject *args)
   char charstring[50];
   if (!PyArg_ParseTuple(args,"s",&name)) return NULL;
 
-  /* The PyString stuff is done to avoid having to deal with strings at the
+  /* The PyUnicode stuff is done to avoid having to deal with strings at the
      C level, which would require explicit memory allocations (yuck!) */
 
   /* Get index for variable from scalar dictionary */
@@ -1947,17 +1947,17 @@ static PyObject *ForthonPackage_getvartype(PyObject *_self_,PyObject *args)
   if (pyi != NULL) {
     PyArg_Parse(pyi,"i",&i);
     if (self->fscalars[i].type == PyArray_STRING) {
-      return PyString_FromString("character");}
+      return PyUnicode_FromString("character");}
     else if (self->fscalars[i].type == PyArray_LONG) {
-      return PyString_FromString("integer");}
+      return PyUnicode_FromString("integer");}
     else if (self->fscalars[i].type == PyArray_DOUBLE) {
-      return PyString_FromString("double");}
+      return PyUnicode_FromString("double");}
     else if (self->fscalars[i].type == PyArray_CDOUBLE) {
-      return PyString_FromString("double complex");}
+      return PyUnicode_FromString("double complex");}
     else if (self->fscalars[i].type == PyArray_FLOAT) {
-      return PyString_FromString("float");}
+      return PyUnicode_FromString("float");}
     else if (self->fscalars[i].type == PyArray_CFLOAT) {
-      return PyString_FromString("float complex");}
+      return PyUnicode_FromString("float complex");}
     }
 
   /* Get index for variable from array dictionary */
@@ -1968,21 +1968,35 @@ static PyObject *ForthonPackage_getvartype(PyObject *_self_,PyObject *args)
     if (self->farrays[i].type == PyArray_STRING) {
       charsize = self->farrays[i].dimensions[self->farrays[i].nd-1];
       sprintf(charstring,"character(%d)",charsize);
-      return PyString_FromString(charstring);}
+      return PyUnicode_FromString(charstring);}
     else if (self->farrays[i].type == PyArray_LONG) {
-      return PyString_FromString("integer");}
+      return PyUnicode_FromString("integer");}
     else if (self->farrays[i].type == PyArray_DOUBLE) {
-      return PyString_FromString("double");}
+      return PyUnicode_FromString("double");}
     else if (self->farrays[i].type == PyArray_CDOUBLE) {
-      return PyString_FromString("double complex");}
+      return PyUnicode_FromString("double complex");}
     else if (self->farrays[i].type == PyArray_FLOAT) {
-      return PyString_FromString("float");}
+      return PyUnicode_FromString("float");}
     else if (self->farrays[i].type == PyArray_CFLOAT) {
-      return PyString_FromString("float complex");}
+      return PyUnicode_FromString("float complex");}
     }
 
   returnnone;
 
+}
+
+/* ######################################################################### */
+void stringconcatanddel(PyObject **left,char *right)
+{
+  /* This is needed in order to properly handle the creation and destruction */
+  /* of python string objects. */
+  PyObject *pyright;
+  PyObject *result;
+  pyright = PyUnicode_FromString(right);
+  result = PyUnicode_Concat(*left,right);
+  Py_DECREF(pyright);
+  Py_DECREF(*left);
+  *left = result;
 }
 
 /* ######################################################################### */
@@ -1992,13 +2006,13 @@ static PyObject *ForthonPackage_listvar(PyObject *_self_,PyObject *args)
 {
   ForthonObject *self = (ForthonObject *)_self_;
   PyObject *pyi;
-  PyObject *doc;
+  PyObject *doc,*tmp;
   int i,j,charsize;
   char *name;
   char charstring[50];
   if (!PyArg_ParseTuple(args,"s",&name)) return NULL;
 
-  /* The PyString stuff is done to avoid having to deal with strings at the
+  /* The PyUnicode stuff is done to avoid having to deal with strings at the
      C level, which would require explicit memory allocations (yuck!) */
 
   /* Get index for variable from scalar dictionary */
@@ -2006,32 +2020,32 @@ static PyObject *ForthonPackage_listvar(PyObject *_self_,PyObject *args)
   pyi = PyDict_GetItemString(self->scalardict,name);
   if (pyi != NULL) {
     PyArg_Parse(pyi,"i",&i);
-    doc = PyString_FromString("");
-    PyString_ConcatAndDel(&doc,PyString_FromString("Package:    "));
-    PyString_ConcatAndDel(&doc,PyString_FromString(self->name));
-    PyString_ConcatAndDel(&doc,PyString_FromString("\nGroup:      "));
-    PyString_ConcatAndDel(&doc,PyString_FromString(self->fscalars[i].group));
-    PyString_ConcatAndDel(&doc,PyString_FromString("\nAttributes:"));
-    PyString_ConcatAndDel(&doc,PyString_FromString(self->fscalars[i].attributes));
-    PyString_ConcatAndDel(&doc,PyString_FromString("\nType:       "));
+    doc = PyUnicode_FromString("");
+    stringconcatanddel(&doc,"Package:    ");
+    stringconcatanddel(&doc,self->name);
+    stringconcatanddel(&doc,"\nGroup:      ");
+    stringconcatanddel(&doc,self->fscalars[i].group);
+    stringconcatanddel(&doc,"\nAttributes:");
+    stringconcatanddel(&doc,self->fscalars[i].attributes);
+    stringconcatanddel(&doc,"\nType:       ");
     if (self->fscalars[i].type == PyArray_STRING) {
-      PyString_ConcatAndDel(&doc,PyString_FromString("character"));}
+      stringconcatanddel(&doc,"character");}
     else if (self->fscalars[i].type == PyArray_LONG) {
-      PyString_ConcatAndDel(&doc,PyString_FromString("integer"));}
+      stringconcatanddel(&doc,"integer");}
     else if (self->fscalars[i].type == PyArray_DOUBLE) {
-      PyString_ConcatAndDel(&doc,PyString_FromString("double"));}
+      stringconcatanddel(&doc,"double");}
     else if (self->fscalars[i].type == PyArray_CDOUBLE) {
-      PyString_ConcatAndDel(&doc,PyString_FromString("double complex"));}
+      stringconcatanddel(&doc,"double complex");}
     else if (self->fscalars[i].type == PyArray_FLOAT) {
-      PyString_ConcatAndDel(&doc,PyString_FromString("float"));}
+      stringconcatanddel(&doc,"float");}
     else if (self->fscalars[i].type == PyArray_CFLOAT) {
-      PyString_ConcatAndDel(&doc,PyString_FromString("float complex"));}
-    PyString_ConcatAndDel(&doc,PyString_FromString("\nAddress:    "));
+      stringconcatanddel(&doc,"float complex");}
+    stringconcatanddel(&doc,"\nAddress:    ");
     if (self->fscalars[i].type == PyArray_OBJECT)
       ForthonPackage_updatederivedtype(self,i,1);
-    PyString_ConcatAndDel(&doc,PyObject_Str(PyInt_FromLong((long)(self->fscalars[i].data))));
-    PyString_ConcatAndDel(&doc,PyString_FromString("\nComment:\n"));
-    PyString_ConcatAndDel(&doc,PyString_FromString(self->fscalars[i].comment));
+    stringconcatanddel(&doc,PyObject_Str(PyLong_FromLong((long)(self->fscalars[i].data))));
+    stringconcatanddel(&doc,"\nComment:\n");
+    stringconcatanddel(&doc,self->fscalars[i].comment);
     return doc;
     }
 
@@ -2040,55 +2054,55 @@ static PyObject *ForthonPackage_listvar(PyObject *_self_,PyObject *args)
   pyi = PyDict_GetItemString(self->arraydict,name);
   if (pyi != NULL) {
     PyArg_Parse(pyi,"i",&i);
-    doc = PyString_FromString("");
-    PyString_ConcatAndDel(&doc,PyString_FromString("Package:    "));
-    PyString_ConcatAndDel(&doc,PyString_FromString(self->name));
-    PyString_ConcatAndDel(&doc,PyString_FromString("\nGroup:      "));
-    PyString_ConcatAndDel(&doc,PyString_FromString(self->farrays[i].group));
-    PyString_ConcatAndDel(&doc,PyString_FromString("\nAttributes:"));
-    PyString_ConcatAndDel(&doc,PyString_FromString(self->farrays[i].attributes));
-    PyString_ConcatAndDel(&doc,PyString_FromString("\nDimension:  "));
-    PyString_ConcatAndDel(&doc,PyString_FromString(self->farrays[i].dimstring));
-    PyString_ConcatAndDel(&doc,PyString_FromString("\n            ("));
+    doc = PyUnicode_FromString("");
+    stringconcatanddel(&doc,"Package:    ");
+    stringconcatanddel(&doc,self->name);
+    stringconcatanddel(&doc,"\nGroup:      ");
+    stringconcatanddel(&doc,self->farrays[i].group);
+    stringconcatanddel(&doc,"\nAttributes:");
+    stringconcatanddel(&doc,self->farrays[i].attributes);
+    stringconcatanddel(&doc,"\nDimension:  ");
+    stringconcatanddel(&doc,self->farrays[i].dimstring);
+    stringconcatanddel(&doc,"\n            (");
     for (j=0;j<self->farrays[i].nd;j++) {
-      PyString_ConcatAndDel(&doc,PyObject_Str(PyInt_FromLong((long)(self->farrays[i].dimensions[j]))));
+      stringconcatanddel(&doc,PyObject_Str(PyLong_FromLong((long)(self->farrays[i].dimensions[j]))));
       if (j < self->farrays[i].nd-1)
-        PyString_ConcatAndDel(&doc,PyString_FromString(", "));
+        stringconcatanddel(&doc,", ");
       }
-    PyString_ConcatAndDel(&doc,PyString_FromString(")"));
+    stringconcatanddel(&doc,")");
 
-    PyString_ConcatAndDel(&doc,PyString_FromString("\nType:       "));
+    stringconcatanddel(&doc,"\nType:       ");
     if (self->farrays[i].type == PyArray_STRING) {
       charsize = self->farrays[i].dimensions[self->farrays[i].nd-1];
       sprintf(charstring,"character(%d)",charsize);
-      PyString_ConcatAndDel(&doc,PyString_FromString(charstring));
-      /* PyString_ConcatAndDel(&doc,PyObject_Str(PyInt_FromLong((long)(self->farrays[i].dimensions[0])))); */
+      stringconcatanddel(&doc,charstring);
+      /* stringconcatanddel(&doc,PyObject_Str(PyLong_FromLong((long)(self->farrays[i].dimensions[0])))); */
       }
     else if (self->farrays[i].type == PyArray_LONG) {
-      PyString_ConcatAndDel(&doc,PyString_FromString("integer"));}
+      stringconcatanddel(&doc,"integer");}
     else if (self->farrays[i].type == PyArray_DOUBLE) {
-      PyString_ConcatAndDel(&doc,PyString_FromString("double"));}
+      stringconcatanddel(&doc,"double");}
     else if (self->farrays[i].type == PyArray_CDOUBLE) {
-      PyString_ConcatAndDel(&doc,PyString_FromString("double complex"));}
+      stringconcatanddel(&doc,"double complex");}
     else if (self->farrays[i].type == PyArray_FLOAT) {
-      PyString_ConcatAndDel(&doc,PyString_FromString("float"));}
+      stringconcatanddel(&doc,"float");}
     else if (self->farrays[i].type == PyArray_CFLOAT) {
-      PyString_ConcatAndDel(&doc,PyString_FromString("float complex"));}
+      stringconcatanddel(&doc,"float complex");}
 
-    PyString_ConcatAndDel(&doc,PyString_FromString("\nAddress:    "));
+    stringconcatanddel(&doc,"\nAddress:    ");
     if (self->farrays[i].pya == NULL) {
-      PyString_ConcatAndDel(&doc,PyString_FromString("unallocated"));}
+      stringconcatanddel(&doc,"unallocated");}
     else {
-      PyString_ConcatAndDel(&doc,PyObject_Str(PyInt_FromLong((long)(PyArray_BYTES(self->farrays[i].pya)))));}
+      stringconcatanddel(&doc,PyObject_Str(PyLong_FromLong((long)(PyArray_BYTES(self->farrays[i].pya)))));}
 
-    PyString_ConcatAndDel(&doc,PyString_FromString("\nPyaddress:  "));
+    stringconcatanddel(&doc,"\nPyaddress:  ");
     if ((self->farrays[i].pya) == 0)
-      PyString_ConcatAndDel(&doc,PyString_FromString("unallocated"));
+      stringconcatanddel(&doc,"unallocated");
     else
-      PyString_ConcatAndDel(&doc,PyObject_Str(PyInt_FromLong((long)(self->farrays[i].pya))));
+      stringconcatanddel(&doc,PyObject_Str(PyLong_FromLong((long)(self->farrays[i].pya))));
 
-    PyString_ConcatAndDel(&doc,PyString_FromString("\nComment:\n"));
-    PyString_ConcatAndDel(&doc,PyString_FromString(self->farrays[i].comment));
+    stringconcatanddel(&doc,"\nComment:\n");
+    stringconcatanddel(&doc,self->farrays[i].comment);
     return doc;
     }
 
@@ -2141,7 +2155,7 @@ static PyObject *ForthonPackage_setdict(PyObject *_self_,PyObject *args)
   /* Set the object name if it is now "pointee"*/
   /* if (strcmp(self->name,"pointee") == 0) { */
     /* PyMem_Free(self->name); */
-    /* self->name = PyString_AsString(PyDict_GetItemString(dict,"_name")); */
+    /* self->name = PyUnicode_AsString(PyDict_GetItemString(dict,"_name")); */
     /* } */
   /* First set the scalars so that the array dimensions are set. */
   while (PyDict_Next(dict,&pos,&key,&value)) {
@@ -2261,7 +2275,7 @@ static void Forthon_dealloc(ForthonObject *self)
   if (self->garbagecollected) PyObject_GC_UnTrack((PyObject *) self);
   Forthon_clear(self);
   PyObject_GC_Del((PyObject*)self);
-  /* self->ob_type->tp_free((PyObject*)self); */
+  /* Py_TYPE(self)->tp_free((PyObject*)self); */
 }
 
 /* ######################################################################### */
@@ -2308,7 +2322,7 @@ static PyObject *Forthon_getattro(ForthonObject *self,PyObject *oname)
     return Forthon_getarray(self,(void *)i);}
 
   /* Now convert oname into the actual string, checking for errors. */
-  name = PyString_AsString(oname);
+  name = PyUnicode_AsString(oname);
   if (name == NULL) return NULL;
 
   /* Check if asking for one of the dictionaries or other names*/
@@ -2390,7 +2404,7 @@ static PyObject *Forthon_repr(ForthonObject *self)
 /* ######################################################################### */
 /* # Package object declaration                                              */
 static PyTypeObject ForthonType = {
-  PyObject_HEAD_INIT(NULL)
+  PyVarObject_HEAD_INIT(NULL, 0)
   0,                                     /*ob_size*/
   "Forthon",                             /*tp_name*/
   sizeof(ForthonObject),                 /*tp_basicsize*/

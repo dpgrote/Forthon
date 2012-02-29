@@ -758,7 +758,7 @@ of scalars and arrays.
           if re.search('[a-zA-Z]',d.low) == None:
             self.cw('('+d.low+')+1);')
           else:
-            self.cw('('+self.prefixdimsc(d.low,self.sdict)+')+1);',noreturn=1)
+            self.cw('('+self.prefixdimsc(d.low,self.sdict)+')+1);')
         self.cw('  }')
 
     if currentgroup != '':
@@ -846,12 +846,26 @@ of scalars and arrays.
 
     ###########################################################################
     # --- And finally, the initialization function
-    self.cw('#ifndef PyMODINIT_FUNC')
-    self.cw('#define PyMODINIT_FUNC void')
-    self.cw('#endif')
+    if sys.hexversion >= 0x03000000:
+      self.cw('static struct PyModuleDef moduledef = {')
+      self.cw('  PyModuleDef_HEAD_INIT,')
+      self.cw('  "{0}py", /* m_name */'.format(self.pname))
+      self.cw('  "{0}", /* m_doc */'.format(self.pnamd))
+      self.cw('  -1,                  /* m_size */')
+      self.cw('  {0}_methods,    /* m_methods */'.format(self.pname))
+      self.cw('  NULL,                /* m_reload */')
+      self.cw('  NULL,                /* m_traverse */')
+      self.cw('  NULL,                /* m_clear */')
+      self.cw('  NULL,                /* m_free */')
+      self.cw('  };')
+
     self.cw('PyMODINIT_FUNC')
-    self.cw('init'+self.pname+'py(void)')
+    if sys.hexversion >= 0x03000000:
+      self.cw('PyInit_'+self.pname+'py(void)')
+    else:
+      self.cw('init'+self.pname+'py(void)')
     self.cw('{')
+
     self.cw('  PyObject *m;')
     if self.fcompname == 'nag':
       self.cw('  int argc; char **argv;')
@@ -860,8 +874,16 @@ of scalars and arrays.
 #   self.cw('  ForthonType.tp_getset = '+self.pname+'_getseters;')
 #   self.cw('  ForthonType.tp_methods = '+self.pname+'_methods;')
     self.cw('  if (PyType_Ready(&ForthonType) < 0)')
-    self.cw('    return;')
-    self.cw('  m = Py_InitModule("'+self.pname+'py",'+self.pname+'_methods);')
+    if sys.hexversion >= 0x03000000:
+      self.cw('    return NULL;')
+    else:
+      self.cw('    return;')
+
+    if sys.hexversion >= 0x03000000:
+      self.cw('  m = PyModule_Create(&moduledef);')
+    else:
+      self.cw('  m = Py_InitModule("'+self.pname+'py",'+self.pname+'_methods);')
+
    #self.cw('  PyModule_AddObject(m,"'+self.pname+'Type",'+
    #               '(PyObject *)&ForthonType);')
     self.cw('  '+self.pname+'Object=(ForthonObject *)'+
@@ -886,12 +908,12 @@ of scalars and arrays.
     self.cw('  '+self.pname+'Object->garbagecollected = 0;')
     self.cw('  PyModule_AddObject(m,"'+self.pname+'",(PyObject *)'+
                 self.pname+'Object);')
-    self.cw('  ErrorObject = PyString_FromString("'+self.pname+'py.error");')
+    self.cw('  ErrorObject = PyUnicode_FromString("'+self.pname+'py.error");')
     self.cw('  PyModule_AddObject(m,"'+self.pname+'error", ErrorObject);')
     self.cw('  PyModule_AddObject(m,"fcompname",'+
-               'PyString_FromString("'+self.fcompname+'"));')
+               'PyUnicode_FromString("'+self.fcompname+'"));')
     self.cw('  PyModule_AddObject(m,"realsize",'+
-               'PyInt_FromLong((long)%s'%realsize+'));')
+               'PyLong_FromLong((long)%s'%realsize+'));')
     self.cw('  if (PyErr_Occurred()) {')
     self.cw('    PyErr_Print();')
     self.cw('    Py_FatalError("can not initialize module '+self.pname+'");')
@@ -937,11 +959,14 @@ of scalars and arrays.
       self.cw('  /* Initialize FORTRAN on CYGWIN */')
       self.cw(' initPGfortran();')
 
+    if sys.hexversion >= 0x03000000:
+      self.cw('  return m;')
+
     self.cw('}')
     self.cw('')
 
     ###########################################################################
-    # --- --- Close the c package module file
+    # --- Close the c package module file
     self.cfile.close()
 
     ###########################################################################
