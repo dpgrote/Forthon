@@ -1986,7 +1986,7 @@ static PyObject *ForthonPackage_getvartype(PyObject *_self_,PyObject *args)
 }
 
 /* ######################################################################### */
-void stringconcatanddel(PyObject **left,char *right)
+static void stringconcatanddel(PyObject **left,char *right)
 {
   /* This is needed in order to properly handle the creation and destruction */
   /* of python string objects. */
@@ -2155,7 +2155,7 @@ static PyObject *ForthonPackage_setdict(PyObject *_self_,PyObject *args)
   /* Set the object name if it is now "pointee"*/
   /* if (strcmp(self->name,"pointee") == 0) { */
     /* PyMem_Free(self->name); */
-    /* self->name = PyUnicode_AsString(PyDict_GetItemString(dict,"_name")); */
+    /* self->name = PyUnicode_AS_DATA(PyDict_GetItemString(dict,"_name")); */
     /* } */
   /* First set the scalars so that the array dimensions are set. */
   while (PyDict_Next(dict,&pos,&key,&value)) {
@@ -2322,7 +2322,7 @@ static PyObject *Forthon_getattro(ForthonObject *self,PyObject *oname)
     return Forthon_getarray(self,(void *)i);}
 
   /* Now convert oname into the actual string, checking for errors. */
-  name = PyUnicode_AsString(oname);
+  name = PyUnicode_AS_DATA(oname);
   if (name == NULL) return NULL;
 
   /* Check if asking for one of the dictionaries or other names*/
