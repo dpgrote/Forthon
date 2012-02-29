@@ -9,11 +9,11 @@ try:
     from distutils.core import setup
     from distutils.command.install import INSTALL_SCHEMES
 except:
-    raise SystemExit, "Distutils problem"
+    raise SystemExit("Distutils problem")
 
 # --- With this, the data_files listed in setup will be installed in
 # --- the usual place in site-packages.
-for scheme in INSTALL_SCHEMES.values():
+for scheme in INSTALL_SCHEMES.itervalues():
     scheme['data'] = scheme['purelib']
 
 try:
