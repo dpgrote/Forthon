@@ -31,8 +31,12 @@ class ForthonDerivedType:
     """
     name = type.name+prefix+suffix
     if len(name) < 32 or not dohash: return name
-    hash = string.translate(hashlib.md5(name).digest(),
-                            ForthonDerivedType.transtable)
+    transtable = ForthonDerivedType.transtable
+    if sys.hexversion >= 0x03000000:
+      hashbytes = hashlib.md5(name.encode()).digest()
+      hash = ''.join([transtable[d] for d in hashbytes])
+    else:
+      hash = hashlib.md5(name).digest().translate(transtable)
     return name[:15] + hash
 
   # --- Convert fortran variable name into reference from list of variables.

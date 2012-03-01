@@ -71,7 +71,12 @@ Usage:
     """
     name = self.pname+prefix+suffix
     if len(name) < 32: return name
-    hash = string.translate(hashlib.md5(name).digest(),PyWrap.transtable)
+    transtable = PyWrap.transtable
+    if sys.hexversion >= 0x03000000:
+      hashbytes = hashlib.md5(name.encode()).digest()
+      hash = ''.join([transtable[d] for d in hashbytes])
+    else:
+      hash = hashlib.md5(name).digest().translate(transtable)
     return name[:15] + hash
 
   def prefixdimsc(self,dim,sdict):
