@@ -114,13 +114,12 @@ def registerpackage(pkg,name):
   # --- For each package, which has its own type, the pickling functions
   # --- must be registered for that type. Note that this is not needed
   # --- for packages that are class instances.
-  try:
-    pkg.__class__
-    assert isinstance(pkg,PackageBase),\
-           "Only instances of classes inheritting from PackageBase can be registered as a package"
-  except AttributeError:
+  if IsForthonType(pkg):
     import copy_reg
     copy_reg.pickle(type(pkg),pickle_forthonobject,forthonobject_constructor)
+  else:
+    assert isinstance(pkg,PackageBase),\
+           "Only instances of classes inheritting from PackageBase can be registered as a package"
 
   _pkg_dict[name] = pkg
   _pkg_list.append(name)

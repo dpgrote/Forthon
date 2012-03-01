@@ -147,7 +147,7 @@ typedef struct {
   void (*setdims)();
   void (*setstaticdims)();
   PyMethodDef *fmethods;
-  PyObject *scalardict,*arraydict;
+  PyObject *scalardict,*arraydict,*funcdict;
   PyObject *__module__;
   char *fobj;
   void (*fobjdeallocate)();
@@ -270,6 +270,23 @@ static void Forthon_BuildDicts(ForthonObject *self)
     }
   self->scalardict = sdict;
   self->arraydict = adict;
+
+  {
+  /* For functions, the values are the python callable functions themselves */
+  /* rather than an index. */
+  PyObject *fdict;
+  PyMethodDef *ml;
+  fdict = PyDict_New();
+  for (ml = self->fmethods; ml->ml_name != NULL; ml++) {
+    PyDict_SetItemString(fdict,ml->ml_name,
+                         (PyObject *)PyCFunction_New(ml,(PyObject *)self));
+    }
+  for (ml = getForthonPackage_methods(); ml->ml_name != NULL; ml++) {
+    PyDict_SetItemString(fdict,ml->ml_name,
+                         (PyObject *)PyCFunction_New(ml,(PyObject *)self));
+    }
+  self->funcdict = fdict;
+  }
 }
 static void Forthon_DeleteDicts(ForthonObject *self)
 {
@@ -1129,23 +1146,9 @@ static char getfunctions_doc[] = "Builds a dictionary containing all of the func
 static PyObject *ForthonPackage_getfunctions(PyObject *_self_,PyObject *args)
 {
   ForthonObject *self = (ForthonObject *)_self_;
-  PyObject *dict,*name;
-  PyMethodDef *ml;
   if (!PyArg_ParseTuple(args,"")) return NULL;
-  dict = PyDict_New();
-  ml = getForthonPackage_methods();
-  for (; ml->ml_name != NULL; ml++) {
-    name = Py_BuildValue("s",ml->ml_name);
-    PyDict_SetItem(dict,name,(PyObject *)PyCFunction_New(ml, _self_));
-    Py_DECREF(name);
-    }
-  ml = self->fmethods;
-  for (; ml->ml_name != NULL; ml++) {
-    name = Py_BuildValue("s",ml->ml_name);
-    PyDict_SetItem(dict,name,(PyObject *)PyCFunction_New(ml, _self_));
-    Py_DECREF(name);
-    }
-  return dict;
+  Py_INCREF(self->funcdict);
+  return self->funcdict;
 }
 
 /* ######################################################################### */
@@ -2242,7 +2245,7 @@ static PyObject *ForthonPackage_varlist(PyObject *_self_,PyObject *args)
 
 /* ######################################################################### */
 /* # Method list                                                            */
-/* Methods which are callable as attributes of a package                   */
+/* Methods which are callable as attributes of a Forthon object            */
 static struct PyMethodDef ForthonPackage_methods[] = {
   {"addvarattr"  ,(PyCFunction)ForthonPackage_addvarattr,1,addvarattr_doc},
   {"allocated"   ,(PyCFunction)ForthonPackage_allocated,1,allocated_doc},
@@ -2295,7 +2298,11 @@ static PyObject *Forthon_getattro(ForthonObject *self,PyObject *oname)
   long i;
   PyObject *pyi;
   PyObject *meth;
+#if PY_MAJOR_VERSION >= 3
+  const char *name;
+#else
   char *name;
+#endif
 
   /* Get index for variable from scalar dictionary */
   /* If it is not found, the pyi is returned as NULL */
@@ -2354,12 +2361,16 @@ static PyObject *Forthon_getattro(ForthonObject *self,PyObject *oname)
     return self->__module__;
     }
 
-  /* # Look through the method lists */
-  meth = Py_FindMethod(self->fmethods,(PyObject *)self,name);
-  if (meth == NULL) {
-    PyErr_Clear();
-    meth = Py_FindMethod(ForthonPackage_methods,(PyObject *)self,name);
+  /* Look through the method dictionary */
+  meth = PyDict_GetItem(self->funcdict,oname);
+  if (meth != NULL) {
+    Py_INCREF(meth);
+    return meth;
     }
+
+  /* The last resort, the standard getattr */
+  meth = PyObject_GenericGetAttr((PyObject *)self,oname);
+  Py_XINCREF(meth);
   return meth;
 }
 
