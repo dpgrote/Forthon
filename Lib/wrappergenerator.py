@@ -1181,7 +1181,8 @@ of scalars and arrays.
 
     # --- --- Close fortran file
     self.ffile.close()
-    scalar_pickle_file = open(self.pname + '.scalars','w')
+
+    scalar_pickle_file = open(self.pname + '.scalars','wb')
     self.sdict ['_module_name_'] = self.pname
     pickle.dump (self.sdict, scalar_pickle_file)
     pickle.dump (self.slist, scalar_pickle_file)
@@ -1249,7 +1250,7 @@ module_prefix_pat = re.compile ('([a-zA-Z_][a-zA-Z0-9_]*)\.scalars')
 def get_another_scalar_dict(file_name,other_scalar_vars):
   m = module_prefix_pat.search(file_name)
   if m.start() == -1: raise SyntaxError('expect a .scalars file')
-  f = open(file_name,'r')
+  f = open(file_name,'rb')
   vars = []
   vars.append(pickle.load(f))
   vars.append(pickle.load(f))
