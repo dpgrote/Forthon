@@ -8,7 +8,6 @@
 # to python (or other scripting language).
 
 import sys
-import string
 import fvars
 import re
 if sys.version[0] == '1':
@@ -37,7 +36,7 @@ def processfile(packname,filename,othermacros=[],timeroutines=0):
   # Get the package name (first line of file) and strip it from the text
   i = re.search('[\n \t#]',text).start()
   line = text[:i]
-  text = string.strip(text[i+1:])
+  text = text[i+1:].strip()
 
   # Check to make sure that the package name is correct
   if packname != line:
@@ -61,7 +60,7 @@ typing ":set fileformat=unix" and then saving the file.)
 
   # Get rid of any initial comments and blank lines
   while len(text) > 0 and text[0] ==  '#':
-    text = string.strip(text[re.search('\n',text).start()+1:])
+    text = text[re.search('\n',text).start()+1:].strip()
 
   # Get macros (everthing between curly braces) from other files and
   # prepend to current file (inside curly braces).
@@ -78,21 +77,21 @@ typing ":set fileformat=unix" and then saving the file.)
   if len(text) > 0 and text[0] == '{':
     while text[0] != '}':
       if 'a' <= text[0] and text[0] <= 'z' or 'A' <= text[0] and text[0] <= 'Z':
-        macro = string.strip(text[0:re.search('=',text).start()])
-        text = string.strip(text[re.search('=',text).start()+1:])
-        value = string.strip(text[0:re.search('[#\n]',text).start()])
+        macro = text[0:re.search('=',text).start()].strip()
+        text = text[re.search('=',text).start()+1:].strip()
+        value = text[0:re.search('[#\n]',text).start()].strip()
         value = repr(eval(value))
         if sys.version[0] == '1':
           text = regsub.gsub('\<'+macro+'\>',value,text)
         else:
           text = re.sub('(?<=\W)'+macro+'(?=\W)',value,text)
         text = re.sub('/'+macro+'/','/'+value+'/',text)
-      text = string.strip(text[re.search('\n',text).start()+1:])
-    text = string.strip(text[re.search('\n',text).start()+1:])
+      text = text[re.search('\n',text).start()+1:].strip()
+    text = text[re.search('\n',text).start()+1:].strip()
 
   # Get rid of any comments and blank lines
   while len(text) > 0 and text[0] ==  '#':
-    text = string.strip(text[re.search('\n',text).start()+1:])
+    text = text[re.search('\n',text).start()+1:].strip()
 
   # Parse rest of file, gathering variables
 
@@ -129,18 +128,18 @@ typing ":set fileformat=unix" and then saving the file.)
         raise SyntaxError('Line defining the group is invalid\n%s'%g.group(1))
       # Then get new group name
       i = re.search(':',text).start()
-      g = string.split(text[:i])
+      g = text[:i].split()
       group = g[1]
       # Include group name as an attribute
-      attributes = ' '+string.join(g[1:])+' '
+      attributes = ' '+' '.join(g[1:])+' '
       # Look for the 'hidden' attribute
       hidden = 0
       if re.search(' hidden ',attributes) != None:
         hidden = 1
       # Strip off group name and any comments
-      text = string.strip(text[i+1:]) + '\n'
+      text = text[i+1:].strip() + '\n'
       while text[0] ==  '#':
-        text = string.strip(text[re.search('\n',text).start()+1:]) + '\n'
+        text = text[re.search('\n',text).start()+1:].strip() + '\n'
       # Set i so that nothing is stripped off at end of 'if' block
       i = -1
       readyfortype = 0
@@ -150,7 +149,7 @@ typing ":set fileformat=unix" and then saving the file.)
       istype = 1
       # Then get new type name
       i = re.search(':',text).start()
-      tname = string.split(text[:i])[1]
+      tname = text[:i].split()[1]
       group = tname
       # Include group name as an attribute
       attributes = ' '+tname+' '
@@ -158,9 +157,9 @@ typing ":set fileformat=unix" and then saving the file.)
       ftype = fvars.Ftype(tname,attributes)
       typelist.append(ftype)
       # Strip off group name and any comments
-      text = string.strip(text[i+1:]) + '\n'
+      text = text[i+1:].strip() + '\n'
       while text[0] ==  '#':
-        text = string.strip(text[re.search('\n',text).start()+1:]) + '\n'
+        text = text[re.search('\n',text).start()+1:].strip() + '\n'
       # Set i so that nothing is stripped off at end of 'if' block
       i = -1
       readyfortype = 0
@@ -389,7 +388,7 @@ typing ":set fileformat=unix" and then saving the file.)
 
     # Strip off field which was just parsed
     try:
-      text = string.strip(text[i+1:])
+      text = text[i+1:].strip()
     except IndexError:
       text = ''
 
@@ -406,7 +405,7 @@ typing ":set fileformat=unix" and then saving the file.)
       dims = v.dims
       v.dims = []
       for d in dims:
-        sd = string.splitfields(d,':')
+        sd = d.split(':')
         fd = fvars.Fdims()
         if len(sd) == 1:
           fd.low = '1'
@@ -456,7 +455,7 @@ typing ":set fileformat=unix" and then saving the file.)
         if ma.group() == '(':
           i = findmatchingparenthesis(ma.start(),a,v.name)
           fa.dimstring = a[ma.start():i+1]
-          dimlist = string.split(fa.dimstring[1:-1],',')
+          dimlist = fa.dimstring[1:-1].split(',')
           fa.dims = processargdimvars(dimlist,v.dimvars)
           a = a[i+1:]
           ma = re.search("[:]|\Z",a)
@@ -554,7 +553,7 @@ def processargdimvars(dims,dimvars):
     fd = fvars.Fdims()
     dimlist = dimlist + [fd]
     # --- Find the low and high pieces, which are separated by a colon
-    sd = string.splitfields(d,':')
+    sd = d.split(':')
     if len(sd) == 1:
       fd.low = '1'
       fd.high = sd[0]

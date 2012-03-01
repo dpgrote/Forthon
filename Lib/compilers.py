@@ -3,7 +3,6 @@ for it.
 """
 
 import sys,os,re
-import string
 import struct
 from cfinterface import realsize,intsize
 
@@ -34,7 +33,7 @@ appropriate block for the machine.
       self.processor = os.uname()[4]
     else:
       self.processor = 'i686'
-    self.paths = string.split(os.environ['PATH'],os.pathsep)
+    self.paths = os.environ['PATH'].split(os.pathsep)
 
     self.fcompname = fcompname
     self.fcompexec = fcompexec

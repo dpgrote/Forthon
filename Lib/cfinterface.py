@@ -3,7 +3,6 @@
 
 # Routines which allows c functions to be callable by fortran
 import sys
-import string
 import re
 import struct
 
@@ -31,23 +30,23 @@ fpsize = 'kind=%s'%realsize
 
 if machine in ['hp-uxB','aix4','aix5','win32','MAC']:
   def fname(n):
-    return string.lower(n)
+    return n.lower()
 elif machine in ['linux2','linux3','darwin','SOL','sunos5','AXP','osf1V4','DOS','cygwin']:
   if underscoring:
     if twounderscores:
       def fname(n):
         m = re.search('_',n)
-        if m == None: return string.lower(n+'_')
-        else:         return string.lower(n+'__')
+        if m == None: return n.lower()+'_'
+        else:         return n.lower()+'__'
     else:
       def fname(n):
-        return string.lower(n+'_')
+        return n.lower()+'_'
   else:
     def fname(n):
-      return string.lower(n)
+      return n.lower()
 elif machine in ['T3E','sn67112','C90','J90','SGI','irix646']:
   def fname(n):
-    return string.upper(n)
+    return n.upper()
 else:
   raise ValueError('Machine %s not supported'%machine)
 
@@ -66,10 +65,10 @@ else:
 #     return f.name+'_in_'+f.group
 # elif machine in ['T3E','sn67112','C90','J90']:
 #   def fnameofobj(f):
-#     return string.upper(f.name)+'_in_'+string.upper(f.group)
+#     return f.name.upper()+'_in_'+f.group.upper()
 # elif machine in ['SGI','irix646']:
 #   def fnameofobj(f):
-#     return string.upper(f.name)+'.in.'+string.upper(f.group)
+#     return f.name.upper()+'.in.'+f.group.upper()
 # elif machine in ['aix4']:
 #   def fnameofobj(f):
 #     return '__'+f.group+'_MOD_'+f.name

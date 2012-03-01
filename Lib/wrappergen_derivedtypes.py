@@ -44,12 +44,12 @@ class ForthonDerivedType:
     sl=re.split('[ ()/\*\+\-]',dim)
     for ss in sl:
       if re.search('[a-zA-Z]',ss) != None:
-        if sdict.has_key (ss):
+        if ss in sdict:
           dim = re.sub(ss,'*(long *)obj->fscalars['+repr(sdict[ss])+'].data',
                        dim,count=1)
         else:
           raise SyntaxError('%s from dim %s is not declared in a .v file'%(ss,dim))
-    return string.lower(dim)
+    return dim.lower()
 
   # --- Convert variable names in to type elements
   def prefixdimsf(self,dim,sdict):
@@ -63,19 +63,19 @@ class ForthonDerivedType:
     # --- But this works as is and is fast enough.
     for ss in sl:
       if re.search('[a-zA-Z]',ss) != None:
-        if sdict.has_key(ss):
+        if ss in sdict:
           dim = re.sub(ss,'obj__%==',dim,count=1)
     for ss in sl:
       if re.search('[a-zA-Z]',ss) != None:
-        if sdict.has_key(ss):
+        if ss in sdict:
           dim = re.sub('==',ss,dim,count=1)
     # --- Check for any unspecified dimensions and replace it with an element
     # --- from the dims array.
     sl = re.split(',',dim[1:-1])
     for i in range(len(sl)):
       if sl[i] == ':': sl[i] = 'dims__(%d)'%(i+1)
-    dim = '(' + string.join(sl,',') + ')'
-    return string.lower(dim)
+    dim = '(' + ','.join(sl) + ')'
+    return dim.lower()
 
   # --------------------------------------------
   def cw(self,text,noreturn=0):
@@ -208,7 +208,7 @@ class ForthonDerivedType:
         self.cw('obj->fscalars[%d].group = "%s";'%(i,t.name))
         self.cw('obj->fscalars[%d].attributes = "%s";'%(i,s.attr))
         self.cw('obj->fscalars[%d].comment = "%s";'%(i,
-                             string.replace(repr(s.comment)[1:-1],'"','\\"')))
+                             repr(s.comment)[1:-1].replace('"','\\"')))
                              # The repr is used so newlines get written out
                              # as \n.
         self.cw('obj->fscalars[%d].dynamic = %d;'%(i,s.dynamic))
@@ -258,7 +258,7 @@ class ForthonDerivedType:
         self.cw('obj->farrays[%d].group = "%s";'%(i,a.group))
         self.cw('obj->farrays[%d].attributes = "%s";'%(i,a.attr))
         self.cw('obj->farrays[%d].comment = "%s";'%(i,
-                            string.replace(repr(a.comment)[1:-1],'"','\\"')))
+                            repr(a.comment)[1:-1].replace('"','\\"')))
         self.cw('obj->farrays[%d].dimstring = "%s";'%(i,repr(a.dimstring)[1:-1]))
       self.cw('}')
 
@@ -275,13 +275,13 @@ class ForthonDerivedType:
 #       else:                    gstype = 'derivedtype'
 #       self.cw('{"'+s.name+'",(getter)Forthon_getscalar'+gstype+
 #                            ',(setter)Forthon_setscalar'+gstype+
-#                      ',"%s"'%string.replace(repr(s.comment)[1:-1],'"','\\"') +
+#                      ',"%s"'%repr(s.comment)[1:-1].replace('"','\\"') +
 #                           ',(void *)'+repr(i)+'},')
 #     for i in range(len(alist)):
 #       a = alist[i]
 #       self.cw('{"'+a.name+'",(getter)Forthon_getarray'+
 #                            ',(setter)Forthon_setarray'+
-#                      ',"%s"'%string.replace(repr(a.comment)[1:-1],'"','\\"') +
+#                      ',"%s"'%repr(a.comment)[1:-1].replace('"','\\"') +
 #                           ',(void *)'+repr(i)+'},')
 #     self.cw('{"scalardict",(getter)Forthon_getscalardict,'+
 #                           '(setter)Forthon_setscalardict,'+

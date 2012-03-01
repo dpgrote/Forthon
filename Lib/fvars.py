@@ -73,11 +73,11 @@ ftof_dict = {'integer':'integer('+cfinterface.isz+')',
              'complex':'complex(kind=8)'}
 
 def isderivedtype(arg):
-  if arg.type in ftoc_dict.keys(): return 0
+  if arg.type in ftoc_dict: return 0
   else: return 1
 
 def ftoc(type):
-  if type in ftoc_dict.keys(): return ftoc_dict[type]
+  if type in ftoc_dict: return ftoc_dict[type]
   else: return 'char'
 
 def ftop(type):
@@ -89,6 +89,6 @@ def ftop(type):
   return result
 
 def ftof(type):
-  if type in ftof_dict.keys(): return ftof_dict[type]
+  if type in ftof_dict: return ftof_dict[type]
   else: return 'TYPE(%s)'%type
 

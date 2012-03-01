@@ -72,7 +72,7 @@ Prints info about the function and all of its callees, up to the input level.
     if self.time > mintime:
       print "%2d%s%s %d %f"%(self.level,self.level*'  ',self.name,
                              self.ncalls,self.time)
-    for v in self.subtimers.values():
+    for v in self.subtimers.itervalues():
       v.out(maxlevel,mintime)
 
 class ForthonProfiler:

@@ -236,7 +236,7 @@ for d in (defines + fcompiler.defines):
 fortranroot,suffix = os.path.splitext(fortranfile)
 if fcompiler.static:
   defaultrule = 'static:'
-  raise InputError,'Static linking not supported at this time'
+  raise InputError('Static linking not supported at this time')
 else:
   defaultrule = 'dynamic: %(compile_first)s %(pkg)s_p%(osuffix)s %(fortranroot)s%(osuffix)s %(pkg)spymodule.c Forthon.h Forthon.c %(extraobjectsstr)s'%locals()
 
@@ -335,10 +335,10 @@ try:
 except:
   pass
 
-addbuilddir = lambda p:os.path.join(builddir,p)
-cfiles = map(addbuilddir,[pkg+'pymodule.c','Forthon.c'])
-ofiles = map(addbuilddir,[fortranroot+osuffix,pkg+'_p'+osuffix]+
-             extraobjectslist)
+cfiles = [os.path.join(builddir,p) for p in [pkg+'pymodule.c','Forthon.c']]
+ofiles = [os.path.join(builddir,p) for p in [fortranroot+osuffix,
+                                             pkg+'_p'+osuffix] +
+                                             extraobjectslist]
 
 # --- DOS requires an extra argument and include directory to build properly
 if machine == 'win32': sys.argv.append('--compiler=mingw32')
@@ -348,7 +348,7 @@ if machine == 'win32': includedirs+=['/usr/include']
 # --- This fixes it.
 if machine == 'darwin':
 # --- Machines running csh/tcsh seem to have MACHTYPE defined and this is the safest way to set -arch.
-  if os.environ.has_key('MACHTYPE'):
+  if 'MACHTYPE' in os.environ:
     if os.environ['MACHTYPE'] == 'i386':
       os.environ['ARCHFLAGS'] = '-arch i386'
     elif os.environ['MACHTYPE'] == 'x86_64':

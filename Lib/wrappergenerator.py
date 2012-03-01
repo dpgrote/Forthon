@@ -84,20 +84,20 @@ Usage:
     sl=re.split('[ ()/\*\+\-]',dim)
     for ss in sl:
       if re.search('[a-zA-Z]',ss) != None:
-        if sdict.has_key (ss):
+        if ss in sdict:
           dim = re.sub(ss,
                    '*(long *)'+self.pname+'_fscalars['+repr(sdict[ss])+'].data',
                    dim,count=1)
         else:
           for other_vars in self.other_scalar_vars:
             other_dict = other_vars[0]
-            if other_dict.has_key (ss):
+            if ss in other_dict:
               dim = re.sub(ss,'*(long *)'+other_dict['_module_name_']+
                         '_fscalars['+repr(other_dict[ss])+'].data',dim,count=1)
               break
           else:
             raise SyntaxError(ss + ' is not declared in the interface file')
-    return string.lower(dim)
+    return dim.lower()
 
   # --- Convert dimensions for unspecified arrays
   def prefixdimsf(self,dim):
@@ -106,8 +106,8 @@ Usage:
     sl = re.split(',',dim[1:-1])
     for i in range(len(sl)):
       if sl[i] == ':': sl[i] = 'dims__(%d)'%(i+1)
-    dim = '(' + string.join(sl,',') + ')'
-    return string.lower(dim)
+    dim = '(' + ','.join(sl) + ')'
+    return dim.lower()
 
   def dimsgroups(self,dim,sdict,slist):
     # --- Returns a list of group names that contain the variables listed in
@@ -116,13 +116,13 @@ Usage:
     sl=re.split('[ (),:/\*\+\-]',dim)
     for ss in sl:
       if re.search('[a-zA-Z]',ss) != None:
-        if sdict.has_key(ss):
+        if ss in sdict:
           groups.append(slist[sdict[ss]].group)
         else:
           for other_vars in self.other_scalar_vars:
             other_dict = other_vars[0]
             other_list = other_vars[1]
-            if other_dict.has_key(ss):
+            if ss in other_dict:
               groups.append(other_list[other_dict[ss]].group)
               break
           else:
@@ -334,7 +334,7 @@ of scalars and arrays.
                  'NULL,' + 
                  '"%s",'%s.group + 
                  '"%s",'%s.attr + 
-                 '"%s",'%string.replace(repr(s.comment)[1:-1],'"','\\"') + 
+                 '"%s",'%repr(s.comment)[1:-1].replace('"','\\"') + 
                  '%i,'%s.dynamic + 
                  'NULL,' + # setpointer
                  'NULL,' + # getpointer
@@ -371,7 +371,7 @@ of scalars and arrays.
                   'NULL,' +
                   '"%s",'%a.group +
                   '"%s",'%a.attr +
-                  '"%s",'%string.replace(repr(a.comment)[1:-1],'"','\\"') +
+                  '"%s",'%repr(a.comment)[1:-1].replace('"','\\"') +
                   '"%s"}'%repr(a.dimstring)[1:-1],noreturn=1)
         if i < len(self.alist)-1: self.cw(',')
       self.cw('};')
@@ -430,13 +430,13 @@ of scalars and arrays.
 #     else:                    gstype = 'derivedtype'
 #     self.cw('{"'+s.name+'",(getter)Forthon_getscalar'+gstype+
 #                          ',(setter)Forthon_setscalar'+gstype+
-#                    ',"%s"'%string.replace(repr(s.comment)[1:-1],'"','\\"') +
+#                    ',"%s"'%repr(s.comment)[1:-1].replace('"','\\"') +
 #                         ',(void *)'+repr(i)+'},')
 #   for i in range(len(self.alist)):
 #     a = self.alist[i]
 #     self.cw('{"'+a.name+'",(getter)Forthon_getarray'+
 #                          ',(setter)Forthon_setarray'+
-#                    ',"%s"'%string.replace(repr(a.comment)[1:-1],'"','\\"') +
+#                    ',"%s"'%repr(a.comment)[1:-1].replace('"','\\"') +
 #                         ',(void *)'+repr(i)+'},')
 #   self.cw('{"scalardict",(getter)Forthon_getscalardict,'+
 #                         '(setter)Forthon_setscalardict,'+
@@ -871,7 +871,7 @@ of scalars and arrays.
       self.cw('static struct PyModuleDef moduledef = {')
       self.cw('  PyModuleDef_HEAD_INIT,')
       self.cw('  "{0}py", /* m_name */'.format(self.pname))
-      self.cw('  "{0}", /* m_doc */'.format(self.pnamd))
+      self.cw('  "{0}", /* m_doc */'.format(self.pname))
       self.cw('  -1,                  /* m_size */')
       self.cw('  {0}_methods,    /* m_methods */'.format(self.pname))
       self.cw('  NULL,                /* m_reload */')
@@ -1179,7 +1179,7 @@ of scalars and arrays.
       self.fw('      return')
       self.fw('      end')
 
-    # --- --- Close fortran file
+    # --- Close fortran file
     self.ffile.close()
 
     scalar_pickle_file = open(self.pname + '.scalars','wb')
@@ -1297,7 +1297,7 @@ class PrintEval:
     def __init__(self, globals=None, locals=None):
         self.globals = globals or {}
         self.locals = locals or None
-        
+
     def __getitem__(self, key):
         if self.locals is None:
             self.locals = sys._getframe(1).f_locals

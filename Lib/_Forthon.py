@@ -14,7 +14,6 @@ def gettypecode(x):
   return x.dtype.char
 
 from types import *
-import string
 import re
 import os
 import copy
@@ -143,7 +142,7 @@ def gallot(group='*',iverbose=0):
 If the group is not given or is '*', then all groups are allocated.
 When optional argument iverbose is true, the variables allocated and their new size is printed.
   """
-  for pkg in _pkg_dict.values():
+  for pkg in _pkg_dict.itervalues():
     r = pkg.gallot(group,iverbose)
     if r and (group != '*'): return
   if group != '*': raise NameError("No such group")
@@ -153,7 +152,7 @@ def gchange(group='*',iverbose=0):
 If the group is not given or is '*', then all groups are changed.
 When optional argument iverbose is true, the variables changed and their new size is printed.
   """
-  for pkg in _pkg_dict.values():
+  for pkg in _pkg_dict.itervalues():
     r = pkg.gchange(group,iverbose)
     if r and (group != '*'): return
   if group != '*': raise NameError("No such group")
@@ -162,7 +161,7 @@ def gfree(group='*'):
   """Frees the allocated memory of all dynamic arrays in the specified group.
 If the group is not given or is '*', then all groups are freed.
   """
-  for pkg in _pkg_dict.values():
+  for pkg in _pkg_dict.itervalues():
     r = pkg.gfree(group)
     if r and (group != '*'): return
   if group != '*': raise NameError("No such group")
@@ -171,7 +170,7 @@ def gsetdims(group='*'):
   """Sets the size in the python database of all dynamic arrays in the specified group.
 If the group is not given or is '*', then it is done for all groups.
   """
-  for pkg in _pkg_dict.values():
+  for pkg in _pkg_dict.itervalues():
     r = pkg.gsetdims(group)
     if r and (group != '*'): return
   if group != '*': raise NameError("No such group")
@@ -179,13 +178,13 @@ If the group is not given or is '*', then it is done for all groups.
 def forceassign(name,v):
   """Forces the assignment to an array, resizing the array is necessary.
   """
-  for pkg in _pkg_dict.values():
+  for pkg in _pkg_dict.itervalues():
     pkg.forceassign(name,v)
 
 def listvar(name):
   """Lists information about a variable, given the name as a string.
   """
-  for pkg in _pkg_dict.values():
+  for pkg in _pkg_dict.itervalues():
     r = pkg.listvar(name)
     if r is not None: return r
   raise NameError
@@ -203,14 +202,14 @@ def reprefix():
   """For each variable in the main dictionary, if there is a package variable with the same name
 it is assigned to that value. For arrays, the data is copied.
   """
-  for pkg in _pkg_dict.values():
+  for pkg in _pkg_dict.itervalues():
     pkg.reprefix()
 
 def totmembytes():
   """Prints the total amount of memory dynamically allocated for all groups in all packages.
   """
   tot = 0.
-  for pkg in _pkg_dict.values():
+  for pkg in _pkg_dict.itervalues():
     tot = tot + pkg.totmembytes()
   return tot
 
@@ -255,7 +254,7 @@ def arraytostr(a,strip=true):
     result = ''
     for c in a:
       result = result + str(c)
-    if strip: result = string.strip(result)
+    if strip: result = result.strip()
   elif len(shape(a)) == 2:
     result = []
     for i in xrange(shape(a)[1]):
@@ -436,12 +435,12 @@ Gets the total size of a package or dictionary.
   if IsForthonType(pkg):
     ll = pkg.varlist(grp)
   elif type(pkg) == DictType:
-    ll = pkg.keys()
+    ll = pkg.iterkeys()
   elif type(pkg) in [ListType,TupleType]:
     ll = pkg
   else:
     try:
-      ll = pkg.__dict__.keys()
+      ll = pkg.__dict__.iterkeys()
     except AttributeError:
       ll = []
 
@@ -506,12 +505,12 @@ Gets the total size of a package or dictionary.
   if IsForthonType(pkg):
     ll = pkg.varlist(grp)
   elif type(pkg) == DictType:
-    ll = pkg.keys()
+    ll = pkg.iterkeys()
   elif type(pkg) in [ListType,TupleType]:
     ll = pkg
   else:
     try:
-      ll = pkg.__dict__.keys()
+      ll = pkg.__dict__.iterkeys()
     except (AttributeError,NameError):
       ll = []
 
@@ -555,7 +554,7 @@ Print out all variables in a group or with an attribute
   try:
     vlist = pkg.varlist(group)
   except AttributeError:
-    vlist = pkg.__dict__.keys()
+    vlist = pkg.__dict__.iterkeys()
   if not vlist:
     print "Unknown group name "+group
     return
@@ -953,7 +952,7 @@ Note that it will automatically detect whether the file is PDB or HDF.
   # --- These would be interpreter variables written to the file
   # --- from python (or other sources). A simple assignment is done and
   # --- the variable in put in the main dictionary.
-  if groups.has_key(''):
+  if '' in groups:
     plist = groups['']
     del groups['']
     for vname in plist:
@@ -970,7 +969,7 @@ Note that it will automatically detect whether the file is PDB or HDF.
   # --- in put in the main dictionary.
   # --- This is only needed with the old pdb wrapper.
   if ff.file_type == 'oldPDB':
-    if groups.has_key('pickle'):
+    if 'pickle' in groups:
       picklelist = groups['pickle']
       del groups['pickle']
       for vname in picklelist:
@@ -985,7 +984,7 @@ Note that it will automatically detect whether the file is PDB or HDF.
   # --- These would be interpreter variables written to the file
   # --- from Basis. A simple assignment is done and the variable
   # --- in put in the main dictionary.
-  if groups.has_key('global'):
+  if 'global' in groups:
     globallist = groups['global']
     del groups['global']
     for vname in globallist:
@@ -998,13 +997,13 @@ Note that it will automatically detect whether the file is PDB or HDF.
         if verbose: print "error with variable "+vname
 
   # --- User defined Python functions
-  if groups.has_key('function'):
+  if 'function' in groups:
     functionlist = groups['function']
     del groups['function']
     for vname in functionlist:
       # --- Skip functions which have already been defined in case the user
       # --- has made source updates since the dump was made.
-      if __main__.__dict__.has_key(vname): 
+      if vname in __main__.__dict__: 
         if verbose:
           print "skipping python function %s since it already is defined"%vname
       else:
@@ -1021,13 +1020,13 @@ Note that it will automatically detect whether the file is PDB or HDF.
           if verbose: print "error with function "+vname
 
   # --- Ignore variables with suffix @parallel
-  if groups.has_key('parallel'):
+  if 'parallel' in groups:
     del groups['parallel']
 
-  for gname in groups.keys():
+  for gname in groups.iterkeys():
     pyrestoreforthonobject(ff,gname,groups[gname],fobjdict,varsuffix,
                            verbose,doarrays=0)
-  for gname in groups.keys():
+  for gname in groups.iterkeys():
     pyrestoreforthonobject(ff,gname,groups[gname],fobjdict,varsuffix,
                            verbose,doarrays=1)
 
@@ -1043,7 +1042,7 @@ def sortrestorevarsbysuffix(vlist,skip):
   groups = {}
   for v in vlist:
     if '@' in v:
-      i = string.rfind(v,'@')
+      i = v.rfind('@')
       vname = v[:i]
       gname = v[i+1:]
     else:
@@ -1079,9 +1078,9 @@ def pyrestoreforthonobject(ff,gname,vlist,fobjdict,varsuffix,verbose,doarrays,
 
   # --- Convert gname in pdb-style name
   if gpdbname is None:
-    gsplit = string.split(gname,'.')
+    gsplit = gname.split('.')
     gsplit.reverse()
-    gpdbname = string.join(gsplit,'@')
+    gpdbname = '@'.join(gsplit)
 
   # --- Check if the variable gname exists or is allocated.
   # --- If not, create a new variable.
@@ -1120,7 +1119,7 @@ def pyrestoreforthonobject(ff,gname,vlist,fobjdict,varsuffix,verbose,doarrays,
   groups = sortrestorevarsbysuffix(vlist,[])
 
   # --- Get "leaf" variables
-  if groups.has_key(''):
+  if '' in groups:
     leafvars = groups['']
     del groups['']
   else:
@@ -1172,7 +1171,7 @@ def pyrestoreforthonobject(ff,gname,vlist,fobjdict,varsuffix,verbose,doarrays,
             # --- element size > 1. This coding converts old style strings
             # --- into a single string before doing the setattr. The change
             # --- affects restart dumps make before July 2008.
-            setattr(pkg,vname,string.join(val,sep=''))
+            setattr(pkg,vname,''.join(val))
           else:
             setattr(pkg,vname,val)
         else:
@@ -1192,7 +1191,7 @@ def pyrestoreforthonobject(ff,gname,vlist,fobjdict,varsuffix,verbose,doarrays,
       if verbose: sys.excepthook(*sys.exc_info())
 
   # --- Read in rest of groups.
-  for g,v in groups.items():
+  for g,v in groups.iteritems():
     pyrestoreforthonobject(ff,gname+'.'+g,v,fobjdict,varsuffix,verbose,doarrays,
                            g+'@'+gpdbname)
 
