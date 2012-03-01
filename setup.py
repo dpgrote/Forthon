@@ -11,10 +11,10 @@ try:
 except:
     raise SystemExit("Distutils problem")
 
-# --- With this, the data_files listed in setup will be installed in
-# --- the usual place in site-packages.
-for scheme in INSTALL_SCHEMES.itervalues():
-    scheme['data'] = scheme['purelib']
+try:
+    from distutils.command.build_py import build_py_2to3 as build_py
+except ImportError:
+    from distutils.command.build_py import build_py
 
 try:
     perm644 = stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH | stat.S_IWUSR
@@ -22,7 +22,7 @@ try:
     os.chmod('Src/Forthon.h',perm644)
     os.chmod('Src/Forthon.c',perm644)
 except:
-    print 'Permissions on Notice and Src files needs to be set by hand'
+    print('Permissions on Notice and Src files needs to be set by hand')
 
 # --- Get around a "bug" in disutils on 64 bit systems. When there is no
 # --- extension to be installed, distutils will put the scripts in
@@ -31,6 +31,11 @@ if distutils.sysconfig.get_config_vars()["LIBDEST"].find('lib64') != -1:
     import distutils.command.install
     INSTALL_SCHEMES['unix_prefix']['purelib'] = '$base/lib64/python$py_version_short/site-packages'
     INSTALL_SCHEMES['unix_home']['purelib'] = '$base/lib64/python$py_version_short/site-packages'
+
+# --- With this, the data_files listed in setup will be installed in
+# --- the usual place in site-packages.
+for scheme in INSTALL_SCHEMES.values():
+    scheme['data'] = scheme['purelib']
 
 # --- Normally, the package building script is called Forthon, but on Windows,
 # --- it works better if it is called Forthon.py.
@@ -78,7 +83,8 @@ Numpy are available.""",
        packages = ['Forthon'],
        package_dir = {'Forthon': 'Lib'},
        data_files = [('Forthon', ['Notice','Src/Forthon.h','Src/Forthon.c'])],
-       scripts = [Forthon]
+       scripts = [Forthon],
+       cmdclass = {'build_py':build_py}
        )
 
 # --- Clean up the extra file created on win32.
