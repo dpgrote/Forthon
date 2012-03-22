@@ -9,11 +9,12 @@ from distutils.command.build import build
 
 from Forthon_options import options,args
 from Forthon.compilers import FCompiler
-print "IN FORTHON_BUILDER"
 
 # --- Get the package name, which is assumed to be the first argument.
 pkg = args[0]
 del args[0]
+
+print "Building package " + pkg
 
 # --- Get any extra fortran, C or object files listed.
 # --- This scans through args until the end or until it finds an option
@@ -57,6 +58,7 @@ compile_first  = options.compile_first
 builddir       = options.builddir
 implicitnone   = options.implicitnone
 build_temp     = options.build_temp
+verbose        = options.verbose
 
 # --- There options require special handling
 
@@ -280,12 +282,20 @@ if len(fortransuffices) > 2:
 """%locals()
     del suffix,suffixpath,ff
 
+pypreproc = '%(python)s -c "from Forthon.preprocess import main;main()" %(f90)s -t%(machine)s %(forthonargs)s'%locals()
+forthon = '%(python)s -c "from Forthon.wrappergenerator import wrappergenerator_main;wrappergenerator_main()"'%locals()
+noprintdirectory = ''
+if not verbose:
+  # --- Set so that the make doesn't produce any output
+  f90fixed = "@echo ' ' F90Fixed $(<F);" + f90fixed
+  f90free = "@echo ' ' F90Free $(<F);" + f90free
+  pypreproc = "@echo ' ' Preprocess $(<F);" + pypreproc
+  forthon = "@echo ' ' Forthon $(<F);" + forthon
+  noprintdirectory = '--no-print-directory'
+
 # --- First, create Makefile.pkg which has all the needed definitions
 makefiletext = """
 %(definesstr)s
-PYTHON = %(prefix)s
-PYVERS = %(pyvers)s
-PYPREPROC = %(python)s -c "from Forthon.preprocess import main;main()" %(f90)s -t%(machine)s %(forthonargs)s
 
 %(defaultrule)s
 
@@ -295,15 +305,14 @@ PYPREPROC = %(python)s -c "from Forthon.preprocess import main;main()" %(f90)s -
 	%(f90free)s %(fopt)s %(fargs)s -c $<
 %(extrafortranrules)s
 Forthon.h:%(forthonhome)s%(pathsep)sForthon.h
-	$(PYPREPROC) %(forthonhome)s%(pathsep)sForthon.h Forthon.h
+	%(pypreproc)s %(forthonhome)s%(pathsep)sForthon.h Forthon.h
 Forthon.c:%(forthonhome)s%(pathsep)sForthon.c
-	$(PYPREPROC) %(forthonhome)s%(pathsep)sForthon.c Forthon.c
+	%(pypreproc)s %(forthonhome)s%(pathsep)sForthon.c Forthon.c
 
 %(pkg)s_p%(osuffix)s:%(pkg)s_p.%(free_suffix)s %(wrapperdependency)s
 	%(f90free)s %(popt)s %(fargs)s -c %(pkg)s_p.%(free_suffix)s
 %(pkg)spymodule.c %(pkg)s_p.%(free_suffix)s:%(interfacefile)s
-	%(python)s -c "from Forthon.wrappergenerator import wrappergenerator_main;wrappergenerator_main()" \\
-        --realsize %(realsize)s \\
+	%(forthon)s --realsize %(realsize)s \\
 	%(f90)s -t %(machine)s %(forthonargs)s %(initialgallot)s \\
         %(othermacstr)s %(dep)s %(pkg)s %(interfacefile)s
 clean:
@@ -318,7 +327,7 @@ makefile.close()
 
 # --- Now, execuate the make command.
 os.chdir(builddir)
-m = os.system('make -f Makefile.%(pkg)s'%locals())
+m = os.system('make -f Makefile.%(pkg)s %(noprintdirectory)s'%locals())
 if m != 0:
   # --- If there was a problem with the make, then quite this too.
   # --- The factor of 256 just selects out the higher of the two bytes
@@ -368,6 +377,10 @@ if machine == 'darwin':
         os.environ['ARCHFLAGS'] = '-arch i386'  # Leopard or earlier
       else:
         os.environ['ARCHFLAGS'] = '-arch x86_64'  # Snow Leopard
+
+if not verbose:
+  print "  Setup " + pkg
+  sys.stdout = open(os.devnull, 'w')
 
 setup(name = pkg,
       ext_modules = [Extension(pkg+'py',

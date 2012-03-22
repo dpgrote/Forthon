@@ -104,6 +104,8 @@ parser.add_option('--no2underscores',action='store_false',default=False,
                   help='Specifies whether or not to use second underscores when doing fortran name mangling.')
 parser.add_option('--with-numpy',action='store_true',default=True,
                   help='This is now the default. Numeric is no longer supported.')
+parser.add_option('-v','--verbose',action='store_true',default=False,
+                  help='Turn on verbose output during the make process')
 
 # --- Print help and then exit if no arguments are given
 if len(sys.argv) == 1:

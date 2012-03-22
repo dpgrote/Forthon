@@ -219,7 +219,7 @@ appropriate block for the machine.
       elif re.search('AMD Athlon',cpuinfo):
         self.fopt = '-O3'
       elif struct.calcsize('l') == 8:
-        self.fopt = '-O3 -mfpmath=sse -ftree-vectorize -ftree-vectorizer-verbose=5 -funroll-loops -fstrict-aliasing -fsched-interblock -falign-loops=16 -falign-jumps=16 -falign-functions=16 -ffast-math -fstrict-aliasing'
+        self.fopt = '-O3 -mfpmath=sse -ftree-vectorize -ftree-vectorizer-verbose=0 -funroll-loops -fstrict-aliasing -fsched-interblock -falign-loops=16 -falign-jumps=16 -falign-functions=16 -ffast-math -fstrict-aliasing'
       else:
         self.fopt = '-O3'
       return 1
@@ -251,7 +251,7 @@ appropriate block for the machine.
       flibroot = self.findgnulibroot('gfortran',self.fcompexec)
       self.libdirs = [flibroot]
       self.libs = ['gfortran']
-      self.fopt = '-O3 -ftree-vectorize -ftree-vectorizer-verbose=1'
+      self.fopt = '-O3 -ftree-vectorize -ftree-vectorizer-verbose=0'
       return 1
 
   def linux_pg(self):
@@ -421,7 +421,7 @@ appropriate block for the machine.
       else:
         self.f90free  += ' -fno-second-underscore'
         self.f90fixed += ' -fno-second-underscore'
-      self.fopt = '-O3 -ftree-vectorize -ftree-vectorizer-verbose=5'
+      self.fopt = '-O3 -ftree-vectorize -ftree-vectorizer-verbose=0'
 #      self.fopt = '-O3 -funroll-loops -fstrict-aliasing -fsched-interblock  \
 #           -falign-loops=16 -falign-jumps=16 -falign-functions=16 \
 #           -falign-jumps-max-skip=15 -falign-loops-max-skip=15 -malign-natural \
@@ -456,7 +456,7 @@ appropriate block for the machine.
         self.f90fixed += ' -fno-second-underscore'
       self.fopt = '-O3 -funroll-loops -fstrict-aliasing -fsched-interblock \
            -falign-loops=16 -falign-jumps=16 -falign-functions=16 \
-           -ftree-vectorize -ftree-vectorizer-verbose=5 \
+           -ftree-vectorize -ftree-vectorizer-verbose=0 \
            -ffast-math -fstrict-aliasing'
 #      self.fopt = '-O3  -mtune=G5 -mcpu=G5 -mpowerpc64'
       self.extra_link_args = ['-flat_namespace']
@@ -495,7 +495,7 @@ appropriate block for the machine.
            -ffast-math -mpowerpc-gpopt -force_cpusubtype_ALL \
            -fstrict-aliasing -mtune=G5 -mcpu=G5 -mpowerpc64'
 #      self.fopt = '-O3  -mtune=G5 -mcpu=G5 -mpowerpc64'
-      self.fopt = '-O3 -ftree-vectorize -ftree-vectorizer-verbose=2'
+      self.fopt = '-O3 -ftree-vectorize -ftree-vectorizer-verbose=0'
 #      self.extra_link_args = ['-flat_namespace','-lg2c']
       self.extra_link_args = ['-flat_namespace']
       flibroot = self.findgnulibroot('gfortran',self.fcompexec)
