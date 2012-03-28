@@ -59,6 +59,7 @@ builddir       = options.builddir
 implicitnone   = options.implicitnone
 build_temp     = options.build_temp
 verbose        = options.verbose
+dobuild        = options.dobuild
 
 # --- There options require special handling
 
@@ -133,7 +134,10 @@ del fvars
 # --- distutils options remaining in args.
 # --- This needs to be done for generating builddir since the distutils
 # --- options may affect its value.
-sys.argv = ['Forthon','build','--build-platlib','.'] + args
+if dobuild:
+  sys.argv = ['Forthon','build'] + args
+else:
+  sys.argv = ['Forthon','install'] + args
 
 # --- Find the location of the build directory. There must be a better way
 # --- of doing this.
