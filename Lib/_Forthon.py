@@ -722,6 +722,8 @@ Dump data into a pdb file
     if datawriter is not None:
       try:
         ff = datawriter(fname)
+      except IOError:
+        raise
       except:
         pass
 
@@ -729,6 +731,8 @@ Dump data into a pdb file
       # --- If PDB not available, try pickle. Note that this should always work.
       try:
         ff = PWpickle.PW(fname)
+      except IOError:
+        raise
       except:
         pass
 
@@ -736,6 +740,8 @@ Dump data into a pdb file
       # --- If PDB not available, try HDF.
       try:
         ff = PWpyt.PW(fname)
+      except IOError:
+        raise
       except:
         pass
 
