@@ -2369,9 +2369,7 @@ static PyObject *Forthon_getattro(ForthonObject *self,PyObject *oname)
     }
 
   /* The last resort, the standard getattr */
-  meth = PyObject_GenericGetAttr((PyObject *)self,oname);
-  Py_XINCREF(meth);
-  return meth;
+  return PyObject_GenericGetAttr((PyObject *)self,oname);
 }
 
 /* ######################################################################### */
