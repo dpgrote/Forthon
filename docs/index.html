@@ -32,8 +32,7 @@ David Grote
 
 <P>
 <H3>
-Python interface generator for Fortran based codes (a code development
-aid)
+Python interface generator for Fortran based codes (a code development aid)
 </H3>
 
 <P>
@@ -43,7 +42,7 @@ What is Forthon?
 </H3>
 
 <P>
-Forthon generates links between Fortran(90 and 95) and
+Forthon generates links between Fortran95 and
 <A HREF="http://www.python.org">Python</A>. Python is a high
 level, object oriented, interactive and scripting language that allows
 a flexible and versatile interface to computational tools. The Forthon
@@ -62,7 +61,7 @@ and variables of derived type. A subset of the Fortran subroutines,
 as specified in the interface file, can be called from Python, with
 argument lists including scalars, arrays, and variables of derived
 type. Arrays can be statically dimensioned or dynamically dimensioned,
-in which case Fortran90 style pointers are used. Variables of derived
+in which case Fortran95 style pointers are used. Variables of derived
 type can be pointers, and derived types can have elements which are
 themselves derived types or pointers to derived types. A tool is included
 which will automatically compile the user's source code and the generated
@@ -86,16 +85,12 @@ git clone http://portal.nersc.gov/project/warp/git/Forthon.git
 Installation
 </H3>
 <P>
-Forthon requires either <A HREF="http://sourceforge.net/project/showfiles.php?group_id=1369&package_id=1351">Numeric</A>
-or <A HREF="http://sourceforge.net/projects/numpy">Numpy</A>.
-Note that for now, it defaults to Numeric.
+Forthon requires <A HREF="http://numpy.scipy.org">Numpy</A>.
 <P>
-Of course, a Fortran90 compiler is required. The following are supported:
+Of course, a Fortran95 compiler is required. The recommended compiler is gfortran. The following are also supported:
 <UL>
-<LI>On Linux: Intel, Portland Group, Absoft, g95, gfortran</LI>
-<LI>On Mac OSX: IBM, Absoft, NAG, g95, gfortran </LI>
-<LI>On Windows: Intel, Portland Group</LI>
-<LI>On AIX: IBM</LI>
+<LI>On Linux: Intel, Portland Group, Absoft, g95</LI>
+<LI>On Mac OSX: IBM, Absoft, NAG, g95 </LI>
 </UL>
 
 <P>
@@ -106,15 +101,6 @@ that will be used with Forthon. Also, note that you will need to have
 write access to the lib directory where the python modules are
 installed, and to the bin directory where the python executable is installed.
 <P>
-Other useful software includes
-<A HREF="http://bonsai.ims.u-tokyo.ac.jp/~mdehoon/software/python">PyGist</A>
-(a graphics package), and
-<A HREF="http://pytables.sourceforge.net/html/WelcomePage.html">PyTables</A>
-(an interface to self-describing data formats).
-
-<P>
-Note that Forthon will also wrap Fortran77, but only give access to the
-subroutines, but not to any common blocks.
 
 <H3>
 Method of Solution
@@ -123,7 +109,7 @@ Method of Solution
 <P>
 Forthon will generate the wrapping code needed to access Fortran subroutines
 and data in Python, from a user created interface file that describes
-the Fortran90 modules and the subroutines to be accessed from Python.
+the Fortran95 modules and the subroutines to be accessed from Python.
 The listing of variables in the interface file includes variable type
 information, array dimensions, attributes, and documentation. Additionally,
 Fortran derived types can be described, and variables of derived type
@@ -132,7 +118,7 @@ wrapper are mechanisms for dealing with dynamically allocated arrays
 and pointers to derived types. 
 
 <P>
-Using the interface file, Forthon generates both C and Fortran90 code
+Using the interface file, Forthon generates both C and Fortran95 code
 which is compiled along with the user's source code to form the Python
 module. The C code contains wrapper routines which are called directly
 from Python and in turn call the appropriate Fortran routines. The
@@ -150,7 +136,7 @@ generated Fortran code contains the definitions of the modules as
 defined in the interface file (this can be skipped if the modules
 are already defined), as well as other routines that carry out actions
 such as passing variable memory locations to the C and doing proper
-Fortran90 pointer assignments to data passed in from C.
+Fortran95 pointer assignments to data passed in from C.
 
 <P>
 At the Python level, for each interface file, a Python object is created
@@ -172,7 +158,7 @@ retrieved for later use. Python modules, written by others, that wrap
 libraries for self-describing data such as HDF, are used.
 
 <P>
-The layout of the interface file was taken origianally from the Basis
+The layout of the interface file was taken originally from the Basis
 package and extended.
 
 <P>
@@ -195,7 +181,7 @@ Limitations
 </H3>
 
 <P>
-Forthon does not support all features of Fortran90. Some of the major
+Forthon does not support all features of Fortran95. Some of the major
 features not supported include the use of IntentIn and IntentOut attributes
 on subroutine arguments and functions which returns arrays. Also,
 Forthon can only process integer and real variables of kind that match
@@ -273,4 +259,4 @@ UCRL-CODE-155927
 <P>
 <A HREF="http://hifweb.lbl.gov/Forthon/Legal_Notice.html">Legal notice</A>
 
-Last updated August 13, 2007
+Last updated March 29, 2012
