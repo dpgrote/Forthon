@@ -133,7 +133,7 @@ typedef struct {
   char* comment;
   char* dimstring;
   } Fortranarray;
-  
+
 /* ######################################################################### */
 /* # Write definition of fortran package type */
 typedef struct {
@@ -147,7 +147,7 @@ typedef struct {
   void (*setdims)();
   void (*setstaticdims)();
   PyMethodDef *fmethods;
-  PyObject *scalardict,*arraydict,*funcdict;
+  PyObject *scalardict,*arraydict;
   PyObject *__module__;
   char *fobj;
   void (*fobjdeallocate)();
@@ -216,6 +216,7 @@ static int Forthon_checksubroutineargtype(PyObject *pyobj,int type_num)
     }
   return ret;
 }
+
 static void Forthon_restoresubroutineargs(int n,PyObject **pyobj,
                                           PyArrayObject **ax)
 {
@@ -223,7 +224,7 @@ static void Forthon_restoresubroutineargs(int n,PyObject **pyobj,
   /* Loop over the arguments */
   for (i=0;i<n;i++) {
     /* For each input value that is an array... */
-    if (PyArray_Check(pyobj[i])) { 
+    if (PyArray_Check(pyobj[i])) {
       /* ... check if a copy was made to pass into the wrapped subroutine... */
       if (pyobj[i] != (PyObject *)ax[i]) {
         /* ... If so, copy it back. */
@@ -270,23 +271,6 @@ static void Forthon_BuildDicts(ForthonObject *self)
     }
   self->scalardict = sdict;
   self->arraydict = adict;
-
-  {
-  /* For functions, the values are the python callable functions themselves */
-  /* rather than an index. */
-  PyObject *fdict;
-  PyMethodDef *ml;
-  fdict = PyDict_New();
-  for (ml = self->fmethods; ml->ml_name != NULL; ml++) {
-    PyDict_SetItemString(fdict,ml->ml_name,
-                         (PyObject *)PyCFunction_New(ml,(PyObject *)self));
-    }
-  for (ml = getForthonPackage_methods(); ml->ml_name != NULL; ml++) {
-    PyDict_SetItemString(fdict,ml->ml_name,
-                         (PyObject *)PyCFunction_New(ml,(PyObject *)self));
-    }
-  self->funcdict = fdict;
-  }
 }
 static void Forthon_DeleteDicts(ForthonObject *self)
 {
@@ -1142,13 +1126,31 @@ static PyObject *ForthonPackage_deprefix(PyObject *_self_,PyObject *args)
 }
 
 /* ######################################################################### */
-static char getfunctions_doc[] = "Builds a dictionary containing all of the functions in the package.";
+static char getfunctions_doc[] = "Builds a list containing all of the function names in the package.";
 static PyObject *ForthonPackage_getfunctions(PyObject *_self_,PyObject *args)
 {
+  /* Note, that this used to return a dictionary, mapping names to python callable */
+  /* functions, using PyCFunction_New. However, PyCFunction_New would grab a reference */
+  /* to self, unnecessarily increasing its reference count. This caused a severe memory */
+  /* leak. So now, use of a dictionary of functions is avoided. */
   ForthonObject *self = (ForthonObject *)_self_;
+  PyObject *list,*name;
+  PyMethodDef *ml;
   if (!PyArg_ParseTuple(args,"")) return NULL;
-  Py_INCREF(self->funcdict);
-  return self->funcdict;
+  list = PyList_New((Py_ssize_t)0);
+  ml = getForthonPackage_methods();
+  for (; ml->ml_name != NULL; ml++) {
+    name = Py_BuildValue("s",ml->ml_name);
+    PyList_Append(list,name);
+    Py_DECREF(name);
+    }
+  ml = self->fmethods;
+  for (; ml->ml_name != NULL; ml++) {
+    name = Py_BuildValue("s",ml->ml_name);
+    PyList_Append(list,name);
+    Py_DECREF(name);
+    }
+  return list;
 }
 
 /* ######################################################################### */
@@ -2297,7 +2299,7 @@ static PyObject *Forthon_getattro(ForthonObject *self,PyObject *oname)
 {
   long i;
   PyObject *pyi;
-  PyObject *meth;
+  PyMethodDef *ml;
 #if PY_MAJOR_VERSION >= 3
   const char *name;
 #else
@@ -2361,12 +2363,22 @@ static PyObject *Forthon_getattro(ForthonObject *self,PyObject *oname)
     return self->__module__;
     }
 
-  /* Look through the method dictionary */
-  meth = PyDict_GetItem(self->funcdict,oname);
-  if (meth != NULL) {
-    Py_INCREF(meth);
-    return meth;
+  /* The code here used to be handled by calling Py_FindMethod, but */
+  /* that is not defined in python3 */
+  /* Look through the Forthon generic methods */
+  ml = getForthonPackage_methods();
+  for (; ml->ml_name != NULL; ml++) {
+    if (strcmp(name,ml->ml_name) == 0) {
+      return (PyObject *)PyCFunction_New(ml,(PyObject *)self);
     }
+  }
+  /* Look through the object specific methods */
+  ml = self->fmethods;
+  for (; ml->ml_name != NULL; ml++) {
+    if (strcmp(name,ml->ml_name) == 0) {
+      return (PyObject *)PyCFunction_New(ml,(PyObject *)self);
+    }
+  }
 
   /* The last resort, the standard getattr */
   return PyObject_GenericGetAttr((PyObject *)self,oname);
