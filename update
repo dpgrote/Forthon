@@ -13,6 +13,7 @@ git archive --worktree-attributes --format=tar --prefix=Forthon-$vvv/ $vvv | gzi
 
 scp Forthon-$vvv.tgz grote@hifweb:/web/html/Forthon
 scp docs/index.html grote@hifweb:/web/html/Forthon
+scp License.txt grote@hifweb:/web/html/Forthon
 ssh hifweb "chmod -R go+rX /web/html/Forthon"
 rm -f Forthon-$vvv.tgz version.pyc
 

@@ -13,9 +13,10 @@ much more versatile Python language.
 
 Release Notes:
 
-0.8.8:
- - removed unused argno variable in Fortran subroutine interfaces
+0.8.8: April 2, 2012
+ - Forthon released under the BSD license
  - Now under git
+ - removed unused argno variable in Fortran subroutine interfaces
  - Changes to support Python version 3.
    - Fixes in python for compatibility
    - Can write to version 3 API
