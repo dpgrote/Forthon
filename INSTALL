@@ -1,13 +1,11 @@
 
-Requires python versions 2.2 or higher and the Numeric or numpy package, which
-can be obtained from sourceforge.net.
+Requires python versions 2.6 or higher and the numpy package, which can be
+obtained from http://numpy.scipy.org. It is compatible with python version 3.
 
 To install,
 
 python setup.py install
 
-Write permission is required for the python library site-packages directory,
-which is usually located in /usr/lib/python2.x or /usr/local/lib/python2.x,
-where x depends on the version.
+Write permission is required for the python library site-packages directory.
 
 See the examples, which act as the documentation.
