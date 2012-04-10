@@ -18,11 +18,11 @@ except ImportError:
 
 try:
     perm644 = stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH | stat.S_IWUSR
-    os.chmod('Notice',perm644)
+    os.chmod('License.txt',perm644)
     os.chmod('Src/Forthon.h',perm644)
     os.chmod('Src/Forthon.c',perm644)
 except:
-    print('Permissions on Notice and Src files needs to be set by hand')
+    print('Permissions on License.txt and Src files needs to be set by hand')
 
 # --- Get around a "bug" in disutils on 64 bit systems. When there is no
 # --- extension to be installed, distutils will put the scripts in
@@ -82,7 +82,7 @@ Numpy are available.""",
        platforms = "Linux, Unix, Windows (cygwin), Mac OSX",
        packages = ['Forthon'],
        package_dir = {'Forthon': 'Lib'},
-       data_files = [('Forthon', ['Notice','Src/Forthon.h','Src/Forthon.c'])],
+       data_files = [('Forthon', ['License.txt','Src/Forthon.h','Src/Forthon.c'])],
        scripts = [Forthon],
        cmdclass = {'build_py':build_py}
        )
