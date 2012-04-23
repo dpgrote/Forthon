@@ -13,6 +13,9 @@ much more versatile Python language.
 
 Release Notes:
 
+0.8.9:
+ - Added getgroupsizes
+
 0.8.8: April 2, 2012
  - Forthon released under the BSD license
  - Now under git

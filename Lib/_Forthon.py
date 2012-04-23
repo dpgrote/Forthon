@@ -540,6 +540,41 @@ Gets the total size of a package or dictionary.
 # --- Keep the old name around
 getgroupsize = getobjectsize
 
+def getgroupsizes(pkg,minsize=1,sortby='sizes'):
+  """Get the sizes of groups in the specified package.
+ - pkg: package to list
+ - minsize=1: only groups with size greater than the given value are printed
+ - sortby='sizes': When 'sizes', sort by sizes, when 'names', sort by names,
+                   otherwise unsorted.
+  """
+  groups = {}
+  varlist = pkg.varlist()
+  for n in varlist:
+    group = pkg.getgroup(n)
+    v = pkg.getpyobject(n)
+    groups[group] = groups.get(group,0) + size(v)
+
+  if sortby == 'sizes':
+    ii = argsort(groups.values())
+    keysunsorted = groups.keys()
+    keys = []
+    for i in ii:
+      keys.append(keysunsorted[i])
+
+  elif sortby == 'names':
+    keys = groups.keys()
+    keys.sort()
+
+  else:
+    keys = groups.keys()
+
+  for k in keys:
+    v = groups[k]
+    if v > minsize:
+      print k,v,'(words)'
+
+  print "Total size of allocated arrays",pkg.totmembytes()
+
 # --- Print out all variables in a group
 def printgroup(pkg,group='',maxelements=10,sumarrays=0):
   """
