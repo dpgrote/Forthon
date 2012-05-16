@@ -176,8 +176,8 @@ static long totmembytes=0;
 static int strfind(char *v,char *s)
 {
   int ls,lv,ind=0;
-  ls = strlen(s);
-  lv = strlen(v);
+  ls = (int)strlen(s);
+  lv = (int)strlen(v);
   while (ls >= lv) {
     if (strncmp(s,v,strlen(v))==0) return ind;
     s++;
@@ -373,7 +373,7 @@ static void ForthonPackage_staticarrays(ForthonObject *self)
         /* length 1. */
         nd = self->farrays[i].nd;
         /* The dimensions[nd-1] holds the character length. */
-        itemsize = self->farrays[i].dimensions[nd-1];
+        itemsize = (int)(self->farrays[i].dimensions[nd-1]);
         /* If this is really an array, remove the first dimension, which */
         /* is the character length. Otherwise, make it a 1-D array. */
         if (nd > 1) {nd -= 1;}
@@ -1966,7 +1966,7 @@ static PyObject *ForthonPackage_getvartype(PyObject *_self_,PyObject *args)
   if (pyi != NULL) {
     PyArg_Parse(pyi,"i",&i);
     if (self->farrays[i].type == PyArray_STRING) {
-      charsize = self->farrays[i].dimensions[self->farrays[i].nd-1];
+      charsize = (int)(self->farrays[i].dimensions[self->farrays[i].nd-1]);
       sprintf(charstring,"character(%d)",charsize);
       return PyUnicode_FromString(charstring);}
     else if (self->farrays[i].type == PyArray_LONG) {
@@ -2088,7 +2088,7 @@ static PyObject *ForthonPackage_listvar(PyObject *_self_,PyObject *args)
 
     stringconcatanddel(&doc,"\nType:       ");
     if (self->farrays[i].type == PyArray_STRING) {
-      charsize = self->farrays[i].dimensions[self->farrays[i].nd-1];
+      charsize = (int)(self->farrays[i].dimensions[self->farrays[i].nd-1]);
       sprintf(charstring,"character(%d)",charsize);
       stringconcatanddel(&doc,charstring);
       /* stringconcatanddellong(&doc,(long)(self->farrays[i].dimensions[0])); */
