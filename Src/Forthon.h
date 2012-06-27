@@ -339,7 +339,7 @@ static void ForthonPackage_allotdims(ForthonObject *self)
   for (i=0;i<self->narrays;i++) {
     self->farrays[i].dimensions=(npy_intp *)PyMem_Malloc(self->farrays[i].nd*sizeof(npy_intp));
     if (self->farrays[i].dimensions == NULL) {
-      printf("Failure allocating space for array dimensions.\n");
+      printf("Failure allocating space for dimensions of array %s.\n",self->farrays[i].name);
       exit(EXIT_FAILURE);
       }
     /* Fill the dimensions with zeros. This is only needed for arrays with */
@@ -1324,7 +1324,7 @@ static PyObject *ForthonPackage_gallot(PyObject *_self_,PyObject *args)
           }
         /* Add the array size to totmembytes. */
         totmembytes += (long)PyArray_NBYTES(self->farrays[i].pya);
-        if (iverbose) printf("%s.%s %d\n",self->name,self->farrays[i].name,
+        if (iverbose) printf("Allocating %s.%s %d\n",self->name,self->farrays[i].name,
                                        (int)PyArray_SIZE(self->farrays[i].pya));
         }
       }
@@ -1475,7 +1475,7 @@ static PyObject *ForthonPackage_gchange(PyObject *_self_,PyObject *args)
                                       PyArray_DIMS(self->farrays[i].pya));
         /* Add the array size to totmembytes. */
         totmembytes += (long)PyArray_NBYTES(self->farrays[i].pya);
-        if (iverbose) printf("%s.%s %d\n",self->name,self->farrays[i].name,
+        if (iverbose) printf("Allocating %s.%s %d\n",self->name,self->farrays[i].name,
                                        (int)PyArray_SIZE(self->farrays[i].pya));
         }
       }
@@ -2431,8 +2431,10 @@ static int Forthon_print(ForthonObject *self, FILE *fp, int flags)
 
 static PyObject *Forthon_repr(ForthonObject *self)
 {
+  char v[120];
   PyObject *s;
-  s = Py_BuildValue("s","<fortran object instance>");
+  sprintf(v,"<%s instance at address = %ld>\0",self->name,(long)self);
+  s = Py_BuildValue("s",v);
   return s;
 }
 
