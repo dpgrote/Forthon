@@ -35,7 +35,14 @@ if distutils.sysconfig.get_config_vars()["LIBDEST"].find('lib64') != -1:
 # --- With this, the data_files listed in setup will be installed in
 # --- the usual place in site-packages.
 for scheme in INSTALL_SCHEMES.values():
-    scheme['data'] = scheme['purelib']
+    if sys.platform == "darwin":
+        # --- A special hack is needed for darwin. In dist_utils/command/install.py, install_purelib
+        # --- is modified to the form below, but install_data is not. Without this hack, the data files
+        # --- would be installed in the Python directory in /System/Library, which is not by default
+        # --- user accessible.
+        scheme['data'] = os.path.join('/Library/Python', sys.version[:3], 'site-packages')
+    else:
+        scheme['data'] = scheme['purelib']
 
 # --- Normally, the package building script is called Forthon, but on Windows,
 # --- it works better if it is called Forthon.py.
