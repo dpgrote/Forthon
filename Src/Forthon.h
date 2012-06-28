@@ -2433,7 +2433,7 @@ static PyObject *Forthon_repr(ForthonObject *self)
 {
   char v[120];
   PyObject *s;
-  sprintf(v,"<%s instance at address = %ld>\0",self->name,(long)self);
+  sprintf(v,"<%s instance at address = %ld>",self->name,(long)self);
   s = Py_BuildValue("s",v);
   return s;
 }
