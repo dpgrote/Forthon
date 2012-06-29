@@ -72,7 +72,7 @@ else:
 os.system("rm -rf build")
 
 setup (name = "Forthon",
-       version = '0.8.8',
+       version = '0.8.9',
        author = 'David P. Grote',
        author_email = "DPGrote@lbl.gov",
        url = "http://hifweb.lbl.gov/Forthon",

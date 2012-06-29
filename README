@@ -13,8 +13,10 @@ much more versatile Python language.
 
 Release Notes:
 
-0.8.9:
+0.8.9: June 29, 2012
  - Added getgroupsizes
+ - Fixed install location on Mac OSX
+ - Change in Forthon_repr
 
 0.8.8: April 2, 2012
  - Forthon released under the BSD license
