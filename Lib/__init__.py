@@ -1,3 +1,4 @@
 from _Forthon import *
 from ForthonTimer import *
-__version__ = "0.8.9"
+from version import version as __version__
+from version import gitversion as __gitversion__

@@ -13,6 +13,10 @@ much more versatile Python language.
 
 Release Notes:
 
+0.8.10:
+ - Put the version number in an automatically generated file, version.py
+ - Removed old cvs version numbers
+
 0.8.9: June 29, 2012
  - Added getgroupsizes
  - Fixed install location on Mac OSX

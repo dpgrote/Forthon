@@ -3,6 +3,7 @@
 import sys
 import os.path
 import optparse
+from version import version
 
 usage = "Forthon [options] pkgname [extra Fortran or C files to be compiled or objects to link] [options for distutils]"
 description = """
@@ -16,7 +17,7 @@ Extra files can for fortran or C files that are to be compiled and included
 in the package.
 """
 
-parser = optparse.OptionParser(usage=usage,description=description)
+parser = optparse.OptionParser(usage=usage,description=description,version=version)
 
 # --- This tells the optparser to stop parsing when it comes across a
 # --- non-option argument (i.e. one without the preceeding '-').

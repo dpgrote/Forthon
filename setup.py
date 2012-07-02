@@ -24,6 +24,17 @@ try:
 except:
     print('Permissions on License.txt and Src files needs to be set by hand')
 
+# --- Write out version information to the version.py file.
+version = '0.8.9'
+try:
+    commithash = os.popen('git log -n 1 --pretty=%h').read().strip()
+except OSError:
+    commithash = 'Unknown'
+
+with open('Lib/version.py','w') as ff:
+    ff.write("version = '%s'\n"%version)
+    ff.write("gitversion = '%s'\n"%commithash)
+
 # --- Get around a "bug" in disutils on 64 bit systems. When there is no
 # --- extension to be installed, distutils will put the scripts in
 # --- /usr/lib/... instead of /usr/lib64.
@@ -72,7 +83,7 @@ else:
 os.system("rm -rf build")
 
 setup (name = "Forthon",
-       version = '0.8.9',
+       version = version,
        author = 'David P. Grote',
        author_email = "DPGrote@lbl.gov",
        url = "http://hifweb.lbl.gov/Forthon",
