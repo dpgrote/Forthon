@@ -51,8 +51,6 @@ else:
   import rlcompleter
   readline.parse_and_bind("tab: complete")
 
-Forthon_version = "$Id: _Forthon.py,v 1.59 2011/05/16 18:55:25 grote Exp $"
-
 ##############################################################################
 # --- Functions needed for object pickling. These should be moved to C.
 def forthonobject_constructor(typename,arg=None):

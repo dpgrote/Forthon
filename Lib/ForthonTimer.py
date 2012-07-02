@@ -9,8 +9,6 @@ disablelinetracing: disables line level tracing
 import sys,time
 import linecache
 
-ForthonTimer_version = "$Id: ForthonTimer.py,v 1.8 2011/05/16 18:55:25 grote Exp $"
-
 def ForthonTimerdoc():
   import ForthonTimer
   print ForthonTimer.__doc__
