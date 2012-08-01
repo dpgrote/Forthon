@@ -225,7 +225,10 @@ for f in extrafiles:
     extracfiles.append(f)
 
 if compile_first != '':
-  compile_first = compile_first + osuffix
+  compile_firstroot,compile_firstsuffix = os.path.splitext(compile_first)
+  compile_firstobject = compile_firstroot + osuffix
+else:
+  compile_firstobject = ''
 
 # --- Make string containing other macros files
 othermacstr = ''
@@ -244,7 +247,7 @@ if fcompiler.static:
   defaultrule = 'static:'
   raise InputError('Static linking not supported at this time')
 else:
-  defaultrule = 'dynamic: %(compile_first)s %(pkg)s_p%(osuffix)s %(fortranroot)s%(osuffix)s %(pkg)spymodule.c Forthon.h Forthon.c %(extraobjectsstr)s'%locals()
+  defaultrule = 'dynamic: %(compile_firstobject)s %(pkg)s_p%(osuffix)s %(fortranroot)s%(osuffix)s %(pkg)spymodule.c Forthon.h Forthon.c %(extraobjectsstr)s'%locals()
 
 if writemodules:
   # --- Fortran modules are written by the wrapper to the _p file.
@@ -271,24 +274,6 @@ for i in includedirs:
 if cargs is not None:
   extra_compile_args.append(cargs)
 
-# --- Add build rules for fortran files with suffices other than the
-# --- basic fixed and free ones. Those first two suffices are included
-# --- explicitly in the makefile. Note that this depends on fargs.
-extrafortranrules = ''
-if len(fortransuffices) > 2:
-  for suffix in fortransuffices[2:]:
-    suffixpath = os.path.join(upbuilddir,'%%.%(suffix)s'%locals())
-    if suffix[-2:] == '90': ff = f90free
-    else:                   ff = f90fixed
-    if not verbose:
-      # --- Set so that the make doesn't produce any output
-      ff = "@echo ' ' F90 $(<F);" + ff
-    extrafortranrules += """
-%%%(osuffix)s: %(suffixpath)s %(modulecontainer)s%(osuffix)s
-	%(ff)s %(fopt)s %(fargs)s -c $<
-"""%locals()
-    del suffix,suffixpath,ff
-
 pypreproc = '%(python)s -c "from Forthon.preprocess import main;main()" %(f90)s -t%(machine)s %(forthonargs)s'%locals()
 forthon = '%(python)s -c "from Forthon.wrappergenerator import wrappergenerator_main;wrappergenerator_main()"'%locals()
 noprintdirectory = ''
@@ -300,12 +285,40 @@ if not verbose:
   forthon = "@echo ' ' Forthon $(<F);" + forthon
   noprintdirectory = '--no-print-directory'
 
+# --- Create a separate rule to compile the compiler_first file, setting it up
+# --- so that it doesn't have any dependencies beyond itself.
+compile_firstrule = ''
+if compile_first != '':
+  suffixpath = os.path.join(upbuilddir,'%(compile_first)s'%locals())
+  if compile_firstsuffix == '90': ff = f90free
+  else:                           ff = f90fixed
+  compile_firstrule = """
+%(compile_firstobject)s: %(suffixpath)s
+	%(ff)s %(fopt)s %(fargs)s -c $<
+"""%locals()
+
+# --- Add build rules for fortran files with suffices other than the
+# --- basic fixed and free ones. Those first two suffices are included
+# --- explicitly in the makefile. Note that this depends on fargs.
+extrafortranrules = ''
+if len(fortransuffices) > 2:
+  for suffix in fortransuffices[2:]:
+    suffixpath = os.path.join(upbuilddir,'%%.%(suffix)s'%locals())
+    if suffix[-2:] == '90': ff = f90free
+    else:                   ff = f90fixed
+    extrafortranrules += """
+%%%(osuffix)s: %(suffixpath)s %(modulecontainer)s%(osuffix)s
+	%(ff)s %(fopt)s %(fargs)s -c $<
+"""%locals()
+    del suffix,suffixpath,ff
+
 # --- First, create Makefile.pkg which has all the needed definitions
 makefiletext = """
 %(definesstr)s
 
 %(defaultrule)s
 
+%(compile_firstrule)s
 %%%(osuffix)s: %(fixedpath)s %(modulecontainer)s%(osuffix)s
 	%(f90fixed)s %(fopt)s %(fargs)s -c $<
 %%%(osuffix)s: %(freepath)s %(modulecontainer)s%(osuffix)s
