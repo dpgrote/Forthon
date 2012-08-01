@@ -45,14 +45,15 @@ def processfile(packname,filename,othermacros=[],timeroutines=0):
 Warning: the package name in the file does not agree
 with the file name. Make sure that the first line of the
 variable description file is the package name.
+file name = %r
+packagename = %r
 
 One possible reason this error is that the variable description
 file is in dos format. If this is so, change the format to match
 your system. (This can be done in vi by opening the file and
 typing ":set fileformat=unix" and then saving the file.)
 
-
-"""
+"""%(packname,line)
     return []
 
   # Remove all line continuation marks

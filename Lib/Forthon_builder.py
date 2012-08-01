@@ -216,7 +216,7 @@ for f in extrafiles:
   if suffix[1:] in ['o','obj']:
     extraobjectsstr = extraobjectsstr + ' ' + root + osuffix
     extraobjectslist = extraobjectslist + [root + osuffix]
-  elif suffix[1:] in ['F','F90','f','f90',fixed_suffix,free_suffix]:
+  elif suffix[1:] in ['F','F90','f','f90','for',fixed_suffix,free_suffix]:
     extraobjectsstr = extraobjectsstr + ' ' + root + osuffix
     extraobjectslist = extraobjectslist + [root + osuffix]
     if suffix[1:] not in fortransuffices:
@@ -280,6 +280,9 @@ if len(fortransuffices) > 2:
     suffixpath = os.path.join(upbuilddir,'%%.%(suffix)s'%locals())
     if suffix[-2:] == '90': ff = f90free
     else:                   ff = f90fixed
+    if not verbose:
+      # --- Set so that the make doesn't produce any output
+      ff = "@echo ' ' F90 $(<F);" + ff
     extrafortranrules += """
 %%%(osuffix)s: %(suffixpath)s %(modulecontainer)s%(osuffix)s
 	%(ff)s %(fopt)s %(fargs)s -c $<
