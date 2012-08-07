@@ -288,7 +288,7 @@ if not verbose:
 # --- Create a separate rule to compile the compiler_first file, setting it up
 # --- so that it doesn't have any dependencies beyond itself.
 compile_firstrule = ''
-if compile_first != '':
+if compile_first != '' and compile_firstsuffix != '':
   suffixpath = os.path.join(upbuilddir,'%(compile_first)s'%locals())
   if compile_firstsuffix == '90': ff = f90free
   else:                           ff = f90fixed
