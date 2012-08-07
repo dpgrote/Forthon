@@ -16,6 +16,9 @@ Release Notes:
 0.8.10:
  - Put the version number in an automatically generated file, version.py
  - Removed old cvs version numbers
+ - Fix for darwin in setup.py when not using the system python
+ - The compile_first argument can now include the fortran suffix
+ - Now accepts files with the "for" suffix
 
 0.8.9: June 29, 2012
  - Added getgroupsizes
