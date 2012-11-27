@@ -331,10 +331,15 @@ void
 {
   char *cfname,*cmname,*cpname;
   PyObject *modules;
-  PyObject *m,*d,*f,*r;
+  PyObject *m=NULL;
+  PyObject *d=NULL;
+  PyObject *f=NULL;
+  PyObject *r=NULL;
   int m_is_borrowed = 1;
+  char *errormessage;
   cfname = (char *) PyMem_Malloc((FSTRLEN1(fname)+1)*sizeof(char));
   cmname = (char *) PyMem_Malloc((FSTRLEN2(mname)+1)*sizeof(char));
+
   // Copy the module and function names from the fortran data. Note that
   // strings in fortran do not have a null termination and it must be
   // explicitly added here.
@@ -342,6 +347,7 @@ void
   memcpy(cmname,FSTRPTR(mname),FSTRLEN2(mname));
   cfname[FSTRLEN1(fname)] = (char)0;
   cmname[FSTRLEN2(mname)] = (char)0;
+
   // Some fancy footwork is needed to find the module to import. Depending
   // on how the modules are setup, the module's name in python could either
   // be modulename or warp.modulename. The latter if using an egg or if the
@@ -355,6 +361,7 @@ void
   // be called.
   modules = PyImport_GetModuleDict();
   m = PyDict_GetItemString(modules,cmname);
+
   if (m == NULL) {
     // Try warp.modulename
     cpname = (char *) PyMem_Malloc((FSTRLEN2(mname)+1+5)*sizeof(char));
@@ -363,28 +370,82 @@ void
     m = PyDict_GetItemString(modules,cpname);
     PyMem_Free(cpname);
     }
+
   if (m == NULL) {
     // Still not found, so try directly importing
     m = PyImport_ImportModule(cmname);
     m_is_borrowed = 0;
     }
-  r = NULL;
+
+  // Call the function (checking for errors)
   if (m != NULL) {
     d = PyModule_GetDict(m);
     if (d != NULL) {
       f = PyDict_GetItemString(d,cfname);
       if (f != NULL) {
         r = PyObject_CallFunction(f,NULL);
-  }}}
+        }
+      }
+    }
+
+  if (m == NULL) {
+    // Module not found, so raise an exception and return the same way that kaboom does
+    if (PyErr_Occurred() == NULL) {
+      char *errorstring = "callpythonfunc: %s module could not be found";
+      errormessage = (char *) PyMem_Malloc((strlen(errorstring)+strlen(cmname)+1)*sizeof(char));
+      sprintf(errormessage,errorstring,cmname);
+      }
+    goto err;
+    }
+
+  if (d == NULL) {
+    // Module dictionary not found, so raise an exception and return the same way that kaboom does
+    // This should never happen.
+    if (PyErr_Occurred() == NULL) {
+      char *errorstring = "callpythonfunc: %s module's dictionary could not be found";
+      errormessage = (char *) PyMem_Malloc((strlen(errorstring)+strlen(cmname)+1)*sizeof(char));
+      sprintf(errormessage,errorstring,cmname);
+      }
+    goto err;
+    }
+
+  if (f == NULL) {
+    // Function not found, so raise an exception and return the same way that kaboom does
+    if (PyErr_Occurred() == NULL) {
+      char *errorstring = "callpythonfunc: %s.%s function could not be found";
+      errormessage = (char *) PyMem_Malloc((strlen(errorstring)+strlen(cfname)+strlen(cmname)+1)*sizeof(char));
+      sprintf(errormessage,errorstring,cmname,cfname);
+      }
+    goto err;
+    }
+
+  if (r == NULL) {
+    // Function returned an error, so raise an exception and return the same way that kaboom does
+    if (PyErr_Occurred() == NULL) {
+      char *errorstring = "callpythonfunc: %s.%s function had an error";
+      errormessage = (char *) PyMem_Malloc((strlen(errorstring)+strlen(cfname)+strlen(cmname)+1)*sizeof(char));
+      sprintf(errormessage,errorstring,cmname,cfname);
+      }
+    goto err;
+    }
+
   PyMem_Free(cfname);
   PyMem_Free(cmname);
   if (!m_is_borrowed) {
-    Py_XDECREF(m);}
-  if (r == NULL) {
-    longjmp(stackenvironment,1);
-  }
-  else {
-    Py_XDECREF(r);
-  }
+    Py_XDECREF(m);
+    }
+  Py_XDECREF(r);
+
+  return;
+
+err:
+  if (PyErr_Occurred() == NULL) {
+    PyErr_SetString(PyExc_RuntimeError,errormessage);
+    PyMem_Free(errormessage);
+    }
+  PyMem_Free(cfname);
+  PyMem_Free(cmname);
+  lstackenvironmentset = 0;
+  longjmp(stackenvironment,1);
 }
 
