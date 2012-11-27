@@ -19,6 +19,7 @@ Release Notes:
  - Fix for darwin in setup.py when not using the system python
  - The compile_first argument can now include the fortran suffix
  - Now accepts files with the "for" suffix
+ - callpythonfunc now raises errors if there are any problems
 
 0.8.9: June 29, 2012
  - Added getgroupsizes
