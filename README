@@ -13,7 +13,7 @@ much more versatile Python language.
 
 Release Notes:
 
-0.8.10:
+0.8.10: November 30, 2012
  - Put the version number in an automatically generated file, version.py
  - Removed old cvs version numbers
  - Fix for darwin in setup.py when not using the system python
