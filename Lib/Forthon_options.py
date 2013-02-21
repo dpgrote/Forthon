@@ -92,7 +92,7 @@ class InputError(Exception):
 # --- Otherwise ignore the arguments. This is needed since for example this
 # --- module may be imported by the compilers module which is used by some
 # --- program other than Forthon.
-if os.path.basename(sys.argv[0]) == 'Forthon' or sys.argv[0] == '-c':
+if os.path.basename(sys.argv[0]).startswith('Forthon') or sys.argv[0] == '-c':
     (options, args) = parser.parse_args()
 else:
     (options, args) = parser.parse_args(args=[])
