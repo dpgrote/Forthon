@@ -13,6 +13,10 @@ much more versatile Python language.
 
 Release Notes:
 
+0.8.11: (beta)
+ - Added dyanamic arrays of strings
+ - Updated the example
+
 0.8.10: November 30, 2012
  - Put the version number in an automatically generated file, version.py
  - Removed old cvs version numbers
