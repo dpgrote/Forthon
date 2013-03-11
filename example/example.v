@@ -140,6 +140,7 @@ static2 Type2 # Pointer to static derived type object
 next _Type1 # Pointer to derived type object of the same type
 prev _Type1 # Pointer to derived type object of the same type
 xxx(:,:) _real
+sss(m) _character*(10)
 
 ***** Module2:
 t1 Type1 # Test derived type
@@ -166,6 +167,9 @@ a3() subroutine
 tstring character*4 /"////"/ # test "/" in strings
 cccc character*8
 printchar8(cccc:string) subroutine
+nstrarray integer
+strarray(nstrarray) _character*(10)
+printstrarray() subroutine
 
 ****** Actiontest:
 action1 integer GET SET # This variable is used to get set and get actions

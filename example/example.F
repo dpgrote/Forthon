@@ -97,6 +97,15 @@ c========================================================================
       return
       end
 c========================================================================
+      subroutine printstrarray()
+      use Stringtest
+      integer(ISZ):: i
+      do i=1,nstrarray
+        print*,i,strarray(i)
+      enddo
+      return
+      end
+c========================================================================
       subroutine examplesetactionaction1(i)
       integer(ISZ):: i
       print*,"action1 is being set to ",i
