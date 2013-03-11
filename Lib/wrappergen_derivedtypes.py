@@ -884,8 +884,12 @@ class ForthonDerivedType:
           self.fw('  USE '+t.name+'module')
           self.fw('  TYPE('+t.name+'):: obj__')
           self.fw('  integer('+isz+'):: dims__('+repr(len(a.dims))+')')
-          self.fw('  '+fvars.ftof(a.type)+',target:: '+
-                  'p__'+self.prefixdimsf(re.sub('[ \t\n]','',a.dimstring),sdict)+'')
+          if a.type == 'character':
+            self.fw('  character(len='+a.dims[0].high+'),target:: '+
+                    'p__'+self.prefixdimsf(re.sub('[ \t\n]','',a.dimstring),sdict)+'')
+          else:
+            self.fw('  '+fvars.ftof(a.type)+',target:: '+
+                    'p__'+self.prefixdimsf(re.sub('[ \t\n]','',a.dimstring),sdict)+'')
           self.fw('  obj__%'+a.name+' => p__')
           self.fw('  RETURN')
           self.fw('END')
@@ -899,7 +903,11 @@ class ForthonDerivedType:
             self.fw('  if (.not. associated(obj__%'+a.name+')) return ')
             self.fw('  call '+self.fsub(t,'setarraypointersobj')+
                                                    '(i__,obj__%'+a.name+')')
-            self.fw('  ss = shape(obj__%'+a.name+')')
+            if a.type == 'character':
+              self.fw('  ss(1:%d)'%(len(a.dims)-1)+' = shape(obj__%'+a.name+')')
+              self.fw('  ss(%d)'%(len(a.dims))+' = %s'%a.dims[0].high)
+            else:
+              self.fw('  ss = shape(obj__%'+a.name+')')
             self.fw('  call '+self.fsub(t,'setarraydims')+ '(i__,ss)')
             self.fw('  return')
             self.fw('end')

@@ -1097,7 +1097,10 @@ of scalars and arrays.
         self.fw('SUBROUTINE '+self.fsub('setpointer',s.name)+'(p__,cobj__)')
         self.fw('  USE '+s.group)
         self.fw('  integer('+self.isz+'):: cobj__')
-        self.fw('  '+fvars.ftof(s.type)+',target:: p__')
+        if s.type == 'character':
+          self.fw('  character(len='+s.dims[0].high+'),target:: p__')
+        else:
+          self.fw('  '+fvars.ftof(s.type)+',target:: p__')
         if s.dynamic:
           self.fw('  '+s.name+' => p__')
         else:
@@ -1136,7 +1139,12 @@ of scalars and arrays.
           self.fw('  USE '+a.group)
           self.fw('  integer('+self.isz+'):: cobj__')
           self.fw('  integer('+self.isz+'):: dims__('+repr(len(a.dims))+')')
-          self.fw('  '+fvars.ftof(a.type)+',target:: p__'+
+
+          if a.type == 'character':
+            self.fw('  character(len='+a.dims[0].high+'),target:: p__'+
+                    self.prefixdimsf(re.sub('[ \t\n]','',a.dimstring)))
+          else:
+            self.fw('  '+fvars.ftof(a.type)+',target:: p__'+
                     self.prefixdimsf(re.sub('[ \t\n]','',a.dimstring)))
           self.fw('  '+a.name+' => p__')
           self.fw('  return')
