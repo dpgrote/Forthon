@@ -59,40 +59,17 @@ static PyObject *ErrorObject;
     PyArray_DIMS(A)[_n-_i-1] = _m;}                           \
   ISNOTCONTIGUOUS(A);}
 
-/* This converts a python object into a python array          */
-/* and then checks if the array is in fortran order.          */
-/* If it is not, the array is reordered.                      */
+/* This converts a python object into a python array,         */
+/* requesting fortran ordering.                               */
 /* If PyArray_FromObject returns NULL meaning the the input   */
 /* can not be converted into an array, A1 is also set to NULL.*/
 /* This probably should be modified to include casting if it  */
 /* is needed.                                                 */
 static PyArrayObject* FARRAY_FROMOBJECT(PyObject *A2, int ARRAY_TYPE) {
-  PyArrayObject *A1,*_tmp;
-  int _c,_j;
-  _tmp=(PyArrayObject *)PyArray_FromObject(A2,ARRAY_TYPE,0,0);
-  _c = 1;
-  if (_tmp != NULL) {
-    _c = PyArray_ITEMSIZE(_tmp);
-    for (_j=0 ; _j < PyArray_NDIM(_tmp) ; _j++) {
-      if ((int)(PyArray_STRIDES(_tmp)[_j]) != _c) {
-        _c=0;
-        break;
-        }
-      _c *= (int)(PyArray_DIMS(_tmp)[_j]);
-      }}
-  if (!_c) {
-    ARRAY_REVERSE_DIM(_tmp);
-    ARRAY_REVERSE_STRIDE(_tmp);
-    A1 = (PyArrayObject *)PyArray_ContiguousFromObject((PyObject *)_tmp,ARRAY_TYPE,0,0);
-    ARRAY_REVERSE_DIM(_tmp);
-    ARRAY_REVERSE_STRIDE(_tmp);
-    Py_XDECREF(_tmp);
-    ARRAY_REVERSE_DIM(A1);
-    ARRAY_REVERSE_STRIDE(A1);
-    }
-  else {
-    A1 = _tmp;
-    }
+  PyArrayObject *A1;
+  PyArray_Descr *descr;
+  descr = PyArray_DescrFromType(ARRAY_TYPE);
+  A1 = (PyArrayObject *)PyArray_CheckFromAny(A2,descr,0,0,NPY_ARRAY_BEHAVED_NS|NPY_ARRAY_F_CONTIGUOUS,NULL);
   return A1;
 }
 
