@@ -9,7 +9,15 @@ typedef int Py_ssize_t;
 #endif
 
 #include <numpy/arrayobject.h>
-#define MAKECONTIGUOUS(a) PyArray_UpdateFlags(a,(NPY_CONTIGUOUS | NPY_FORTRAN))
+
+#ifndef NPY_ARRAY_BEHAVED_NS
+#define NPY_ARRAY_BEHAVED_NS NPY_BEHAVED_NS
+#define NPY_ARRAY_C_CONTIGUOUS NPY_C_CONTIGUOUS
+#define NPY_ARRAY_F_CONTIGUOUS NPY_F_CONTIGUOUS
+#define NPY_ARRAY_FARRAY NPY_FARRAY
+#endif
+
+#define MAKECONTIGUOUS(a) PyArray_UpdateFlags(a,(NPY_ARRAY_C_CONTIGUOUS | NPY_ARRAY_F_CONTIGUOUS))
 
 #include <pythonrun.h>
 #include "forthonf2c.h"
@@ -263,7 +271,7 @@ static PyArrayObject *ForthonPackage_PyArrayFromFarray(Fortranarray *farray,void
   pya = (PyArrayObject *)PyArray_New(&PyArray_Type,
                                      nd,dimensions,
                                      farray->type,NULL,
-                                     data,itemsize,NPY_FARRAY,NULL);
+                                     data,itemsize,NPY_ARRAY_FARRAY,NULL);
 
   if (farray->type == PyArray_STRING) PyMem_Free(dimensions);
 
