@@ -525,7 +525,7 @@ of scalars and arrays.
         if not fvars.isderivedtype(f.args[i]):
           self.cw('  if (!Forthon_checksubroutineargtype(pyobj['+repr(i)+'],'+
               'PyArray_'+fvars.ftop(f.args[i].type)+')) {')
-          self.cw('    sprintf(e,"Argument '+repr(i+1)+ ' in '+f.name+
+          self.cw('    sprintf(e,"Argument '+f.args[i].name+ ' in '+f.name+
                                ' has the wrong type");')
           self.cw('    PyErr_SetString(ErrorObject,e);')
           self.cw('    goto err;}')
@@ -536,7 +536,7 @@ of scalars and arrays.
             self.cw('  ax['+repr(i)+']=(PyArrayObject *)PyArray_ContiguousFromObject('+
                   'pyobj['+repr(i)+'], PyArray_'+fvars.ftop(f.args[i].type)+',0,0);')
           self.cw('  if (ax['+repr(i)+'] == NULL) {')
-          self.cw('    sprintf(e,"There is an error in argument '+repr(i+1)+
+          self.cw('    sprintf(e,"There is an error in argument '+f.args[i].name+
                                ' in '+f.name+'");')
           self.cw('    PyErr_SetString(ErrorObject,e);')
           self.cw('    goto err;}')
@@ -549,14 +549,14 @@ of scalars and arrays.
           self.cw('  PyObject *t;')
           self.cw('  t = PyObject_Type(pyobj['+repr(i)+']);')
           self.cw('  if (strcmp(((PyTypeObject *)t)->tp_name,"Forthon") != 0) {')
-          self.cw('    sprintf(e,"Argument '+repr(i+1)+ ' in '+f.name+
+          self.cw('    sprintf(e,"Argument '+f.args[i].name+ ' in '+f.name+
                               ' has the wrong type");')
           self.cw('    PyErr_SetString(ErrorObject,e);')
           self.cw('    goto err;}')
           self.cw('  Py_DECREF(t);')
           typename = '((ForthonObject *)pyobj['+repr(i)+'])->typename'
           self.cw('  if (strcmp('+typename+',"'+f.args[i].type+'") != 0) {')
-          self.cw('    sprintf(e,"Argument '+repr(i+1)+ ' in '+f.name+
+          self.cw('    sprintf(e,"Argument '+f.args[i].name+ ' in '+f.name+
                               ' has the wrong type");')
           self.cw('    PyErr_SetString(ErrorObject,e);')
           self.cw('    goto err;}')
@@ -588,7 +588,7 @@ of scalars and arrays.
               self.cw('      ||PyArray_NDIM(ax[%d]) == 0)) {'%i)
             else:
               self.cw('      )) {')
-            self.cw('    sprintf(e,"Argument %d in %s '%(i+1,f.name) +
+            self.cw('    sprintf(e,"Argument %s in %s '%(arg.name,f.name) +
                              'has the wrong number of dimensions");')
             self.cw('    PyErr_SetString(ErrorObject,e);')
             self.cw('    goto err;}')
@@ -617,7 +617,7 @@ of scalars and arrays.
                 self.cw('    if (!((',noreturn=1)
               self.cw('_n == (long)(PyArray_DIMS(ax[%d])[%d])))) {'%(i,j))
               self.cw('      sprintf(e,"Dimension '+repr(j+1)+' of argument '+
-                               repr(i+1)+ ' in '+f.name+
+                               arg.name + ' in '+f.name+
                                ' has the wrong size");')
               self.cw('      PyErr_SetString(ErrorObject,e);')
               self.cw('      goto err;}')
