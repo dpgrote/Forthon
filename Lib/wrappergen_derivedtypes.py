@@ -160,7 +160,7 @@ class ForthonDerivedType:
           self.cw('extern void '+fname(self.fsub(t,'getpointer',a.name))+
                   '(long *i,char* fobj);')
       self.cw('')
-  
+
       # --- setaction and getaction routines for f90
       for s in slist:
         if s.setaction is not None:
@@ -303,7 +303,7 @@ class ForthonDerivedType:
         if a.dims and not a.dynamic:
           j = 0
           for d in a.dims:
-            self.cw('  '+vname+'.dimensions['+repr(len(a.dims)-1-j)+'] = (npy_intp)(('+
+            self.cw('  '+vname+'.dimensions['+repr(j)+'] = (npy_intp)(('+
                     d.high+') - ('+d.low+') + 1);')
             j = j + 1
       self.cw('}')
@@ -328,11 +328,10 @@ class ForthonDerivedType:
         if a.dynamic == 1 or a.dynamic == 2:
           j = 0
           self.cw('  if (i == -1 || i == %d) {'%i)
-          # --- create lines of the form dims[1] = high - low + 1, in
-          # --- reverse order
+          # --- create lines of the form dims[1] = high - low + 1
           for d in a.dims:
             if d.high == '': continue
-            self.cw('   '+vname+'.dimensions['+repr(len(a.dims)-1-j)+']=(npy_intp)((int)',
+            self.cw('   '+vname+'.dimensions['+repr(j)+']=(npy_intp)((int)',
                     noreturn=1)
             j = j + 1
             if re.search('[a-zA-Z]',d.high) == None:
@@ -487,7 +486,6 @@ class ForthonDerivedType:
       # --- This routine gets the dimensions from an array. It is called from
       # --- fortran and the last argument should be shape(array).
       # --- This is only used for routines with the fassign attribute.
-      # --- Note that the dimensions are stored in C order.
       # --- I should check the fortran standard - for the dims argument, the
       # --- fortran is passing in shape(x). Apparently, it is the same length
       # --- as longs.
@@ -497,7 +495,7 @@ class ForthonDerivedType:
       if f90:
         self.cw('  int id;')
         self.cw('  for (id=0;id<farray->nd;id++)')
-        self.cw('    farray->dimensions[farray->nd-1-id] = (npy_intp)(dims[id]);')
+        self.cw('    farray->dimensions[id] = (npy_intp)(dims[id]);')
       self.cw('}')
 
       #########################################################################
@@ -758,7 +756,7 @@ class ForthonDerivedType:
       self.fw('  USE '+t.name+'module')
       self.fw('  TYPE('+t.name+'):: obj__')
       self.fw('  INTEGER('+isz+'):: setinitvalues')
- 
+
       # --- Write out calls to c routine passing down pointers to scalars
       for i in range(len(slist)):
         s = slist[i]

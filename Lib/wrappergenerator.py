@@ -192,7 +192,7 @@ of scalars and arrays.
       if not hv.function and hv.group != current_hidden_group:
         hidden_groups.append(hv.group)
         current_hidden_group = hv.group
-  
+
     # --- Select out all of the scalars and build a dictionary
     # --- The dictionary is used to get number of the variables use as
     # --- dimensions for arrays.
@@ -328,14 +328,14 @@ of scalars and arrays.
       self.cw('Fortranscalar '+self.pname+'_fscalars['+repr(len(self.slist))+']={')
       for i in range(len(self.slist)):
         s = self.slist[i]
-        self.cw('{PyArray_%s,'%fvars.ftop(s.type) + 
+        self.cw('{PyArray_%s,'%fvars.ftop(s.type) +
                  '"%s",'%s.type +
-                 '"%s",'%s.name + 
-                 'NULL,' + 
-                 '"%s",'%s.group + 
-                 '"%s",'%s.attr + 
-                 '"%s",'%repr(s.comment)[1:-1].replace('"','\\"') + 
-                 '%i,'%s.dynamic + 
+                 '"%s",'%s.name +
+                 'NULL,' +
+                 '"%s",'%s.group +
+                 '"%s",'%s.attr +
+                 '"%s",'%repr(s.comment)[1:-1].replace('"','\\"') +
+                 '%i,'%s.dynamic +
                  'NULL,' + # setpointer
                  'NULL,' + # getpointer
                  'NULL,' + # setaction
@@ -365,7 +365,7 @@ of scalars and arrays.
                   '{NULL},' +
                   'NULL,' + # setpointer
                   'NULL,' + # getpointer
-                  'NULL,' + # setaction 
+                  'NULL,' + # setaction
                   'NULL,' + # getaction
                   '%s,'%initvalue +
                   'NULL,' +
@@ -592,7 +592,6 @@ of scalars and arrays.
                              'has the wrong number of dimensions");')
             self.cw('    PyErr_SetString(ErrorObject,e);')
             self.cw('    goto err;}')
-            j = -1
 
             # --- Skip the check of dimension sizes if the total size of
             # --- the array should be zero. This gets around an issue with
@@ -603,6 +602,7 @@ of scalars and arrays.
               self.cw('*(('+dim.high+')-('+dim.low+')+1)',noreturn=1)
             self.cw(' != 0) {')
 
+            j = -1
             for dim in arg.dims:
               j += 1
               # --- Compare each dimension with its specified value
@@ -691,7 +691,7 @@ of scalars and arrays.
 
       # --- Error section, in case there was an error above or in the
       # --- fortran call
-      self.cw('err:') 
+      self.cw('err:')
 
       if len(f.args) > 0:
         # --- Decrement reference counts of array objects created.
@@ -722,7 +722,7 @@ of scalars and arrays.
     # --- Write static array initialization routines
     self.cw('void '+self.pname+'setstaticdims(ForthonObject *self)')
     self.cw('{')
-  
+
     i = -1
     for a in self.alist:
       i = i + 1
@@ -730,7 +730,7 @@ of scalars and arrays.
       if a.dims and not a.dynamic:
         j = 0
         for d in a.dims:
-          self.cw('  '+vname+'.dimensions['+repr(len(a.dims)-1-j)+'] = (npy_intp)(('+
+          self.cw('  '+vname+'.dimensions['+repr(j)+'] = (npy_intp)(('+
                   d.high+') - ('+d.low+') + 1);')
           j = j + 1
 
@@ -766,10 +766,10 @@ of scalars and arrays.
       if a.dynamic == 1 or a.dynamic == 2:
         j = 0
         self.cw('  if (i == -1 || i == %d) {'%i)
-        # --- create lines of the form dims[1] = high-low+1, in reverse order
+        # --- create lines of the form dims[1] = high-low+1
         for d in a.dims:
           if d.high == '': continue
-          self.cw('   '+vname+'.dimensions['+repr(len(a.dims)-1-j)+']=(npy_intp)((int)',
+          self.cw('   '+vname+'.dimensions['+repr(j)+']=(npy_intp)((int)',
                   noreturn=1)
           j = j + 1
           if re.search('[a-zA-Z]',d.high) == None:
@@ -794,7 +794,7 @@ of scalars and arrays.
                 noreturn=1)
         self.cw('  '+self.pname+'setdims'+groupinfo[0]+'(name,i);')
     self.cw('}')
-  
+
     self.cw('')
 
     ###########################################################################
@@ -862,7 +862,7 @@ of scalars and arrays.
     if self.f90:
       self.cw('  int id;')
       self.cw('  for (id=0;id<farray->nd;id++)')
-      self.cw('    farray->dimensions[farray->nd-1-id] = (npy_intp)(dims[id]);')
+      self.cw('    farray->dimensions[id] = (npy_intp)(dims[id]);')
     self.cw('}')
 
     ###########################################################################
@@ -1023,7 +1023,7 @@ of scalars and arrays.
        self.fw('  USE '+g)
       else:
        self.fw('  Use('+g+')')
- 
+
     # --- Write out calls to c routine passing down pointers to scalars
     for i in range(len(self.slist)):
       s = self.slist[i]
@@ -1079,7 +1079,7 @@ of scalars and arrays.
     # --- Write out the Use statements
     for g in self.groups+self.hidden_groups:
       self.fw('  USE '+g)
- 
+
     for i in range(len(self.slist)):
       s = self.slist[i]
       if s.dynamic: self.fw('  NULLIFY('+s.name+')')
@@ -1169,7 +1169,7 @@ of scalars and arrays.
       # --- Write out the Use statements
       for g in self.groups:
         self.fw('Use('+g+')')
-     
+
       for hg in self.hidden_groups:
         self.fw('Use('+hg+')')
 
