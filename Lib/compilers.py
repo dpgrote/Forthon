@@ -98,7 +98,7 @@ appropriate block for the machine.
       self.fopt = '-g'
       self.popt = '-g'
       self.extra_link_args += ['-g']
-      self.extra_compile_args += ['-g']
+      self.extra_compile_args += ['-g','-O0']
 
     # --- Add the compiler name to the forthon arguments
     self.forthonargs += ['-F '+self.fcompname]
