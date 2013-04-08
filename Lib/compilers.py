@@ -157,6 +157,28 @@ appropriate block for the machine.
     # --- That's it!
     return libroot
 
+  # --- Make sure tha the version of gfortran is new enough. Older versions
+  # --- had a bug - array dimensions were not setup properly for array arguments,
+  # --- leading to memory out of bounds errors.
+  def isgfortranversionok(self,fcompexec):
+      fcomp = os.path.join(self.findfile(fcompexec,followlinks=0),fcompexec)
+      ff = os.popen(fcomp+' --version')
+      versioninfo = ff.readline()[:-1]
+      ff.close()
+      # --- Hopefully, the version info always has the same format
+      try:
+          version = versioninfo.split()[3]
+          vv = version.split('.')
+          vfloat = float('.'.join(vv[0:2]))
+      except IndexError:
+          # --- If there is a problem, reject it
+          vfloat = 0.
+      if vfloat < 4.3:
+          print "gfortran will not be used, it's version is too old or unknown - upgrade to a newer version"
+          return False
+      else:
+          return True
+
   #-----------------------------------------------------------------------------
   # --- LINUX
   def linux_intel(self):
@@ -226,6 +248,7 @@ appropriate block for the machine.
 
   def linux_gfortran(self):
     if self.usecompiler('gfortran','gfortran'):
+      if not self.isgfortranversionok(self.fcompexec): return None
       self.fcompname = 'gfortran'
       self.f90free  += ' -fPIC'
       self.f90fixed += ' -fPIC -ffixed-line-length-132'
@@ -467,6 +490,7 @@ appropriate block for the machine.
 
   def macosx_gfortran(self):
     if self.usecompiler('gfortran','gfortran'):
+      if not self.isgfortranversionok(self.fcompexec): return None
       self.fcompname = 'gfortran'
       self.f90fixed += ' -ffixed-line-length-132'
       self.f90free  += ' -DFPSIZE=%s'%(realsize)
