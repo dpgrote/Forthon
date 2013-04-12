@@ -60,6 +60,7 @@ implicitnone   = options.implicitnone
 build_temp     = options.build_temp
 verbose        = options.verbose
 dobuild        = options.dobuild
+with_feenableexcept = options.with_feenableexcept
 
 # --- There options require special handling
 
@@ -401,6 +402,9 @@ if machine == 'darwin':
 if not verbose:
   print "  Setup " + pkg
   sys.stdout = open(os.devnull, 'w')
+
+if with_feenableexcept:
+  define_macros.append(('WITH_FEENABLEEXCEPT',1))
 
 setup(name = pkg,
       ext_modules = [Extension(pkg+'py',

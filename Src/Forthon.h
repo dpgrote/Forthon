@@ -1775,6 +1775,36 @@ static PyObject *ForthonPackage_printtypenum(PyObject *_self_,PyObject *args)
 }
 
 /* ######################################################################### */
+#ifdef WITH_FEENABLEEXCEPT
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE 1
+#endif
+#include <fenv.h>
+#endif
+static char feenableexcept_doc[] = "Turns on or off trapping of floating point exceptions";
+static PyObject *ForthonPackage_feenableexcept(PyObject *_self_,PyObject *args)
+{
+  PyObject *pyobj;
+
+  if (!PyArg_ParseTuple(args,"O",&pyobj)) return NULL;
+
+  if (!PyInt_Check(pyobj)) {
+    PyErr_SetString(PyExc_TypeError,"Input argument must be an integer");
+    return NULL;
+    }
+#ifdef WITH_FEENABLEEXCEPT
+    if (PyInt_AS_LONG(pyobj)) {
+      feenableexcept(FE_DIVBYZERO | FE_OVERFLOW | FE_INVALID);
+    }
+    else {
+      fedisableexcept(FE_DIVBYZERO | FE_OVERFLOW | FE_INVALID);
+    }
+#endif
+
+  returnnone;
+}
+
+/* ######################################################################### */
 /* # Group allocation freeing routine */
 static char gfree_doc[] = "Frees the memory of all dynamic arrays in a group";
 static PyObject *ForthonPackage_gfree(PyObject *_self_,PyObject *args)
@@ -2198,6 +2228,7 @@ static struct PyMethodDef ForthonPackage_methods[] = {
   {"varlist"     ,(PyCFunction)ForthonPackage_varlist,1,varlist_doc},
   {"getstrides"  ,(PyCFunction)ForthonPackage_getstrides,1,getstrides_doc},
   {"printtypenum"  ,(PyCFunction)ForthonPackage_printtypenum,1,printtypenum_doc},
+  {"feenableexcept"  ,(PyCFunction)ForthonPackage_feenableexcept,1,feenableexcept_doc},
   {NULL,NULL}};
 
 static PyMethodDef *getForthonPackage_methods(void)
