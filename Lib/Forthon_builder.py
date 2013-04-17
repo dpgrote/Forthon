@@ -22,11 +22,11 @@ print "Building package " + pkg
 # --- are passed to distutils.
 extrafiles = []
 while len(args) > 0:
-  if args[0][0] != '-':
-    extrafiles += [args[0]]
-    del args[0]
-  else:
-    break
+    if args[0][0] != '-':
+        extrafiles += [args[0]]
+        del args[0]
+    else:
+        break
 
 # --- Default values for command line options
 machine        = options.machine
@@ -65,14 +65,14 @@ with_feenableexcept = options.with_feenableexcept
 # --- There options require special handling
 
 if initialgallot:
-  initialgallot = '-a'
+    initialgallot = '-a'
 else:
-  initialgallot = ''
+    initialgallot = ''
 
 if f90:
-  f90 = '--f90'
+    f90 = '--f90'
 else:
-  f90 = '--f77'
+    f90 = '--f77'
 
 fargs = ' '.join(fargslist)
 
@@ -88,36 +88,36 @@ if timeroutines: forthonargs.append('--timeroutines')
 # --- Get the numpy headers path
 import numpy
 if numpy.__version__ < '1.1.0':
-  # --- Older versions of numpy hacked into distutils, changing things
-  # --- in such a way to mangle things like object file names. To avoid
-  # --- this, the code from get_include is included here explicitly,
-  # --- avoiding the importing of numpy.distutils.
-  import os
-  if numpy.show_config is None:
-      # running from numpy source directory
-      d = os.path.join(os.path.dirname(numpy.__file__), 'core', 'include')
-  else:
-      # using installed numpy core headers
-      import numpy.core as core
-      d = os.path.join(os.path.dirname(core.__file__), 'include')
-  includedirs.append(d)
+    # --- Older versions of numpy hacked into distutils, changing things
+    # --- in such a way to mangle things like object file names. To avoid
+    # --- this, the code from get_include is included here explicitly,
+    # --- avoiding the importing of numpy.distutils.
+    import os
+    if numpy.show_config is None:
+        # running from numpy source directory
+        d = os.path.join(os.path.dirname(numpy.__file__), 'core', 'include')
+    else:
+        # using installed numpy core headers
+        import numpy.core as core
+        d = os.path.join(os.path.dirname(core.__file__), 'include')
+    includedirs.append(d)
 else:
-  includedirs.append(numpy.get_include())
+    includedirs.append(numpy.get_include())
 
 # --- Fix path - needed for Cygwin
 def fixpath(path,dos=1):
-  if machine == 'win32':
-    # --- Cygwin does path mangling, requiring two back slashes
-    if(dos):
-      p = re.sub(r'\\',r'\\\\',path)
-      p = re.sub(r':',r':\\\\',p)
-    else:
-      p = re.sub(r'\\',r'/',path)
+    if machine == 'win32':
+        # --- Cygwin does path mangling, requiring two back slashes
+        if(dos):
+            p = re.sub(r'\\',r'\\\\',path)
+            p = re.sub(r':',r':\\\\',p)
+        else:
+            p = re.sub(r'\\',r'/',path)
 #      p = re.sub(r'C:',r'/c',p)
 #      if p[1:2] == ':': p = '/cygdrive/'+string.lower(p[0])+p[2:]
-    return p
-  else:
-    return path
+        return p
+    else:
+        return path
 
 # --- Define the seperator to use in paths.
 pathsep = os.sep
@@ -136,23 +136,23 @@ del fvars
 # --- This needs to be done for generating builddir since the distutils
 # --- options may affect its value.
 if dobuild:
-  sys.argv = ['Forthon','build'] + args
+    sys.argv = ['Forthon','build'] + args
 else:
-  sys.argv = ['Forthon','install'] + args
+    sys.argv = ['Forthon','install'] + args
 
 # --- Find the location of the build directory. There must be a better way
 # --- of doing this.
 if builddir is None:
-  dummydist = Distribution()
-  dummydist.parse_command_line()
-  dummybuild = dummydist.get_command_obj('build')
-  dummybuild.finalize_options()
-  builddir = dummybuild.build_temp
-  bb = builddir.split(os.sep)
-  upbuilddir = len(bb)*(os.pardir + os.sep)
-  del dummydist,dummybuild,bb
+    dummydist = Distribution()
+    dummydist.parse_command_line()
+    dummybuild = dummydist.get_command_obj('build')
+    dummybuild.finalize_options()
+    builddir = dummybuild.build_temp
+    bb = builddir.split(os.sep)
+    upbuilddir = len(bb)*(os.pardir + os.sep)
+    del dummydist,dummybuild,bb
 else:
-  upbuilddir = os.getcwd()
+    upbuilddir = os.getcwd()
 
 # --- Add the build-temp option. This is needed since distutils would otherwise
 # --- put the object files from compiling the pkgnamepy.c file in a temp
@@ -196,7 +196,7 @@ python = fixpath(sys.executable,dos=0)
 # --- Generate list of package dependencies
 dep = ''
 for d in dependencies:
-  dep = dep + ' -d %s.scalars'%d
+    dep = dep + ' -d %s.scalars'%d
 
 # --- Loop over extrafiles. For each fortran file, append the object name
 # --- to be used in the makefile and for setup. For each C file, add to a
@@ -209,109 +209,109 @@ extraobjectslist = []
 extracfiles = []
 fortransuffices = [fixed_suffix,free_suffix]
 if machine == 'win32':
-  osuffix = '.obj'
+    osuffix = '.obj'
 else:
-  osuffix = '.o'
+    osuffix = '.o'
 for f in extrafiles:
-  root,suffix = os.path.splitext(f)
-  if suffix[1:] in ['o','obj']:
-    extraobjectsstr = extraobjectsstr + ' ' + root + osuffix
-    extraobjectslist = extraobjectslist + [root + osuffix]
-  elif suffix[1:] in ['F','F90','f','f90','for',fixed_suffix,free_suffix]:
-    extraobjectsstr = extraobjectsstr + ' ' + root + osuffix
-    extraobjectslist = extraobjectslist + [root + osuffix]
-    if suffix[1:] not in fortransuffices:
-      fortransuffices.append(suffix[1:])
-  elif suffix[1:] in ['c']:
-    extracfiles.append(f)
+    root,suffix = os.path.splitext(f)
+    if suffix[1:] in ['o','obj']:
+        extraobjectsstr = extraobjectsstr + ' ' + root + osuffix
+        extraobjectslist = extraobjectslist + [root + osuffix]
+    elif suffix[1:] in ['F','F90','f','f90','for',fixed_suffix,free_suffix]:
+        extraobjectsstr = extraobjectsstr + ' ' + root + osuffix
+        extraobjectslist = extraobjectslist + [root + osuffix]
+        if suffix[1:] not in fortransuffices:
+            fortransuffices.append(suffix[1:])
+    elif suffix[1:] in ['c']:
+        extracfiles.append(f)
 
 if compile_first != '':
-  compile_firstroot,compile_firstsuffix = os.path.splitext(compile_first)
-  compile_firstobject = compile_firstroot + osuffix
+    compile_firstroot,compile_firstsuffix = os.path.splitext(compile_first)
+    compile_firstobject = compile_firstroot + osuffix
 else:
-  compile_firstobject = ''
+    compile_firstobject = ''
 
 # --- Make string containing other macros files
 othermacstr = ''
 for f in othermacros:
-  othermacstr = othermacstr + ' --macros ' + os.path.join(upbuilddir,f)
+    othermacstr = othermacstr + ' --macros ' + os.path.join(upbuilddir,f)
 
 # --- Put any defines in a string that will appear at the beginning of the
 # --- makefile.
 definesstr = ''
 for d in (defines + fcompiler.defines):
-  definesstr = definesstr + d + '\n'
+    definesstr = definesstr + d + '\n'
 
 # --- Define default rule. Note that static doesn't work yet.
 fortranroot,suffix = os.path.splitext(fortranfile)
 if fcompiler.static:
-  defaultrule = 'static:'
-  raise InputError('Static linking not supported at this time')
+    defaultrule = 'static:'
+    raise InputError('Static linking not supported at this time')
 else:
-  defaultrule = 'dynamic: %(compile_firstobject)s %(pkg)s_p%(osuffix)s %(fortranroot)s%(osuffix)s %(pkg)spymodule.c Forthon.h Forthon.c %(extraobjectsstr)s'%locals()
+    defaultrule = 'dynamic: %(compile_firstobject)s %(pkg)s_p%(osuffix)s %(fortranroot)s%(osuffix)s %(pkg)spymodule.c Forthon.h Forthon.c %(extraobjectsstr)s'%locals()
 
 if writemodules:
-  # --- Fortran modules are written by the wrapper to the _p file.
-  # --- The rest of the fortran files will depend in this ones obhect file.
-  # --- This file doesn't depend on any fortran files.
-  modulecontainer = pkg+'_p'
-  wrapperdependency = ''
+    # --- Fortran modules are written by the wrapper to the _p file.
+    # --- The rest of the fortran files will depend in this ones obhect file.
+    # --- This file doesn't depend on any fortran files.
+    modulecontainer = pkg+'_p'
+    wrapperdependency = ''
 else:
-  # --- If nowritemodules is set, then it is assumed that modules are contained
-  # --- in the main fortran file. In this case, set the dependencies in the
-  # --- makefile so that all files depend on the main file, rather than the
-  # --- wrapper fortran file.
-  modulecontainer = fortranroot
-  wrapperdependency = fortranroot+osuffix
+    # --- If nowritemodules is set, then it is assumed that modules are contained
+    # --- in the main fortran file. In this case, set the dependencies in the
+    # --- makefile so that all files depend on the main file, rather than the
+    # --- wrapper fortran file.
+    modulecontainer = fortranroot
+    wrapperdependency = fortranroot+osuffix
 
 # --- convert list of fortranargs into a string
 forthonargs = ' '.join(forthonargs)
 
 # --- Add any includedirs to fargs
 for i in includedirs:
-  fargs = fargs + ' -I'+i+' '
+    fargs = fargs + ' -I'+i+' '
 
 # --- Add in any user supplied cargs
 if cargs is not None:
-  extra_compile_args.append(cargs)
+    extra_compile_args.append(cargs)
 
 pypreproc = '%(python)s -c "from Forthon.preprocess import main;main()" %(f90)s -t%(machine)s %(forthonargs)s'%locals()
 forthon = '%(python)s -c "from Forthon.wrappergenerator import wrappergenerator_main;wrappergenerator_main()"'%locals()
 noprintdirectory = ''
 if not verbose:
-  # --- Set so that the make doesn't produce any output
-  f90fixed = "@echo ' ' F90Fixed $(<F);" + f90fixed
-  f90free = "@echo ' ' F90Free $(<F);" + f90free
-  pypreproc = "@echo ' ' Preprocess $(<F);" + pypreproc
-  forthon = "@echo ' ' Forthon $(<F);" + forthon
-  noprintdirectory = '--no-print-directory'
+    # --- Set so that the make doesn't produce any output
+    f90fixed = "@echo ' ' F90Fixed $(<F);" + f90fixed
+    f90free = "@echo ' ' F90Free $(<F);" + f90free
+    pypreproc = "@echo ' ' Preprocess $(<F);" + pypreproc
+    forthon = "@echo ' ' Forthon $(<F);" + forthon
+    noprintdirectory = '--no-print-directory'
 
 # --- Create a separate rule to compile the compiler_first file, setting it up
 # --- so that it doesn't have any dependencies beyond itself.
 compile_firstrule = ''
 if compile_first != '' and compile_firstsuffix != '':
-  suffixpath = os.path.join(upbuilddir,'%(compile_first)s'%locals())
-  if compile_firstsuffix == '90': ff = f90free
-  else:                           ff = f90fixed
-  compile_firstrule = """
+    suffixpath = os.path.join(upbuilddir,'%(compile_first)s'%locals())
+    if compile_firstsuffix == '90': ff = f90free
+    else:                           ff = f90fixed
+    compile_firstrule = """
 %(compile_firstobject)s: %(suffixpath)s
 	%(ff)s %(fopt)s %(fargs)s -c $<
-"""%locals()
+  """%locals()
 
 # --- Add build rules for fortran files with suffices other than the
 # --- basic fixed and free ones. Those first two suffices are included
 # --- explicitly in the makefile. Note that this depends on fargs.
 extrafortranrules = ''
 if len(fortransuffices) > 2:
-  for suffix in fortransuffices[2:]:
-    suffixpath = os.path.join(upbuilddir,'%%.%(suffix)s'%locals())
-    if suffix[-2:] == '90': ff = f90free
-    else:                   ff = f90fixed
-    extrafortranrules += """
+    for suffix in fortransuffices[2:]:
+        suffixpath = os.path.join(upbuilddir,'%%.%(suffix)s'%locals())
+        if suffix[-2:] == '90': ff = f90free
+        else:                   ff = f90fixed
+        extrafortranrules += """
 %%%(osuffix)s: %(suffixpath)s %(modulecontainer)s%(osuffix)s
 	%(ff)s %(fopt)s %(fargs)s -c $<
-"""%locals()
-    del suffix,suffixpath,ff
+    """%locals()
+        del suffix,suffixpath,ff
 
 # --- First, create Makefile.pkg which has all the needed definitions
 makefiletext = """
@@ -335,7 +335,7 @@ Forthon.c:%(forthonhome)s%(pathsep)sForthon.c
 %(pkg)spymodule.c %(pkg)s_p.%(free_suffix)s:%(interfacefile)s
 	%(forthon)s --realsize %(realsize)s \\
 	%(f90)s -t %(machine)s %(forthonargs)s %(initialgallot)s \\
-        %(othermacstr)s %(dep)s %(pkg)s %(interfacefile)s
+	%(othermacstr)s %(dep)s %(pkg)s %(interfacefile)s
 clean:
 	rm -rf *%(osuffix)s *_p.%(free_suffix)s *.mod *module.c *.scalars *.so Forthon.c Forthon.h forthonf2c.h build
 """%(locals())
@@ -350,10 +350,10 @@ makefile.close()
 os.chdir(builddir)
 m = os.system('make -f Makefile.%(pkg)s %(noprintdirectory)s'%locals())
 if m != 0:
-  # --- If there was a problem with the make, then quite this too.
-  # --- The factor of 256 just selects out the higher of the two bytes
-  # --- returned by system. The upper has the error number returned by make.
-  sys.exit(int(m/256))
+    # --- If there was a problem with the make, then quite this too.
+    # --- The factor of 256 just selects out the higher of the two bytes
+    # --- returned by system. The upper has the error number returned by make.
+    sys.exit(int(m/256))
 os.chdir(upbuilddir)
 
 # --- Make sure that the shared object is deleted. This is needed since
@@ -361,9 +361,9 @@ os.chdir(upbuilddir)
 # --- than the shared object. The 'try' is used in case the file doesn't
 # --- exist (like when the code is built the first time).
 try:
-  os.remove(pkg+'py.so')
+    os.remove(pkg+'py.so')
 except:
-  pass
+    pass
 
 cfiles = [os.path.join(builddir,p) for p in [pkg+'pymodule.c','Forthon.c']]
 ofiles = [os.path.join(builddir,p) for p in [fortranroot+osuffix,
@@ -378,33 +378,33 @@ if machine == 'win32': includedirs+=['/usr/include']
 # --- This fixes it.
 if machine == 'darwin':
 # --- Machines running csh/tcsh seem to have MACHTYPE defined and this is the safest way to set -arch.
-  if 'MACHTYPE' in os.environ:
-    if os.environ['MACHTYPE'] == 'i386':
-      os.environ['ARCHFLAGS'] = '-arch i386'
-    elif os.environ['MACHTYPE'] == 'x86_64':
-      os.environ['ARCHFLAGS'] = '-arch x86_64'
-    elif os.environ['MACHTYPE'] == 'powerpc':
-      os.environ['ARCHFLAGS'] = '-arch ppc'
+    if 'MACHTYPE' in os.environ:
+        if os.environ['MACHTYPE'] == 'i386':
+            os.environ['ARCHFLAGS'] = '-arch i386'
+        elif os.environ['MACHTYPE'] == 'x86_64':
+            os.environ['ARCHFLAGS'] = '-arch x86_64'
+        elif os.environ['MACHTYPE'] == 'powerpc':
+            os.environ['ARCHFLAGS'] = '-arch ppc'
 #---  If the shell is bash, MACHTYPE is undefined.  So get what we can from uname. We will assume that if
 #---  we are running Snow Leopard we are -arch x86-64 and if running Leopard on intel we are -arch i386.
 #---  This can be over-ridden by defining MACHTYPE.
-  else:
-    archtype = os.uname()[-1]
-    if archtype in ['Power Macintosh','ppc']:
-      os.environ['ARCHFLAGS'] = '-arch ppc'
-    elif archtype in ['i386','x86_64']:
-      kernel_major = eval(os.uname()[2].split('.')[0])
-      if kernel_major < 10 :
-        os.environ['ARCHFLAGS'] = '-arch i386'  # Leopard or earlier
-      else:
-        os.environ['ARCHFLAGS'] = '-arch x86_64'  # Snow Leopard
+    else:
+        archtype = os.uname()[-1]
+        if archtype in ['Power Macintosh','ppc']:
+            os.environ['ARCHFLAGS'] = '-arch ppc'
+        elif archtype in ['i386','x86_64']:
+            kernel_major = eval(os.uname()[2].split('.')[0])
+            if kernel_major < 10 :
+                os.environ['ARCHFLAGS'] = '-arch i386'  # Leopard or earlier
+            else:
+                os.environ['ARCHFLAGS'] = '-arch x86_64'  # Snow Leopard
 
 if not verbose:
-  print "  Setup " + pkg
-  sys.stdout = open(os.devnull, 'w')
+    print "  Setup " + pkg
+    sys.stdout = open(os.devnull, 'w')
 
 if with_feenableexcept:
-  define_macros.append(('WITH_FEENABLEEXCEPT',1))
+    define_macros.append(('WITH_FEENABLEEXCEPT',1))
 
 setup(name = pkg,
       ext_modules = [Extension(pkg+'py',

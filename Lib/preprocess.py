@@ -7,21 +7,22 @@ import sys
 from Forthon_options import args
 
 def py_ifelse(m,v,t,f=''):
-  if m==v:
-    return t
-  else:
-    return f
+    if m==v:
+        return t
+    else:
+        return f
 
 def main():
-  file = open(args[0],'r')
-  text = file.readlines()
-  sys.stdout = open(args[1],'w')
+    file = open(args[0],'r')
+    text = file.readlines()
+    sys.stdout = open(args[1],'w')
 
-  for line in text:
-    if line[0] == '%':
-      print eval(line[1:],globals())
-    else:
-      print line[:-1]
+    for line in text:
+        if line[0] == '%':
+            print eval(line[1:],globals())
+        else:
+            print line[:-1]
 
 if __name__ == '__main__':
-  main()
+    main()
+
