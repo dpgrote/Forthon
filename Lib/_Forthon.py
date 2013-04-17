@@ -36,6 +36,12 @@ except ImportError:
 try:
   import PWpickle
   import PRpickle
+  try:
+    PW
+    PR
+  except NameError:
+    import PWpickle as PW
+    import PRpickle as PR
 except ImportError:
   pass
 try:

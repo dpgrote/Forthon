@@ -18,6 +18,7 @@ Release Notes:
  - Updated the example
  - With debug, adds -O0 argument when compiling the wrapper
  - Checks the version of gfortran (skipping buggy older versions)
+ - Imports PWpickle and PRpickle as PW and PR if PyPDB is not installed
 
 0.8.10: November 30, 2012
  - Put the version number in an automatically generated file, version.py
