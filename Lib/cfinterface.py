@@ -29,36 +29,36 @@ fpsize = 'kind=%s'%realsize
 # Creates a function which converts a C name into a Fortran name
 
 if machine in ['hp-uxB','aix4','aix5','win32','MAC']:
-  def fname(n):
-    return n.lower()
-elif machine in ['linux2','linux3','darwin','SOL','sunos5','AXP','osf1V4','DOS','cygwin']:
-  if underscoring:
-    if twounderscores:
-      def fname(n):
-        m = re.search('_',n)
-        if m == None: return n.lower()+'_'
-        else:         return n.lower()+'__'
-    else:
-      def fname(n):
-        return n.lower()+'_'
-  else:
     def fname(n):
-      return n.lower()
+        return n.lower()
+elif machine in ['linux2','linux3','darwin','SOL','sunos5','AXP','osf1V4','DOS','cygwin']:
+    if underscoring:
+        if twounderscores:
+            def fname(n):
+                m = re.search('_',n)
+                if m == None: return n.lower()+'_'
+                else:         return n.lower()+'__'
+        else:
+            def fname(n):
+                return n.lower()+'_'
+    else:
+        def fname(n):
+            return n.lower()
 elif machine in ['T3E','sn67112','C90','J90','SGI','irix646']:
-  def fname(n):
-    return n.upper()
+    def fname(n):
+        return n.upper()
 else:
-  raise ValueError('Machine %s not supported'%machine)
+    raise ValueError('Machine %s not supported'%machine)
 
 #----------------------------------------------------------------------------
 # Creates a function which returns the Fortran name of an object
 
 if not f90:
-  def fnameofobj(f):
-    return fname(f.name)
+    def fnameofobj(f):
+        return fname(f.name)
 else:
-  def fnameofobj(f):
-    return fname(f.name)
+    def fnameofobj(f):
+        return fname(f.name)
 # if machine in ['hp-uxB','linux2','linux3', \
 #                'SOL','sunos5','AXP','osf1V4','DOS','MAC']:
 #   def fnameofobj(f):
@@ -80,8 +80,8 @@ else:
 # of a string passed from Fortran to C.
 
 if machine in ['hp-uxB','linux2','linux3','darwin','SOL','sunos5','DOS','aix4','aix5','win32','cygwin']:
-  charlen_at_end = 1
-  forthonf2c = """
+    charlen_at_end = 1
+    forthonf2c = """
 #define FSTRING char*
 #define SL1 ,int sl1
 #define SL2 ,int sl2
@@ -103,15 +103,15 @@ if machine in ['hp-uxB','linux2','linux3','darwin','SOL','sunos5','DOS','aix4','
 """
 
 elif machine in ['T3E','sn67112','SGI','irix646']:
-  charlen_at_end = 0
-  forthonf2c = """
+    charlen_at_end = 0
+    forthonf2c = """
 typedef struct {char* ptr;int len;} fstring;
 #define FSTRING fstring
-#define SL1 
-#define SL2 
-#define SL3 
-#define SL4 
-#define SL5 
+#define SL1
+#define SL2
+#define SL3
+#define SL4
+#define SL5
 #define FSTRLEN1(S) S.len
 #define FSTRLEN2(S) S.len
 #define FSTRLEN3(S) S.len
@@ -122,15 +122,15 @@ typedef struct {char* ptr;int len;} fstring;
 """
 
 elif machine in ['C90','J90']:
-  charlen_at_end = 0
-  forthonf2c = """
+    charlen_at_end = 0
+    forthonf2c = """
 #include <fortran.h>
 #define FSTRING _fcd
-#define SL1 
-#define SL2 
-#define SL3 
-#define SL4 
-#define SL5 
+#define SL1
+#define SL2
+#define SL3
+#define SL4
+#define SL5
 #define FSTRLEN1(S) _fcdlen(S)
 #define FSTRLEN2(S) _fcdlen(S)
 #define FSTRLEN3(S) _fcdlen(S)
@@ -141,14 +141,14 @@ elif machine in ['C90','J90']:
 """
 
 elif machine in ['MAC']:
-  charlen_at_end = 0
-  forthonf2c = """
+    charlen_at_end = 0
+    forthonf2c = """
 #define FSTRING char*
-#define SL1 
-#define SL2 
-#define SL3 
-#define SL4 
-#define SL5 
+#define SL1
+#define SL2
+#define SL3
+#define SL4
+#define SL5
 #define FSTRLEN1(S) sl1
 #define FSTRLEN2(S) sl2
 #define FSTRLEN3(S) sl3
@@ -164,11 +164,10 @@ elif machine in ['MAC']:
 """
 
 else:
-  raise ValueError('Machine %s not supported'%machine)
+    raise ValueError('Machine %s not supported'%machine)
 
 # --- Create the forthonf2c.h file
 ff = open('forthonf2c.h','w')
 ff.write(forthonf2c)
 ff.close()
-
 

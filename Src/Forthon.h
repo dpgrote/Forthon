@@ -1,5 +1,4 @@
 /* Created by David P. Grote, March 6, 1998 */
-/* $Id: Forthon.h,v 1.76 2011/10/11 00:07:53 grote Exp $ */
 
 #include <Python.h>
 
@@ -9,27 +8,16 @@ typedef int Py_ssize_t;
 #define PY_SSIZE_T_MIN INT_MIN
 #endif
 
-#ifdef WITH_NUMERIC
-#include <Numeric/arrayobject.h>
-#define npy_intp int
-#define PyArray_BYTES(a) ((PyArrayObject *)(a))->data
-#define PyArray_NDIM(a) a->nd
-#define PyArray_DIMS(a) a->dimensions
-#define PyArray_STRIDES(a) a->strides
-#define PyArray_ITEMSIZE(a) a->descr->elsize
-#define PyArray_TYPE(a) ((PyArrayObject *)a)->descr->type_num
-#define PyArray_SETITEM(a,d,p) a->descr->setitem(p,d)
-#define PyArray_FILLWBYTE(a,b) memset(PyArray_BYTES(a),b,PyArray_SIZE(a));
-#define ISNOTCONTIGUOUS(a) a->flags &= ~CONTIGUOUS
-#define MAKECONTIGUOUS(a) a->flags |= CONTIGUOUS
-#define PyArray_SimpleNewFromData PyArray_FromDimsAndData
-#define PyArray_SimpleNew PyArray_FromDims
-#define PyArray_CopyInto PyArray_CopyArray
-#else
 #include <numpy/arrayobject.h>
-#define ISNOTCONTIGUOUS(a) PyArray_UpdateFlags(a,NPY_CONTIGUOUS)
-#define MAKECONTIGUOUS(a) PyArray_UpdateFlags(a,(NPY_CONTIGUOUS | NPY_FORTRAN))
+
+#ifndef NPY_ARRAY_BEHAVED_NS
+#define NPY_ARRAY_BEHAVED_NS NPY_BEHAVED_NS
+#define NPY_ARRAY_C_CONTIGUOUS NPY_C_CONTIGUOUS
+#define NPY_ARRAY_F_CONTIGUOUS NPY_F_CONTIGUOUS
+#define NPY_ARRAY_FARRAY NPY_FARRAY
 #endif
+
+#define MAKECONTIGUOUS(a) PyArray_UpdateFlags(a,(NPY_ARRAY_C_CONTIGUOUS | NPY_ARRAY_F_CONTIGUOUS))
 
 #include <pythonrun.h>
 #include "forthonf2c.h"
@@ -41,58 +29,17 @@ static PyObject *ErrorObject;
 #define returnnone {Py_INCREF(Py_None);return Py_None;}
 #define MYSTRCMP(S1,L1,S2,L2) (L1==L2?strncmp(S1,S2,L1)==0:0)
 
-#define ARRAY_REVERSE_STRIDE(A) {                             \
-  int _i,_n=PyArray_NDIM(A);                                  \
-  npy_intp _m;                                                \
-  for(_i=0; _i < _n/2 ; _i++) {                               \
-    _m = PyArray_STRIDES(A)[_i];                              \
-    PyArray_STRIDES(A)[_i] = PyArray_STRIDES(A)[_n-_i-1];     \
-    PyArray_STRIDES(A)[_n-_i-1] = _m;}                        \
-  ISNOTCONTIGUOUS(A);}
-
-#define ARRAY_REVERSE_DIM(A) {                                \
-  int _i,_n=PyArray_NDIM(A);                                  \
-  npy_intp _m;                                                \
-  for(_i=0; _i < _n/2 ; _i++) {                               \
-    _m = PyArray_DIMS(A)[_i];                                 \
-    PyArray_DIMS(A)[_i] = PyArray_DIMS(A)[_n-_i-1];           \
-    PyArray_DIMS(A)[_n-_i-1] = _m;}                           \
-  ISNOTCONTIGUOUS(A);}
-
-/* This converts a python object into a python array          */
-/* and then checks if the array is in fortran order.          */
-/* If it is not, the array is reordered.                      */
+/* This converts a python object into a python array,         */
+/* requesting fortran ordering.                               */
 /* If PyArray_FromObject returns NULL meaning the the input   */
 /* can not be converted into an array, A1 is also set to NULL.*/
 /* This probably should be modified to include casting if it  */
 /* is needed.                                                 */
 static PyArrayObject* FARRAY_FROMOBJECT(PyObject *A2, int ARRAY_TYPE) {
-  PyArrayObject *A1,*_tmp;
-  int _c,_j;
-  _tmp=(PyArrayObject *)PyArray_FromObject(A2,ARRAY_TYPE,0,0);
-  _c = 1;
-  if (_tmp != NULL) {
-    _c = PyArray_ITEMSIZE(_tmp);
-    for (_j=0 ; _j < PyArray_NDIM(_tmp) ; _j++) {
-      if ((int)(PyArray_STRIDES(_tmp)[_j]) != _c) {
-        _c=0;
-        break;
-        }
-      _c *= (int)(PyArray_DIMS(_tmp)[_j]);
-      }}
-  if (!_c) {
-    ARRAY_REVERSE_DIM(_tmp);
-    ARRAY_REVERSE_STRIDE(_tmp);
-    A1 = (PyArrayObject *)PyArray_ContiguousFromObject((PyObject *)_tmp,ARRAY_TYPE,0,0);
-    ARRAY_REVERSE_DIM(_tmp);
-    ARRAY_REVERSE_STRIDE(_tmp);
-    Py_XDECREF(_tmp);
-    ARRAY_REVERSE_DIM(A1);
-    ARRAY_REVERSE_STRIDE(A1);
-    }
-  else {
-    A1 = _tmp;
-    }
+  PyArrayObject *A1;
+  PyArray_Descr *descr;
+  descr = PyArray_DescrFromType(ARRAY_TYPE);
+  A1 = (PyArrayObject *)PyArray_CheckFromAny(A2,descr,0,0,NPY_ARRAY_BEHAVED_NS|NPY_ARRAY_F_CONTIGUOUS,NULL);
   return A1;
 }
 
@@ -143,7 +90,7 @@ typedef struct {
   int nscalars;
   Fortranscalar *fscalars;
   int narrays;
-  Fortranarray  *farrays;
+  Fortranarray *farrays;
   void (*setdims)();
   void (*setstaticdims)();
   PyMethodDef *fmethods;
@@ -279,6 +226,59 @@ static void Forthon_DeleteDicts(ForthonObject *self)
 }
 
 /* ######################################################################### */
+/* # Create a new PyArrayObject based on a FortranArray object.              */
+/* # If data is NULL, new space is allocated.                                */
+static PyArrayObject *ForthonPackage_PyArrayFromFarray(Fortranarray *farray,void *data)
+{
+  int j,nd,itemsize;
+  npy_intp *dimensions;
+  PyArrayObject *pya;
+
+  /* Strings need special treatment. */
+  if (farray->type == PyArray_STRING) {
+    /* First, note that strings are always treated as arrays. */
+    /* The numpy array type is set so that the element size is the */
+    /* length of the associated fortran character variable. If the */
+    /* string is not an array, then it is made into a 1-D array of */
+    /* length 1. */
+    nd = farray->nd;
+    /* The dimensions[0] holds the character length. */
+    itemsize = (int)(farray->dimensions[0]);
+    /* If this is really an array, remove the first dimension, which */
+    /* is the character length. Otherwise, make it a 1-D array. */
+    if (nd > 1) {nd -= 1;}
+    else        {nd = 1;}
+    /* Allocate the appropriate amount of space for the dimensions. */
+    dimensions = (npy_intp*)PyMem_Malloc(sizeof(npy_intp)*nd);
+    if (farray->nd == 1) {
+      /* This is really a scalar, so make its length 1. */
+      dimensions[0] = (npy_intp)1;
+      }
+    else {
+      /* Copy over the rest of the dimensions. */
+      for (j=1;j<farray->nd;j++)
+        dimensions[j-1] = farray->dimensions[j];
+      }
+    }
+  else {
+    /* Set the appropriate variables that have different values */
+    /* for strings. */
+    nd = farray->nd;
+    itemsize = 0;
+    dimensions = farray->dimensions;
+    }
+
+  pya = (PyArrayObject *)PyArray_New(&PyArray_Type,
+                                     nd,dimensions,
+                                     farray->type,NULL,
+                                     data,itemsize,NPY_ARRAY_FARRAY,NULL);
+
+  if (farray->type == PyArray_STRING) PyMem_Free(dimensions);
+
+  return pya;
+}
+
+/* ######################################################################### */
 /* # Update the data element of a dynamic, fortran assignable array.         */
 /* ------------------------------------------------------------------------- */
 static int dimensionsmatch(Fortranarray *farray)
@@ -286,10 +286,11 @@ static int dimensionsmatch(Fortranarray *farray)
   int i;
   int result = 1;
   for (i=0;i<farray->nd;i++) {
-    if (farray->dimensions[i] != PyArray_DIMS(farray->pya)[farray->nd-1-i])
+    if (farray->dimensions[i] != PyArray_DIMS(farray->pya)[i])
       result = 0;}
   return result;
 }
+
 /* ------------------------------------------------------------------------- */
 static void ForthonPackage_updatearray(ForthonObject *self,long i)
 {
@@ -312,21 +313,15 @@ static void ForthonPackage_updatearray(ForthonObject *self,long i)
     if (farray->data.s == NULL) {
       if (farray->pya != NULL) {Py_XDECREF(farray->pya);}
       farray->pya = NULL;
-      for (j=0;j<farray->nd;j++) farray->dimensions[j] = 0;}
+      for (j=0;j<farray->nd;j++) farray->dimensions[j] = 0;
+      }
     else if (farray->pya == NULL ||
              farray->data.s != PyArray_BYTES(farray->pya) ||
              !dimensionsmatch(farray)) {
       /* If data.s is not NULL and there is no python object or its */
       /* data is different, then create a new one. */
       if (farray->pya != NULL) {Py_XDECREF(farray->pya);}
-      farray->pya = (PyArrayObject *)PyArray_SimpleNewFromData(
-                                                farray->nd,farray->dimensions,
-                                                farray->type,farray->data.s);
-      /* Reverse the order of the dims and strides so       */
-      /* indices can be refered to in the correct (fortran) */
-      /* order in python                                    */
-      ARRAY_REVERSE_STRIDE(farray->pya);
-      ARRAY_REVERSE_DIM(farray->pya);
+      farray->pya = ForthonPackage_PyArrayFromFarray(farray,farray->data.s);
     }
   }
 }
@@ -337,7 +332,7 @@ static void ForthonPackage_allotdims(ForthonObject *self)
 {
   int i;
   for (i=0;i<self->narrays;i++) {
-    self->farrays[i].dimensions=(npy_intp *)PyMem_Malloc(self->farrays[i].nd*sizeof(npy_intp));
+    self->farrays[i].dimensions = (npy_intp *)PyMem_Malloc(self->farrays[i].nd*sizeof(npy_intp));
     if (self->farrays[i].dimensions == NULL) {
       printf("Failure allocating space for dimensions of array %s.\n",self->farrays[i].name);
       exit(EXIT_FAILURE);
@@ -352,8 +347,7 @@ static void ForthonPackage_allotdims(ForthonObject *self)
 /* # Static array initialization routines */
 static void ForthonPackage_staticarrays(ForthonObject *self)
 {
-  int i,j,nd,itemsize;
-  npy_intp *dimensions;
+  int i;
   char *c;
 
   /* Call the routine which sets the dimensions */
@@ -363,61 +357,17 @@ static void ForthonPackage_staticarrays(ForthonObject *self)
     if (!self->farrays[i].dynamic) {
       /* Allocate the space */
       Py_XDECREF(self->farrays[i].pya);
-
-      /* Strings need special treatment. */
-      if (self->farrays[i].type == PyArray_STRING) {
-        /* First, note that strings are always treated as arrays. */
-        /* The numpy array type is set so that the element size is the */
-        /* length of the associated fortran character variable. If the */
-        /* string is not an array, then it is made into a 1-D array of */
-        /* length 1. */
-        nd = self->farrays[i].nd;
-        /* The dimensions[nd-1] holds the character length. */
-        itemsize = (int)(self->farrays[i].dimensions[nd-1]);
-        /* If this is really an array, remove the first dimension, which */
-        /* is the character length. Otherwise, make it a 1-D array. */
-        if (nd > 1) {nd -= 1;}
-        else        {nd = 1;}
-        /* Allocate the appropriate amount of space for the dimensions. */
-        dimensions = (npy_intp*)PyMem_Malloc(sizeof(npy_intp)*nd);
-        if (self->farrays[i].nd == 1) {
-          /* This is really a scalar, so make its length 1. */
-          dimensions[0] = 1;
-          }
-        else {
-          /* Copy over the rest of the dimensions. */
-          for (j=0;j<nd;j++)
-            dimensions[j] = self->farrays[i].dimensions[j];
-          }
-        }
-      else {
-        /* Set the appropriate variables that have different values */
-        /* for strings. */
-        nd = self->farrays[i].nd;
-        itemsize = 0;
-        dimensions = self->farrays[i].dimensions;
-        }
-
-      self->farrays[i].pya = (PyArrayObject *)PyArray_New(&PyArray_Type,
-                              nd,dimensions,
-                              self->farrays[i].type,NULL,
-                              self->farrays[i].data.s,itemsize,NPY_CARRAY,NULL);
-
-      if (self->farrays[i].type == PyArray_STRING) PyMem_Free(dimensions);
-
+      self->farrays[i].pya = ForthonPackage_PyArrayFromFarray(&(self->farrays[i]),
+                                                              self->farrays[i].data.s);
       /* Check if the allocation was unsuccessful. */
       if (self->farrays[i].pya==NULL) {
         PyErr_Print();
         printf("Failure creating python object for static array %s\n",
                self->farrays[i].name);
         exit(EXIT_FAILURE);}
-      /* Reverse the order of the dims and strides so indices */
-      /* can be refered to in the correct (fortran) order in */
-      /* python */
-      ARRAY_REVERSE_STRIDE(self->farrays[i].pya);
-      ARRAY_REVERSE_DIM(self->farrays[i].pya);
       /* For strings, replace nulls with blank spaces */
       if (self->farrays[i].type == PyArray_STRING) {
+        int itemsize = PyArray_ITEMSIZE(self->farrays[i].pya);
         if ((c=memchr(self->farrays[i].data.s,0,
                       PyArray_SIZE(self->farrays[i].pya)*itemsize)))
           /* Note that long is used since c and data.s are addresses. */
@@ -599,9 +549,6 @@ static int Forthon_freearray(ForthonObject *self,void *closure)
       totmembytes -= (long)PyArray_NBYTES(farray->pya);
       Py_XDECREF(farray->pya);
       farray->pya = NULL;
-      /* Note that the dimensions passed in are in the wrong (C) order, but */
-      /* here it doesn't matter since the array pointer is just be zero. */
-      /* This probably should be done correctly just to avoid any error. */
       (farray->setpointer)(0,(self->fobj),farray->dimensions);
       }
     }
@@ -799,7 +746,7 @@ static int Forthon_setarray(ForthonObject *self,PyObject *value,
                             void *closure)
 {
   Fortranarray *farray = &(self->farrays[(long)closure]);
-  int j,k,r,d,setit;
+  int j,r,d,setit;
   PyObject *pyobj;
   PyArrayObject *ax;
 
@@ -829,13 +776,12 @@ static int Forthon_setarray(ForthonObject *self,PyObject *value,
       /* This type of dynamic array (deferred-shape) does not have the */
       /* dimensions specified so they can take on whatever is input. */
       for (j=0;j<PyArray_NDIM(ax);j++) {
-        k = PyArray_NDIM(ax) - j - 1;
-        farray->dimensions[j] = PyArray_DIMS(ax)[k];
+        farray->dimensions[j] = PyArray_DIMS(ax)[j];
         }
       }
       if (PyArray_NDIM(ax) == 0) {
         /* Special handling is needed when a 0-D array is assigned to a      */
-        /* 1-D deferred-shape array. The numeric routine used by             */
+        /* 1-D deferred-shape array. The numpy routine used by               */
         /* FARRAY_FROMOBJECT returns a 0-D array when the input is a scalar. */
         /* This can cause problems elsewhere, so it is replaced with a 1-D   */
         /* array of length 1.                                                */
@@ -851,8 +797,7 @@ static int Forthon_setarray(ForthonObject *self,PyObject *value,
       }
     setit = 1;
     for (j=0;j<PyArray_NDIM(ax);j++) {
-      k = PyArray_NDIM(ax) - j - 1;
-      if (PyArray_DIMS(ax)[j] != farray->dimensions[k])
+      if (PyArray_DIMS(ax)[j] != farray->dimensions[j])
         setit=0;
       }
     if (setit) {
@@ -864,8 +809,6 @@ static int Forthon_setarray(ForthonObject *self,PyObject *value,
         }
       if (farray->pya != NULL) {Py_XDECREF(farray->pya);}
       farray->pya = ax;
-      /* Note that pya->dimensions are in the correct fortran order, but */
-      /* farray->dimensions are in C order. */
       (farray->setpointer)(PyArray_BYTES(farray->pya),(self->fobj),
                            PyArray_DIMS(farray->pya));
       r = 0;}
@@ -903,7 +846,7 @@ static int Forthon_setarray(ForthonObject *self,PyObject *value,
     /* when the dimensionality of the input is different  */
     /* than the array.                                    */
     r = PyArray_CopyInto(farray->pya,ax);
-    /* Reset the value of the first dimension if it was   */
+    /* Reset the value of the itemsize if it was          */
     /* changed to accomodate a string.                    */
     if (d > -1) PyArray_ITEMSIZE(farray->pya) = d;
     Py_XDECREF(ax);
@@ -1186,8 +1129,6 @@ static PyObject *ForthonPackage_forceassign(PyObject *_self_,PyObject *args)
       Forthon_freearray(self,(void *)i);
       /* Point to the new one */
       self->farrays[i].pya = ax;
-      /* Note that pya->dimensions are in the correct fortran order, but */
-      /* farray->dimensions are in C order. */
       (self->farrays[i].setpointer)(PyArray_BYTES(self->farrays[i].pya),(self->fobj),
                                     PyArray_DIMS(self->farrays[i].pya));
       totmembytes += (long)PyArray_NBYTES(self->farrays[i].pya);
@@ -1257,7 +1198,7 @@ static PyObject *ForthonPackage_gallot(PyObject *_self_,PyObject *args)
           Py_DECREF(star);
       }}}}
 
-  /* Now Process the arrays now that the dimensions are set */
+  /* Process the arrays now that the dimensions are set */
   for (i=0;i<self->narrays;i++) {
    if (strcmp(s,self->farrays[i].group)==0 || strcmp(s,"*")==0) {
     /* Update the array if it is dynamic and fortran assignable. */
@@ -1278,11 +1219,7 @@ static PyObject *ForthonPackage_gallot(PyObject *_self_,PyObject *args)
       for (j=0;j<self->farrays[i].nd;j++)
         if (self->farrays[i].dimensions[j] <= 0) allotit = 0;
       if (allotit) {
-        /* Use array routine to create space */
-        self->farrays[i].pya = (PyArrayObject *)PyArray_SimpleNew(
-                                                  self->farrays[i].nd,
-                                                  self->farrays[i].dimensions,
-                                                  self->farrays[i].type);
+        self->farrays[i].pya = ForthonPackage_PyArrayFromFarray(&(self->farrays[i]),NULL);
         /* Check if the allocation was unsuccessful. */
         if (self->farrays[i].pya==NULL) {
           long arraysize=1;
@@ -1292,14 +1229,7 @@ static PyObject *ForthonPackage_gallot(PyObject *_self_,PyObject *args)
                  self->farrays[i].name,arraysize);
           exit(EXIT_FAILURE);
           }
-        /* Reverse the order of the dims and strides so indices */
-        /* can be refered to in the correct (fortran) order in  */
-        /* python                                               */
-        ARRAY_REVERSE_STRIDE(self->farrays[i].pya);
-        ARRAY_REVERSE_DIM(self->farrays[i].pya);
         /* Point fortran pointer to new space */
-        /* Note that pya->dimensions are in the correct fortran order, but */
-        /* farray->dimensions are in C order. */
         (self->farrays[i].setpointer)(PyArray_BYTES(self->farrays[i].pya),
                                       (self->fobj),
                                       PyArray_DIMS(self->farrays[i].pya));
@@ -1365,7 +1295,7 @@ static PyObject *ForthonPackage_gchange(PyObject *_self_,PyObject *args)
           Py_DECREF(star);
       }}}}
 
-  /* Now Process the arrays now that the dimensions are set */
+  /* Process the arrays now that the dimensions are set */
   for (i=0;i<self->narrays;i++) {
    if (strcmp(s,self->farrays[i].group)==0 || strcmp(s,"*")==0) {
     r = 1;
@@ -1382,11 +1312,9 @@ static PyObject *ForthonPackage_gchange(PyObject *_self_,PyObject *args)
       if (self->farrays[i].pya == NULL) {
         changeit = 1;}
       else {
-        /* Note that self->farrays[i].dimensions are in C order while */
-        /* self->farrays[i].pya->dimensions are in fortran order.     */
         for (j=0;j<self->farrays[i].nd;j++) {
           if (self->farrays[i].dimensions[j] !=
-              PyArray_DIMS(self->farrays[i].pya)[self->farrays[i].nd-j-1])
+              PyArray_DIMS(self->farrays[i].pya)[j])
             changeit = 1;}
         }
       /* Make sure all of the dimensions are >= 0. If not, then free it. */
@@ -1398,8 +1326,7 @@ static PyObject *ForthonPackage_gchange(PyObject *_self_,PyObject *args)
       /* any dimensions are different. */
       if (changeit && !freeit) {
         /* Use array routine to create new space */
-        ax = (PyArrayObject *)PyArray_SimpleNew(self->farrays[i].nd,
-                            self->farrays[i].dimensions,self->farrays[i].type);
+        ax = ForthonPackage_PyArrayFromFarray(&(self->farrays[i]),NULL);
         /* Check if the allocation was unsuccessful. */
         if (ax==NULL) {
           long arraysize=1;
@@ -1409,11 +1336,6 @@ static PyObject *ForthonPackage_gchange(PyObject *_self_,PyObject *args)
                  self->farrays[i].name,arraysize);
           exit(EXIT_FAILURE);
           }
-        /* Reverse the order of the dims and strides so       */
-        /* indices can be refered to in the correct (fortran) */
-        /* order in python                                    */
-        ARRAY_REVERSE_STRIDE(ax);
-        ARRAY_REVERSE_DIM(ax);
         /* Fill array with initial value. A check could probably be made */
         /* of whether the initial value is zero since the initialization */
         /* doesn't need to be done then. Not having the check gaurantees */
@@ -1468,8 +1390,6 @@ static PyObject *ForthonPackage_gchange(PyObject *_self_,PyObject *args)
         Forthon_freearray(self,(void *)i);
         /* Point pointers to new space. */
         self->farrays[i].pya = ax;
-        /* Note that pya->dimensions are in the correct fortran order, but */
-        /* farray->dimensions are in C order. */
         (self->farrays[i].setpointer)(PyArray_BYTES(self->farrays[i].pya),
                                       (self->fobj),
                                       PyArray_DIMS(self->farrays[i].pya));
@@ -1855,6 +1775,36 @@ static PyObject *ForthonPackage_printtypenum(PyObject *_self_,PyObject *args)
 }
 
 /* ######################################################################### */
+#ifdef WITH_FEENABLEEXCEPT
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE 1
+#endif
+#include <fenv.h>
+#endif
+static char feenableexcept_doc[] = "Turns on or off trapping of floating point exceptions";
+static PyObject *ForthonPackage_feenableexcept(PyObject *_self_,PyObject *args)
+{
+  PyObject *pyobj;
+
+  if (!PyArg_ParseTuple(args,"O",&pyobj)) return NULL;
+
+  if (!PyInt_Check(pyobj)) {
+    PyErr_SetString(PyExc_TypeError,"Input argument must be an integer");
+    return NULL;
+    }
+#ifdef WITH_FEENABLEEXCEPT
+    if (PyInt_AS_LONG(pyobj)) {
+      feenableexcept(FE_DIVBYZERO | FE_OVERFLOW | FE_INVALID);
+    }
+    else {
+      fedisableexcept(FE_DIVBYZERO | FE_OVERFLOW | FE_INVALID);
+    }
+#endif
+
+  returnnone;
+}
+
+/* ######################################################################### */
 /* # Group allocation freeing routine */
 static char gfree_doc[] = "Frees the memory of all dynamic arrays in a group";
 static PyObject *ForthonPackage_gfree(PyObject *_self_,PyObject *args)
@@ -1966,7 +1916,7 @@ static PyObject *ForthonPackage_getvartype(PyObject *_self_,PyObject *args)
   if (pyi != NULL) {
     PyArg_Parse(pyi,"i",&i);
     if (self->farrays[i].type == PyArray_STRING) {
-      charsize = (int)(self->farrays[i].dimensions[self->farrays[i].nd-1]);
+      charsize = (int)(self->farrays[i].dimensions[0]);
       sprintf(charstring,"character(%d)",charsize);
       return PyUnicode_FromString(charstring);}
     else if (self->farrays[i].type == PyArray_LONG) {
@@ -2088,7 +2038,7 @@ static PyObject *ForthonPackage_listvar(PyObject *_self_,PyObject *args)
 
     stringconcatanddel(&doc,"\nType:       ");
     if (self->farrays[i].type == PyArray_STRING) {
-      charsize = (int)(self->farrays[i].dimensions[self->farrays[i].nd-1]);
+      charsize = (int)(self->farrays[i].dimensions[0]);
       sprintf(charstring,"character(%d)",charsize);
       stringconcatanddel(&doc,charstring);
       /* stringconcatanddellong(&doc,(long)(self->farrays[i].dimensions[0])); */
@@ -2184,7 +2134,7 @@ static PyObject *ForthonPackage_setdict(PyObject *_self_,PyObject *args)
     }
   /* Now arrays can be set. */
   /* This is done this way since the setpointer routine uses the farray */
-  /* dimensions instead of the dimensions from the PyArrayObject. */
+  /* dimensions instead of the dimensions from the PyArrayObject.       */
   pos = 0;
   while (PyDict_Next(dict,&pos,&key,&value)) {
     if (value == Py_None) continue;
@@ -2278,6 +2228,7 @@ static struct PyMethodDef ForthonPackage_methods[] = {
   {"varlist"     ,(PyCFunction)ForthonPackage_varlist,1,varlist_doc},
   {"getstrides"  ,(PyCFunction)ForthonPackage_getstrides,1,getstrides_doc},
   {"printtypenum"  ,(PyCFunction)ForthonPackage_printtypenum,1,printtypenum_doc},
+  {"feenableexcept"  ,(PyCFunction)ForthonPackage_feenableexcept,1,feenableexcept_doc},
   {NULL,NULL}};
 
 static PyMethodDef *getForthonPackage_methods(void)
