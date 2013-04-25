@@ -162,17 +162,11 @@ class FCompiler:
     # --- leading to memory out of bounds errors.
     def isgfortranversionok(self,fcompexec):
         fcomp = os.path.join(self.findfile(fcompexec,followlinks=0),fcompexec)
-        ff = os.popen(fcomp+' --version')
-        versioninfo = ff.readline()[:-1]
+        ff = os.popen(fcomp+' -dumpversion')
+        version = ff.readline()[:-1]
         ff.close()
-        # --- Hopefully, the version info always has the same format
-        try:
-            version = versioninfo.split()[3]
-            vv = version.split('.')
-            vfloat = float('.'.join(vv[0:2]))
-        except IndexError:
-            # --- If there is a problem, reject it
-            vfloat = 0.
+        vv = version.split('.')
+        vfloat = float('.'.join(vv[0:2]))
         if vfloat < 4.3:
             print "gfortran will not be used, it's version is too old or unknown - upgrade to a newer version"
             return False
