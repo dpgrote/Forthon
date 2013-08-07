@@ -2,7 +2,10 @@
 for it.
 """
 
-import sys,os,re
+import sys
+import os
+import re
+import platform
 import struct
 from cfinterface import realsize,intsize
 
@@ -282,9 +285,13 @@ class FCompiler:
             self.f90free  += ' -DISZ=%s -i%s'%(intsize,intsize)
             self.f90fixed += ' -DISZ=%s -i%s'%(intsize,intsize)
             self.popt = '-Mcache_align'
-            flibroot,b = os.path.split(self.findfile('pgf90'))
-            self.libdirs = [flibroot+'/lib']
-            self.libs = ['pgf90'] # ???
+            if platform.python_compiler().startswith('GCC'):
+                flibroot,b = os.path.split(self.findfile('pgf90'))
+                self.libdirs = [flibroot+'/lib']
+                self.libs = ['pgf90'] # ???
+            else:
+                # --- When using pgcc for linking, this includes the needed fortran libraries.
+                self.extra_link_args = ['-pgf90libs']
             self.fopt = '-fast -Mcache_align'
             return 1
 
