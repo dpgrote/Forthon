@@ -278,12 +278,19 @@ class FCompiler:
         if self.usecompiler('pg','pgf90'):
             # --- Portland group
             self.fcompname = 'pgi'
-            self.f90free  += ' -Mextend -Mdclchk'
-            self.f90fixed += ' -Mextend -Mdclchk'
-            self.f90free  += ' -DFPSIZE=%s -r%s'%(realsize,realsize)
-            self.f90fixed += ' -DFPSIZE=%s -r%s'%(realsize,realsize)
-            self.f90free  += ' -DISZ=%s -i%s'%(intsize,intsize)
-            self.f90fixed += ' -DISZ=%s -i%s'%(intsize,intsize)
+            f90opts = ' -fPIC -Mextend'
+            if self.implicitnone:
+                f90opts += ' -Mdclchk'
+            else:
+                f90opts += ' -Mnodclchk'
+            if self.twounderscores:
+                f90opts += ' -Msecond_underscore'
+            else:
+                f90opts += ' -Mnosecond_underscore'
+            f90opts += ' -DFPSIZE=%s -r%s'%(realsize,realsize)
+            f90opts += ' -DISZ=%s -i%s'%(intsize,intsize)
+            self.f90free  += f90opts
+            self.f90fixed += f90opts
             self.popt = '-Mcache_align'
             if platform.python_compiler().startswith('GCC'):
                 flibroot,b = os.path.split(self.findfile('pgf90'))
