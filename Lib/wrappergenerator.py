@@ -28,7 +28,6 @@ class PyWrap:
       -d <.scalars file>  a .scalars file in another module that this module depends on
       -F <compiler> The fortran compiler being used. This is needed since some
                     operations depend on the compiler specific oddities.
-      --f90    F90 syntax will be assumed
       --nowritemodules The modules will not be written out, assuming
                        that they are already written.
       --macros pkg.v Other interface files that are needed for the definition
@@ -38,12 +37,11 @@ class PyWrap:
       [file2, ...] Subsidiary variable description files
     """
 
-    def __init__(self,ifile,pname,f90=1,initialgallot=1,writemodules=1,
+    def __init__(self,ifile,pname,initialgallot=1,writemodules=1,
                  otherinterfacefiles=[],other_scalar_vars=[],timeroutines=0,
                  otherfortranfiles=[],fcompname=None):
         self.ifile = ifile
         self.pname = pname
-        self.f90 = f90
         self.initialgallot = initialgallot
         self.writemodules = writemodules
         self.timeroutines = timeroutines
@@ -159,12 +157,8 @@ class PyWrap:
         """
         if 'ffile' in self.__dict__: status = 'a'
         else:                        status = 'w'
-        if (status == 'w' or
-            (status == 'a' and self.ffile.closed)):
-            if self.f90:
-                self.ffile = open(self.pname+'_p.F90',status)
-            else:
-                self.ffile = open(self.pname+'_p.m',status)
+        if status == 'w' or (status == 'a' and self.ffile.closed):
+            self.ffile = open(self.pname+'_p.F90',status)
 
     def processvariabledescriptionfile(self):
         """
@@ -249,13 +243,11 @@ class PyWrap:
         # --- Print out the external commands
         self.cw('extern void '+fname(self.fsub('passpointers'))+'(void);')
         self.cw('extern void '+fname(self.fsub('nullifypointers'))+'(void);')
-        if not self.f90:
-            self.cw('extern void '+self.pname+'data();')
 
         # --- fortran routine prototypes
         for f in self.flist:
             # --- Functions
-            self.cw('extern '+fvars.ftoc(f.type)+' '+fnameofobj(f)+'(',noreturn=1)
+            self.cw('extern '+fvars.ftoc(f.type)+' '+fname(f.name)+'(',noreturn=1)
             i = 0
             istr = 0
             if len(f.args) == 0: self.cw('void',noreturn=1)
@@ -277,28 +269,27 @@ class PyWrap:
             self.cw('extern PyObject *'+self.cname(t.name)+'New(PyObject *self, PyObject *args);')
         self.cw('')
 
-        # --- setpointer and getpointer routines for f90
+        # --- setpointer and getpointer routines
         # --- Note that setpointer gets written out for all derived types -
         # --- for non-dynamic derived types, the setpointer routine does a copy.
         # --- The double underscores in the argument names are to avoid name
         # --- collisions with package variables.
-        if self.f90:
-            for s in self.slist:
-                if s.dynamic or s.derivedtype:
-                    self.cw('extern void '+fname(self.fsub('setscalarpointer',s.name))+
-                            '(char *p__,char *fobj__,npy_intp *nullit__);')
-                if s.dynamic:
-                    self.cw('extern void '+fname(self.fsub('getscalarpointer',s.name))+
-                            '(ForthonObject **cobj__,char *fobj__,int *createnew__);')
-            for a in self.alist:
-                self.cw('extern void '+fname(self.fsub('setarraypointer',a.name))+
-                        '(char *p__,char *fobj__,npy_intp *dims__);')
-                if re.search('fassign',a.attr):
-                    self.cw('extern void '+fname(self.fsub('getarraypointer',a.name))+
-                            '(Fortranarray *farray__,char *fobj__);')
+        for s in self.slist:
+            if s.dynamic or s.derivedtype:
+                self.cw('extern void '+fname(self.fsub('setscalarpointer',s.name))+
+                        '(char *p__,char *fobj__,npy_intp *nullit__);')
+            if s.dynamic:
+                self.cw('extern void '+fname(self.fsub('getscalarpointer',s.name))+
+                        '(ForthonObject **cobj__,char *fobj__,int *createnew__);')
+        for a in self.alist:
+            self.cw('extern void '+fname(self.fsub('setarraypointer',a.name))+
+                    '(char *p__,char *fobj__,npy_intp *dims__);')
+            if re.search('fassign',a.attr):
+                self.cw('extern void '+fname(self.fsub('getarraypointer',a.name))+
+                        '(Fortranarray *farray__,char *fobj__);')
         self.cw('')
 
-        # --- setaction and getaction routines for f90
+        # --- setaction and getaction routines
         for s in self.slist:
             if s.setaction is not None:
                 self.cw('extern void '+fname(self.fsub('setaction',s.name))+
@@ -389,7 +380,7 @@ class PyWrap:
         # --- Scalars
         for i in range(len(self.slist)):
             s = self.slist[i]
-            if (self.f90) and s.derivedtype:
+            if s.derivedtype:
                 setscalarpointer = '*'+fname(self.fsub('setscalarpointer',s.name))
                 self.cw('obj->fscalars[%d].setscalarpointer = %s;'%(i,setscalarpointer))
                 if s.dynamic:
@@ -405,10 +396,10 @@ class PyWrap:
         # --- Arrays
         for i in range(len(self.alist)):
             a = self.alist[i]
-            if (self.f90) and a.dynamic:
+            if a.dynamic:
                 setarraypointer = '*'+fname(self.fsub('setarraypointer',a.name))
                 self.cw('obj->farrays[%d].setarraypointer = %s;'%(i,setarraypointer))
-            if (self.f90) and re.search('fassign',a.attr):
+            if re.search('fassign',a.attr):
                 getarraypointer = '*'+fname(self.fsub('getarraypointer',a.name))
                 self.cw('obj->farrays[%d].getarraypointer = %s;'%(i,getarraypointer))
             if a.setaction is not None:
@@ -642,7 +633,7 @@ class PyWrap:
                 self.cw('  ')
             else:
                 self.cw('  r = ')
-            self.cw(fnameofobj(f)+'(',noreturn=1)
+            self.cw(fname(f.name)+'(',noreturn=1)
             i = 0
             istr = 0
             for a in f.args:
@@ -838,10 +829,9 @@ class PyWrap:
         self.cw('void '+fname(self.fsub('setarraydims'))+
                 '(Fortranarray *farray,long *dims)')
         self.cw('{')
-        if self.f90:
-            self.cw('  int id;')
-            self.cw('  for (id=0;id<farray->nd;id++)')
-            self.cw('    farray->dimensions[id] = (npy_intp)(dims[id]);')
+        self.cw('  int id;')
+        self.cw('  for (id=0;id<farray->nd;id++)')
+        self.cw('    farray->dimensions[id] = (npy_intp)(dims[id]);')
         self.cw('}')
 
         ###########################################################################
@@ -925,8 +915,6 @@ class PyWrap:
         self.cw('  '+fname(self.fsub('passpointers'))+'();')
         self.cw('  '+fname(self.fsub('nullifypointers'))+'();')
         self.cw('  ForthonPackage_staticarrays('+self.pname+'Object);')
-        if not self.f90:
-            self.cw('  '+fname(self.fsub('data'))+'();')
         if self.initialgallot:
             self.cw('  {')
             self.cw('  PyObject *s;')
@@ -981,7 +969,7 @@ class PyWrap:
         # --- Process any derived types
         wrappergen_derivedtypes.ForthonDerivedType(self.typelist,self.pname,
                                    self.pname+'pymodule.c',
-                                   self.pname+'_p.F90',self.f90,self.isz,
+                                   self.pname+'_p.F90',self.isz,
                                    self.writemodules,self.fcompname)
         ###########################################################################
         ###########################################################################
@@ -990,7 +978,7 @@ class PyWrap:
 
         ###########################################################################
         # --- Write out f90 modules, including any data statements
-        if self.f90 and self.writemodules:
+        if self.writemodules:
             self.writef90modules()
 
         ###########################################################################
@@ -998,10 +986,7 @@ class PyWrap:
 
         # --- Write out the Use statements
         for g in self.groups+self.hidden_groups:
-            if self.f90:
-                self.fw('  USE '+g)
-            else:
-                self.fw('  Use('+g+')')
+            self.fw('  USE '+g)
 
         # --- Write out calls to c routine passing down pointers to scalars
         for i in range(len(self.slist)):
@@ -1016,15 +1001,10 @@ class PyWrap:
             else:
                 self.fw('  call '+self.fsub('grabscalarpointers')+'(int('+repr(i)+','+self.isz+'),'+s.name+')')
 
-        # --- Write out calls to c routine passing down pointers to arrays
-        # --- For f90, grabarraypointers is not needed for dynamic arrays but is called
-        # --- anyway to get the numbering of arrays correct.
+        # --- Write out calls to c routine passing down pointers to arrays.
         for i in range(len(self.alist)):
             a = self.alist[i]
-            if a.dynamic:
-                if not self.f90:
-                    self.fw('  call '+self.fsub('grabarraypointers')+'(int('+repr(i)+','+self.isz+'),'+'p'+a.name+')')
-            else:
+            if not a.dynamic:
                 self.fw('  call '+self.fsub('grabarraypointers')+'(int('+repr(i)+','+self.isz+'),'+a.name+')')
 
         # --- Finish the routine
@@ -1055,105 +1035,80 @@ class PyWrap:
         ###########################################################################
         # --- Write routine for each dynamic variable which gets the pointer from the
         # --- wrapper
-        if self.f90:
-            for s in self.slist:
-                self.fw('SUBROUTINE '+self.fsub('setscalarpointer',s.name)+'(p__,fobj__,nullit__)')
+        for s in self.slist:
+            self.fw('SUBROUTINE '+self.fsub('setscalarpointer',s.name)+'(p__,fobj__,nullit__)')
+            self.fw('  USE '+s.group)
+            self.fw('  INTEGER('+self.isz+'):: fobj__')
+            self.fw('  INTEGER('+self.isz+'):: nullit__')
+            if s.type == 'character':
+                self.fw('  character(len='+s.dims[0].high+'),target:: p__')
+            else:
+                self.fw('  '+fvars.ftof(s.type)+',target:: p__')
+            if s.dynamic:
+                self.fw('  if (nullit__ == 0) then')
+                self.fw('    '+s.name+' => p__')
+                self.fw('  else')
+                self.fw('    NULLIFY('+s.name+')')
+                self.fw('  endif')
+            else:
+                self.fw('  '+s.name+' = p__')
+            self.fw('  RETURN')
+            self.fw('END')
+            if s.dynamic:
+                # --- In all cases, it is not desirable to create a new instance,
+                # --- for example when the object is being deleted.
+                self.fw('SUBROUTINE '+self.fsub('getscalarpointer',s.name)+
+                                       '(cobj__,fobj__,createnew__)')
                 self.fw('  USE '+s.group)
-                self.fw('  INTEGER('+self.isz+'):: fobj__')
-                self.fw('  INTEGER('+self.isz+'):: nullit__')
-                if s.type == 'character':
-                    self.fw('  character(len='+s.dims[0].high+'),target:: p__')
-                else:
-                    self.fw('  '+fvars.ftof(s.type)+',target:: p__')
-                if s.dynamic:
-                    self.fw('  if (nullit__ == 0) then')
-                    self.fw('    '+s.name+' => p__')
-                    self.fw('  else')
-                    self.fw('    NULLIFY('+s.name+')')
-                    self.fw('  endif')
-                else:
-                    self.fw('  '+s.name+' = p__')
+                self.fw('  INTEGER('+self.isz+'):: cobj__,fobj__')
+                self.fw('  INTEGER(4):: createnew__')
+                self.fw('  if (ASSOCIATED('+s.name+')) then')
+                self.fw('    if ('+s.name+'%cobj__ == 0 .and. createnew__ == 1) then')
+                self.fw('      call init'+s.type+'py(int(-1,'+self.isz+'),'+s.name+','+
+                                                     s.name+'%cobj__,int(0,'+self.isz+'),int(0,'+self.isz+'))')
+                self.fw('    endif')
+                self.fw('    cobj__ = '+s.name+'%cobj__')
+                self.fw('  else')
+                self.fw('    cobj__ = 0')
+                self.fw('  endif')
                 self.fw('  RETURN')
                 self.fw('END')
-                if s.dynamic:
-                    # --- In all cases, it is not desirable to create a new instance,
-                    # --- for example when the object is being deleted.
-                    self.fw('SUBROUTINE '+self.fsub('getscalarpointer',s.name)+
-                                           '(cobj__,fobj__,createnew__)')
-                    self.fw('  USE '+s.group)
-                    self.fw('  INTEGER('+self.isz+'):: cobj__,fobj__')
-                    self.fw('  INTEGER(4):: createnew__')
-                    self.fw('  if (ASSOCIATED('+s.name+')) then')
-                    self.fw('    if ('+s.name+'%cobj__ == 0 .and. createnew__ == 1) then')
-                    self.fw('      call init'+s.type+'py(int(-1,'+self.isz+'),'+s.name+','+
-                                                         s.name+'%cobj__,int(0,'+self.isz+'),int(0,'+self.isz+'))')
-                    self.fw('    endif')
-                    self.fw('    cobj__ = '+s.name+'%cobj__')
-                    self.fw('  else')
-                    self.fw('    cobj__ = 0')
-                    self.fw('  endif')
-                    self.fw('  RETURN')
-                    self.fw('END')
 
-            for a in self.alist:
-                if a.dynamic:
-                    self.fw('SUBROUTINE '+self.fsub('setarraypointer',a.name)+'(p__,fobj__,dims__)')
-                    groups = self.dimsgroups(a.dimstring,self.sdict,self.slist)
-                    groupsprinted = [a.group]
-                    for g in groups:
-                        if g not in groupsprinted:
-                            self.fw('  USE '+g)
-                            groupsprinted.append(g)
+        for a in self.alist:
+            if a.dynamic:
+                self.fw('SUBROUTINE '+self.fsub('setarraypointer',a.name)+'(p__,fobj__,dims__)')
+                groups = self.dimsgroups(a.dimstring,self.sdict,self.slist)
+                groupsprinted = [a.group]
+                for g in groups:
+                    if g not in groupsprinted:
+                        self.fw('  USE '+g)
+                        groupsprinted.append(g)
+                self.fw('  USE '+a.group)
+                self.fw('  integer('+self.isz+'):: fobj__')
+                self.fw('  integer('+self.isz+'):: dims__('+repr(len(a.dims))+')')
+
+                if a.type == 'character':
+                    self.fw('  character(len='+a.dims[0].high+'),target:: p__'+
+                            self.prefixdimsf(re.sub('[ \t\n]','',a.dimstring)))
+                else:
+                    self.fw('  '+fvars.ftof(a.type)+',target:: p__'+
+                            self.prefixdimsf(re.sub('[ \t\n]','',a.dimstring)))
+                self.fw('  '+a.name+' => p__')
+                self.fw('  return')
+                self.fw('end')
+                if re.search('fassign',a.attr):
+                    self.fw('SUBROUTINE '+self.fsub('getarraypointer',a.name)+'(farray__,fobj__)')
                     self.fw('  USE '+a.group)
-                    self.fw('  integer('+self.isz+'):: fobj__')
-                    self.fw('  integer('+self.isz+'):: dims__('+repr(len(a.dims))+')')
-
-                    if a.type == 'character':
-                        self.fw('  character(len='+a.dims[0].high+'),target:: p__'+
-                                self.prefixdimsf(re.sub('[ \t\n]','',a.dimstring)))
-                    else:
-                        self.fw('  '+fvars.ftof(a.type)+',target:: p__'+
-                                self.prefixdimsf(re.sub('[ \t\n]','',a.dimstring)))
-                    self.fw('  '+a.name+' => p__')
+                    self.fw('  integer('+self.isz+'):: farray__,fobj__')
+                    self.fw('  integer('+self.isz+'):: ss(%d)'%(len(a.dims)))
+                    self.fw('  if (.not. associated('+a.name+')) return')
+                    self.fw('  call '+self.fsub('grabarraypointersobj')+'(farray__,'+a.name+')')
+                    self.fw('  ss = shape('+a.name+')')
+                    self.fw('  call '+self.fsub('setarraydims')+'(farray__,ss)')
                     self.fw('  return')
                     self.fw('end')
-                    if re.search('fassign',a.attr):
-                        self.fw('SUBROUTINE '+self.fsub('getarraypointer',a.name)+'(farray__,fobj__)')
-                        self.fw('  USE '+a.group)
-                        self.fw('  integer('+self.isz+'):: farray__,fobj__')
-                        self.fw('  integer('+self.isz+'):: ss(%d)'%(len(a.dims)))
-                        self.fw('  if (.not. associated('+a.name+')) return')
-                        self.fw('  call '+self.fsub('grabarraypointersobj')+'(farray__,'+a.name+')')
-                        self.fw('  ss = shape('+a.name+')')
-                        self.fw('  call '+self.fsub('setarraydims')+'(farray__,ss)')
-                        self.fw('  return')
-                        self.fw('end')
 
         ###########################################################################
-        if not self.f90:
-            # --- Write out fortran data routine, only for f77 version
-            self.fw('      SUBROUTINE '+self.fsub('data')+'()')
-
-            # --- Write out the Use statements
-            for g in self.groups:
-                self.fw('Use('+g+')')
-
-            for hg in self.hidden_groups:
-                self.fw('Use('+hg+')')
-
-            self.fw('      integer iyiyiy')
-
-            # --- Write out data statements
-            for s in self.slist:
-                if s.data:
-                    self.fw('      data '+s.name+s.data)
-            for a in self.alist:
-                if a.data and not a.dynamic:
-                    self.fw('      data '+a.name+a.data)
-
-            self.fw('      iyiyiy=0')
-            self.fw('      return')
-            self.fw('      end')
 
         # --- Close fortran file
         self.ffile.close()
@@ -1169,7 +1124,6 @@ class PyWrap:
         Write the fortran90 modules
         """
         self.setffile()
-        if   self.f90 : dyntype = 'pointer'
         if   self.fcompname == 'xlf': save = ',SAVE'
         else:                         save = ''
         for g in self.groups+self.hidden_groups:
@@ -1195,12 +1149,10 @@ class PyWrap:
                 if a.group == g:
                     if a.dynamic:
                         if a.type == 'character':
-                            self.fw('  character(len='+a.dims[0].high+'),'+dyntype+save+':: '+
-                                    a.name,noreturn=1)
+                            self.fw('  character(len='+a.dims[0].high+'),pointer'+save+':: '+a.name,noreturn=1)
                             ndims = len(a.dims) - 1
                         else:
-                            self.fw('  '+fvars.ftof(a.type)+','+dyntype+save+':: '+a.name,
-                                    noreturn=1)
+                            self.fw('  '+fvars.ftof(a.type)+',pointer'+save+':: '+a.name,noreturn=1)
                             ndims = len(a.dims)
                         if ndims > 0:
                             self.fw('('+(ndims*':,')[:-1]+')',noreturn=1)
@@ -1250,7 +1202,6 @@ def wrappergenerator_main(argv=None,writef90modulesonly=0):
     # --- get other command line options and default actions
     initialgallot = options.initialgallot
     fcompname = options.fcomp
-    f90 = options.f90
     writemodules = options.writemodules
     timeroutines = options.timeroutines
     otherinterfacefiles = options.othermacros
@@ -1260,7 +1211,7 @@ def wrappergenerator_main(argv=None,writef90modulesonly=0):
     for d in options.dependencies:
         get_another_scalar_dict(d,other_scalar_vars)
 
-    cc = PyWrap(ifile,pname,f90,initialgallot,writemodules,
+    cc = PyWrap(ifile,pname,initialgallot,writemodules,
                 otherinterfacefiles,other_scalar_vars,timeroutines,
                 otherfortranfiles,fcompname)
     if writef90modulesonly:

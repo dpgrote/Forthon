@@ -10,7 +10,6 @@ from Forthon_options import options,args
 
 # Set default values of inputs
 machine = options.machine
-f90 = options.f90
 realsize = options.realsize
 underscoring = options.underscoring
 twounderscores = options.twounderscores
@@ -46,25 +45,6 @@ elif machine in ['linux2','linux3','darwin','SOL','AXP','DOS','cygwin']:
             return n.lower()
 else:
     raise ValueError('Machine %s not supported'%machine)
-
-#----------------------------------------------------------------------------
-# Creates a function which returns the Fortran name of an object
-
-if not f90:
-    def fnameofobj(f):
-        return fname(f.name)
-else:
-    def fnameofobj(f):
-        return fname(f.name)
-# if machine in ['linux2','linux3', \
-#                'SOL','AXP','DOS','MAC']:
-#   def fnameofobj(f):
-#     return f.name+'_in_'+f.group
-# elif machine in ['aix4']:
-#   def fnameofobj(f):
-#     return '__'+f.group+'_MOD_'+f.name
-# else:
-#   raise ValueError('Machine %s not supported'%machine)
 
 #----------------------------------------------------------------------------
 # Sets up C macros which are used to take the place of the length

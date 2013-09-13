@@ -11,12 +11,12 @@ else:
 from cfinterface import *
 
 class ForthonDerivedType:
-    def __init__(self,typelist,pname,c,f,f90,isz,writemodules,fcompname):
+    def __init__(self,typelist,pname,c,f,isz,writemodules,fcompname):
         if not typelist: return
 
         self.cfile = open(c,'a')
         self.ffile = open(f,'a')
-        self.wrapderivedtypes(typelist,pname,f90,isz,writemodules,fcompname)
+        self.wrapderivedtypes(typelist,pname,isz,writemodules,fcompname)
         self.cfile.close()
         self.ffile.close()
 
@@ -101,7 +101,7 @@ class ForthonDerivedType:
             self.ffile.write(text+'\n')
 
     # --- This is the routine that does all of the work for derived types
-    def wrapderivedtypes(self,typelist,pname,f90,isz,writemodules,fcompname):
+    def wrapderivedtypes(self,typelist,pname,isz,writemodules,fcompname):
 
         for t in typelist:
             self.cw('')
@@ -144,7 +144,7 @@ class ForthonDerivedType:
             self.cw('extern void '+fname(self.fsub(t,'deallocatef'))+'(void);')
             self.cw('extern void '+fname(self.fsub(t,'nullifycobjf'))+'(void);')
 
-            # --- setpointer and getpointer routine for f90
+            # --- setpointer and getpointer routine
             # --- Note that setpointer get written out for all derived types -
             # --- for non-dynamic derived types, the setpointer routine does a copy.
             for s in slist:
@@ -161,7 +161,7 @@ class ForthonDerivedType:
                             '(Fortranarray *farray__,char* fobj__);')
             self.cw('')
 
-            # --- setaction and getaction routines for f90
+            # --- setaction and getaction routines
             for s in slist:
                 if s.setaction is not None:
                     self.cw('extern void '+fname(self.fsub(t,'setaction',s.name))+
@@ -471,10 +471,9 @@ class ForthonDerivedType:
             self.cw('void '+fname(self.fsub(t,'setarraydims'))+
                     '(Fortranarray *farray,long *dims)')
             self.cw('{')
-            if f90:
-                self.cw('  int id;')
-                self.cw('  for (id=0;id<farray->nd;id++)')
-                self.cw('    farray->dimensions[id] = (npy_intp)(dims[id]);')
+            self.cw('  int id;')
+            self.cw('  for (id=0;id<farray->nd;id++)')
+            self.cw('    farray->dimensions[id] = (npy_intp)(dims[id]);')
             self.cw('}')
 
             #########################################################################
@@ -757,8 +756,6 @@ class ForthonDerivedType:
                             'int('+repr(i)+','+isz+'),fobj__%'+s.name+',fobj__%cobj__)')
 
             # --- Write out calls to c routine passing down pointers to arrays
-            # --- For f90, grabpointers is not needed for dynamic arrays but is called
-            # --- anyway to get the numbering of arrays correct.
             for i in range(len(alist)):
                 a = alist[i]
                 if not a.dynamic:

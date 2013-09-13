@@ -38,7 +38,6 @@ parser.add_option('-g','--debug',action='store_true',default=False,help='Turns o
 parser.add_option('-d','--dependencies',action='append',default=[],help='Specifies that a package that the package being built depends upon. This option can be specified multiple times.')
 parser.add_option('-D','--defines',action='append',default=[],help='Defines a macro which will be inserted into the makefile. This is required in some cases where a third party library must be specified. This can be specified multiple times.')
 
-parser.add_option('--f77',action='store_false',default=True,dest='f90',help='Writes wrapper code using f77, which means that python accessible variables are defined in common blocks. This is obsolete and is not supported.')
 parser.add_option('--f90',action='store_true',default=True,help='Writes wrapper code using f90, which means that python accessible variables are defined in f90 modules. This is the default.')
 parser.add_option('--fargs',action='append',dest='fargslist',default=[],metavar="FARGS",help='Additional options for the fortran compiler. For example to turn on profiling. If there are any spaces in options, it must be surrounded in double quotes.')
 parser.add_option('-F','--fcomp',help='Fortran compiler. Will automatically be determined if not supplied. It can be one of the following, depending on the machine: intel8, intel, pg, absort, nag, xlf, mpxlf, xlf_r, g95, gfortran.')

@@ -216,8 +216,7 @@ void
 
 void
 %fname('ostime')
-%py_ifelse(f90,1,'(double *cpu, double *io, double *sys, double *mem)')
-%py_ifelse(f90,0,'(float *cpu, float *io, float *sys, float *mem)')
+(double *cpu, double *io, double *sys, double *mem)
 {
   /*
   double utime,stime;
