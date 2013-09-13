@@ -217,7 +217,7 @@ void
 void
 %fname('ostime')
 %py_ifelse(f90,1,'(double *cpu, double *io, double *sys, double *mem)')
-%py_ifelse(f90,0,py_ifelse(machine,'T3E','(double *cpu, double *io, double *sys, double *mem)','(float *cpu, float *io, float *sys, float *mem)'))
+%py_ifelse(f90,0,'(float *cpu, float *io, float *sys, float *mem)')
 {
   /*
   double utime,stime;
@@ -253,19 +253,10 @@ void
   *mem = (double) 0.;
 }
 
-
-%py_ifelse(machine,'T3E','#include <sys/types.h>','')
-%py_ifelse(machine,'T3E','#include <sys/jtab.h>','')
-%py_ifelse(machine,'T3E','#include <errno.h>','')
-
 double
 %fname('py_tremain')+'(void)'
 {
-%py_ifelse(machine,'T3E','','/*')
-  job_t job;
-  if (job_cntl(0, J_GET_ALL, (int)&job) != -1)
-    return (double)(job.j_mpptimelimit - job.j_mpptimeused);
-%py_ifelse(machine,'T3E','','*/')
+/* This is obsolete */
   return (double)(1.e36);
 }
 

@@ -803,57 +803,32 @@ class PyWrap:
 
         ###########################################################################
         # --- Write set pointers routine which gets all of the fortran pointers
-        self.cw('void '+fname(self.fsub('grabscalarpointers'))+
-                '(long *i,char *p',noreturn=1)
-        if machine=='J90':
-            self.cw(',int *iflag)')
-        else:
-            self.cw(')')
+        self.cw('void '+fname(self.fsub('grabscalarpointers'))+'(long *i,char *p)')
         self.cw('{')
         self.cw('  /* Gabs pointer for the scalar */')
         self.cw('  '+self.pname+'_fscalars[*i].data = (char *)p;')
-        if machine=='J90':
-            self.cw('    if (iflag) {')
-            self.cw('      '+self.pname+'_fscalars[*i].data=_fcdtocp((_fcd)p);}')
         self.cw('}')
 
         # --- A serarate routine is needed for derived types since the cobj__
         # --- that is passed in is already a pointer, so **p is needed.
-        self.cw('void '+fname(self.fsub('setderivedtypepointers'))+
-                '(long *i,char **p)')
+        self.cw('void '+fname(self.fsub('setderivedtypepointers'))+'(long *i,char **p)')
         self.cw('{')
         self.cw('  /* Gabs pointer for the scalar */')
         self.cw('  '+self.pname+'_fscalars[*i].data = (char *)(*p);')
         self.cw('}')
 
         # --- Get pointer to an array. This takes an integer to specify which array
-        self.cw('void '+fname(self.fsub('grabarraypointers'))+
-                '(long *i,char *p',noreturn=1)
-        if machine=='J90':
-            self.cw(',int *iflag)')
-        else:
-            self.cw(')')
+        self.cw('void '+fname(self.fsub('grabarraypointers'))+'(long *i,char *p)')
         self.cw('{')
         self.cw('  /* Grabs pointer for the array */')
         self.cw('  '+self.pname+'_farrays[*i].data.s = (char *)p;')
-        if machine=='J90':
-            self.cw('    if (iflag) {')
-            self.cw('      '+self.pname+'_farrays[*i].data.s=_fcdtocp((_fcd)p);}')
         self.cw('}')
 
         # --- This takes a Fortranarray object directly.
-        self.cw('void '+fname(self.fsub('grabarraypointersobj'))+
-                '(Fortranarray *farray,char *p',noreturn=1)
-        if machine=='J90':
-            self.cw(',int *iflag)')
-        else:
-            self.cw(')')
+        self.cw('void '+fname(self.fsub('grabarraypointersobj'))+'(Fortranarray *farray,char *p)')
         self.cw('{')
         self.cw('  /* Grabs pointer for the array */')
         self.cw('  farray->data.s = (char *)p;')
-        if machine=='J90':
-            self.cw('    if (iflag) {')
-            self.cw('      farray->data.s=_fcdtocp((_fcd)p);}')
         self.cw('}')
 
         # --- This routine gets the dimensions from an array. It is called from
@@ -1039,34 +1014,18 @@ class PyWrap:
                         s.name+'%cobj__,int(1,'+self.isz+'),int(0,'+self.isz+'))')
                 self.fw('  call '+self.fsub('setderivedtypepointers')+'(int('+repr(i)+','+self.isz+'),'+s.name+'%cobj__)')
             else:
-                self.fw('  call '+self.fsub('grabscalarpointers')+'(int('+repr(i)+','+self.isz+'),'+s.name,
-                        noreturn=1)
-                if machine == 'J90':
-                    if s.type == 'string' or s.type == 'character':
-                        self.fw(',int(1,'+self.isz+'))')
-                    else:
-                        self.fw(',int(0,'+self.isz+'))')
-                else:
-                    self.fw(')')
+                self.fw('  call '+self.fsub('grabscalarpointers')+'(int('+repr(i)+','+self.isz+'),'+s.name+')')
 
         # --- Write out calls to c routine passing down pointers to arrays
         # --- For f90, grabarraypointers is not needed for dynamic arrays but is called
         # --- anyway to get the numbering of arrays correct.
-        if machine == 'J90':
-            if a.type == 'string' or a.type == 'character':
-                str = ',int(1,'+self.isz+'))'
-            else:
-                str = ',int(0,'+self.isz+'))'
-        else:
-            str = ')'
         for i in range(len(self.alist)):
             a = self.alist[i]
             if a.dynamic:
                 if not self.f90:
-                    self.fw('  call '+self.fsub('grabarraypointers')+'(int('+repr(i)+','+self.isz+'),'+
-                            'p'+a.name+str)
+                    self.fw('  call '+self.fsub('grabarraypointers')+'(int('+repr(i)+','+self.isz+'),'+'p'+a.name+')')
             else:
-                self.fw('  call '+self.fsub('grabarraypointers')+'(int('+repr(i)+','+self.isz+'),'+a.name+str)
+                self.fw('  call '+self.fsub('grabarraypointers')+'(int('+repr(i)+','+self.isz+'),'+a.name+')')
 
         # --- Finish the routine
         self.fw('  return')

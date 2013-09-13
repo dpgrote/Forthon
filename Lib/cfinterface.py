@@ -28,10 +28,10 @@ fpsize = 'kind=%s'%realsize
 #----------------------------------------------------------------------------
 # Creates a function which converts a C name into a Fortran name
 
-if machine in ['hp-uxB','aix4','aix5','win32','MAC']:
+if machine in ['aix4','aix5','win32','MAC']:
     def fname(n):
         return n.lower()
-elif machine in ['linux2','linux3','darwin','SOL','sunos5','AXP','osf1V4','DOS','cygwin']:
+elif machine in ['linux2','linux3','darwin','SOL','AXP','DOS','cygwin']:
     if underscoring:
         if twounderscores:
             def fname(n):
@@ -44,9 +44,6 @@ elif machine in ['linux2','linux3','darwin','SOL','sunos5','AXP','osf1V4','DOS',
     else:
         def fname(n):
             return n.lower()
-elif machine in ['T3E','sn67112','C90','J90','SGI','irix646']:
-    def fname(n):
-        return n.upper()
 else:
     raise ValueError('Machine %s not supported'%machine)
 
@@ -59,16 +56,10 @@ if not f90:
 else:
     def fnameofobj(f):
         return fname(f.name)
-# if machine in ['hp-uxB','linux2','linux3', \
-#                'SOL','sunos5','AXP','osf1V4','DOS','MAC']:
+# if machine in ['linux2','linux3', \
+#                'SOL','AXP','DOS','MAC']:
 #   def fnameofobj(f):
 #     return f.name+'_in_'+f.group
-# elif machine in ['T3E','sn67112','C90','J90']:
-#   def fnameofobj(f):
-#     return f.name.upper()+'_in_'+f.group.upper()
-# elif machine in ['SGI','irix646']:
-#   def fnameofobj(f):
-#     return f.name.upper()+'.in.'+f.group.upper()
 # elif machine in ['aix4']:
 #   def fnameofobj(f):
 #     return '__'+f.group+'_MOD_'+f.name
@@ -79,7 +70,7 @@ else:
 # Sets up C macros which are used to take the place of the length
 # of a string passed from Fortran to C.
 
-if machine in ['hp-uxB','linux2','linux3','darwin','SOL','sunos5','DOS','aix4','aix5','win32','cygwin']:
+if machine in ['linux2','linux3','darwin','SOL','DOS','aix4','aix5','win32','cygwin']:
     charlen_at_end = 1
     forthonf2c = """
 #define FSTRING char*
@@ -100,44 +91,6 @@ if machine in ['hp-uxB','linux2','linux3','darwin','SOL','sunos5','DOS','aix4','
 #define FSETSTRLEN3(S,L) sl3 = L
 #define FSETSTRLEN4(S,L) sl4 = L
 #define FSETSTRLEN5(S,L) sl5 = L
-"""
-
-elif machine in ['T3E','sn67112','SGI','irix646']:
-    charlen_at_end = 0
-    forthonf2c = """
-typedef struct {char* ptr;int len;} fstring;
-#define FSTRING fstring
-#define SL1
-#define SL2
-#define SL3
-#define SL4
-#define SL5
-#define FSTRLEN1(S) S.len
-#define FSTRLEN2(S) S.len
-#define FSTRLEN3(S) S.len
-#define FSTRLEN4(S) S.len
-#define FSTRLEN5(S) S.len
-#define FSTRPTR(S) S.ptr
-#define FSETSTRING(S,P,L) {S.ptr = P;S.len = L;}
-"""
-
-elif machine in ['C90','J90']:
-    charlen_at_end = 0
-    forthonf2c = """
-#include <fortran.h>
-#define FSTRING _fcd
-#define SL1
-#define SL2
-#define SL3
-#define SL4
-#define SL5
-#define FSTRLEN1(S) _fcdlen(S)
-#define FSTRLEN2(S) _fcdlen(S)
-#define FSTRLEN3(S) _fcdlen(S)
-#define FSTRLEN4(S) _fcdlen(S)
-#define FSTRLEN5(S) _fcdlen(S)
-#define FSTRPTR(S) _fcdtocp(S)
-#define FSETSTRING(S,P,L) S = _cptofcd(P,L);
 """
 
 elif machine in ['MAC']:

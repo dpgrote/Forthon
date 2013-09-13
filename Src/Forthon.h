@@ -303,7 +303,7 @@ static void ForthonPackage_updatearray(ForthonObject *self,long i)
     /* Force the pointer to be null, since if the array is not associated, */
     /* the getarraypointer routine just returns and does nothing. This ensures  */
     /* that when the fortan array has been nullified, that garbage data    */
-    /* will not be returned when the array is access from python.          */
+    /* will not be returned when the array is accessed from python.          */
     /* If the array is associated, then farray->data.s will be set         */
     /* appropriately by getarraypointer.                                        */
     farray->data.s = NULL;

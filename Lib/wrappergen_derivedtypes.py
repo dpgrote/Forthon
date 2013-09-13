@@ -435,17 +435,10 @@ class ForthonDerivedType:
             #########################################################################
             # --- Write set pointers routine which gets all of the fortran pointers
             self.cw('void '+fname(self.fsub(t,'grabscalarpointers'))+
-                    '(long *i,char *p,ForthonObject **obj',noreturn=1)
-            if machine=='J90':
-                self.cw(',int *iflag)')
-            else:
-                self.cw(')')
+                    '(long *i,char *p,ForthonObject **obj)')
             self.cw('{')
             self.cw('  /* Grabs pointer for the scalar */')
             self.cw('  (*obj)->fscalars[*i].data = (char *)p;')
-            if machine=='J90':
-                self.cw('    if (iflag) {')
-                self.cw('      (*obj)->fscalars[*i].data=_fcdtocp((_fcd)p);}')
             self.cw('}')
 
             self.cw('void '+fname(self.fsub(t,'setderivedtypepointers'))+
@@ -456,31 +449,17 @@ class ForthonDerivedType:
             self.cw('}')
 
             self.cw('void '+fname(self.fsub(t,'grabarraypointers'))+
-                    '(long *i,char *p,ForthonObject **obj',noreturn=1)
-            if machine=='J90':
-                self.cw(',int *iflag)')
-            else:
-                self.cw(')')
+                    '(long *i,char *p,ForthonObject **obj)')
             self.cw('{')
             self.cw('  /* Grabs pointer for the array */')
             self.cw('  (*obj)->farrays[*i].data.s = (char *)p;')
-            if machine=='J90':
-                self.cw('    if (iflag) {')
-                self.cw('      (*obj)->farrays[*i].data.s=_fcdtocp((_fcd)p);}')
             self.cw('}')
 
             self.cw('void '+fname(self.fsub(t,'grabarraypointersobj'))+
-                    '(Fortranarray *farray,char *p',noreturn=1)
-            if machine=='J90':
-                self.cw(',int *iflag)')
-            else:
-                self.cw(')')
+                    '(Fortranarray *farray,char *p)')
             self.cw('{')
             self.cw('  /* Grabs pointer for the array */')
             self.cw('  farray->data.s = (char *)p;')
-            if machine=='J90':
-                self.cw('    if (iflag) {')
-                self.cw('      farray->data.s=_fcdtocp((_fcd)p);}')
             self.cw('}')
 
             # --- This routine gets the dimensions from an array. It is called from
@@ -775,25 +754,11 @@ class ForthonDerivedType:
                             'int('+repr(i)+','+isz+'),fobj__%'+s.name+'%cobj__,fobj__%cobj__)')
                 else:
                     self.fw('  CALL '+self.fsub(t,'grabscalarpointers')+'('+
-                            'int('+repr(i)+','+isz+'),fobj__%'+s.name+',fobj__%cobj__',noreturn=1)
-                    if machine == 'J90':
-                        if s.type == 'string' or s.type == 'character':
-                            self.fw(',int(1,'+isz+'))')
-                        else:
-                            self.fw(',int(0,'+isz+'))')
-                    else:
-                        self.fw(')')
+                            'int('+repr(i)+','+isz+'),fobj__%'+s.name+',fobj__%cobj__)')
 
             # --- Write out calls to c routine passing down pointers to arrays
             # --- For f90, grabpointers is not needed for dynamic arrays but is called
             # --- anyway to get the numbering of arrays correct.
-            if machine == 'J90':
-                if a.type == 'string' or a.type == 'character':
-                    str = ',int(1,'+isz+'))'
-                else:
-                    str = ',int(0,'+isz+'))'
-            else:
-                str = ')'
             for i in range(len(alist)):
                 a = alist[i]
                 if not a.dynamic:
@@ -802,7 +767,7 @@ class ForthonDerivedType:
                         # --- to fill the array.
                         #if a.data: self.fw('  fobj__%'+a.name+' = '+a.data[1:-1])
                         self.fw('  CALL '+self.fsub(t,'grabarraypointers')+'('+'int('+repr(i)+','+isz+')'+
-                                ',fobj__%'+a.name+',fobj__%cobj__'+str)
+                                ',fobj__%'+a.name+',fobj__%cobj__)')
 
             # --- Set the initial values only if the input flag is 1.
             self.fw('  if (setinitvalues == 1) then')
