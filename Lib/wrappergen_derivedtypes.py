@@ -64,7 +64,7 @@ class ForthonDerivedType:
         for ss in sl:
             if re.search('[a-zA-Z]',ss) != None:
                 if ss in sdict:
-                    dim = re.sub(ss,'obj__%==',dim,count=1)
+                    dim = re.sub(ss,'fobj__%==',dim,count=1)
         for ss in sl:
             if re.search('[a-zA-Z]',ss) != None:
                 if ss in sdict:
@@ -145,20 +145,20 @@ class ForthonDerivedType:
             self.cw('extern void '+fname(self.fsub(t,'nullifycobjf'))+'(void);')
 
             # --- setpointer and getpointer routine for f90
-            # --- Note that setpointers get written out for all derived types -
+            # --- Note that setpointer get written out for all derived types -
             # --- for non-dynamic derived types, the setpointer routine does a copy.
             for s in slist:
-                self.cw('extern void '+fname(self.fsub(t,'setpointer',s.name))+
-                        '(char *p,char *fobj,npy_intp *nullit__);')
+                self.cw('extern void '+fname(self.fsub(t,'setscalarpointer',s.name))+
+                        '(char *p,char *fobj__,npy_intp *nullit__);')
                 if s.dynamic:
-                    self.cw('extern void '+fname(self.fsub(t,'getpointer',s.name))+
-                            '(ForthonObject **cobj__,char *obj,int *createnew__);')
+                    self.cw('extern void '+fname(self.fsub(t,'getscalarpointer',s.name))+
+                            '(ForthonObject **cobj__,char *fobj__,int *createnew__);')
             for a in alist:
-                self.cw('extern void '+fname(self.fsub(t,'setpointer',a.name))+
-                          '(char *p,char *fobj,npy_intp *dims__);')
+                self.cw('extern void '+fname(self.fsub(t,'setarraypointer',a.name))+
+                          '(char *p,char *fobj__,npy_intp *dims__);')
                 if a.dynamic or re.search('fassign',a.attr):
-                    self.cw('extern void '+fname(self.fsub(t,'getpointer',a.name))+
-                            '(long *i,char* fobj);')
+                    self.cw('extern void '+fname(self.fsub(t,'getarraypointer',a.name))+
+                            '(Fortranarray *farray__,char* fobj__);')
             self.cw('')
 
             # --- setaction and getaction routines for f90
@@ -190,9 +190,9 @@ class ForthonDerivedType:
                 self.cw('obj->fscalars = NULL;')
             for i in range(len(slist)):
                 s = slist[i]
-                setpointer = '*'+fname(self.fsub(t,'setpointer',s.name))
-                if s.dynamic: getpointer = '*'+fname(self.fsub(t,'getpointer',s.name))
-                else:         getpointer = 'NULL'
+                setscalarpointer = '*'+fname(self.fsub(t,'setscalarpointer',s.name))
+                if s.dynamic: getscalarpointer = '*'+fname(self.fsub(t,'getscalarpointer',s.name))
+                else:         getscalarpointer = 'NULL'
                 if s.setaction is None:
                     setaction = 'NULL'
                 else:
@@ -212,8 +212,8 @@ class ForthonDerivedType:
                                      # The repr is used so newlines get written out
                                      # as \n.
                 self.cw('obj->fscalars[%d].dynamic = %d;'%(i,s.dynamic))
-                self.cw('obj->fscalars[%d].setpointer = %s;'%(i,setpointer))
-                self.cw('obj->fscalars[%d].getpointer = %s;'%(i,getpointer))
+                self.cw('obj->fscalars[%d].setscalarpointer = %s;'%(i,setscalarpointer))
+                self.cw('obj->fscalars[%d].getscalarpointer = %s;'%(i,getscalarpointer))
                 self.cw('obj->fscalars[%d].setaction = %s;'%(i,setaction))
                 self.cw('obj->fscalars[%d].getaction = %s;'%(i,getaction))
 
@@ -226,13 +226,13 @@ class ForthonDerivedType:
             for i in range(len(alist)):
                 a = alist[i]
                 if a.dynamic:
-                    setpointer = '*'+fname(self.fsub(t,'setpointer',a.name))
+                    setarraypointer = '*'+fname(self.fsub(t,'setarraypointer',a.name))
                 else:
-                    setpointer = 'NULL'
+                    setarraypointer = 'NULL'
                 if a.dynamic or re.search('fassign',a.attr):
-                    getpointer = '*'+fname(self.fsub(t,'getpointer',a.name))
+                    getarraypointer = '*'+fname(self.fsub(t,'getarraypointer',a.name))
                 else:
-                    getpointer = 'NULL'
+                    getarraypointer = 'NULL'
                 if a.setaction is None:
                     setaction = 'NULL'
                 else:
@@ -249,8 +249,8 @@ class ForthonDerivedType:
                 self.cw('obj->farrays[%d].dimensions = (npy_intp*)NULL;'%i)
                 self.cw('obj->farrays[%d].name = "%s";'%(i,a.name))
                 self.cw('obj->farrays[%d].data.s = (char *)NULL;'%i)
-                self.cw('obj->farrays[%d].setpointer = %s;'%(i,setpointer))
-                self.cw('obj->farrays[%d].getpointer = %s;'%(i,getpointer))
+                self.cw('obj->farrays[%d].setarraypointer = %s;'%(i,setarraypointer))
+                self.cw('obj->farrays[%d].getarraypointer = %s;'%(i,getarraypointer))
                 self.cw('obj->farrays[%d].setaction = %s;'%(i,setaction))
                 self.cw('obj->farrays[%d].getaction = %s;'%(i,getaction))
                 self.cw('obj->farrays[%d].initvalue = %s;'%(i,initvalue))
@@ -434,14 +434,14 @@ class ForthonDerivedType:
 
             #########################################################################
             # --- Write set pointers routine which gets all of the fortran pointers
-            self.cw('void '+fname(self.fsub(t,'setscalarpointers'))+
+            self.cw('void '+fname(self.fsub(t,'grabscalarpointers'))+
                     '(long *i,char *p,ForthonObject **obj',noreturn=1)
             if machine=='J90':
                 self.cw(',int *iflag)')
             else:
                 self.cw(')')
             self.cw('{')
-            self.cw('  /* Get pointers for the scalars */')
+            self.cw('  /* Grabs pointer for the scalar */')
             self.cw('  (*obj)->fscalars[*i].data = (char *)p;')
             if machine=='J90':
                 self.cw('    if (iflag) {')
@@ -451,32 +451,32 @@ class ForthonDerivedType:
             self.cw('void '+fname(self.fsub(t,'setderivedtypepointers'))+
                     '(long *i,char **p,ForthonObject **obj)')
             self.cw('{')
-            self.cw('  /* Get pointers for the derived types */')
+            self.cw('  /* Grabs pointer for the derived type */')
             self.cw('  (*obj)->fscalars[*i].data = (char *)(*p);')
             self.cw('}')
 
-            self.cw('void '+fname(self.fsub(t,'setarraypointers'))+
+            self.cw('void '+fname(self.fsub(t,'grabarraypointers'))+
                     '(long *i,char *p,ForthonObject **obj',noreturn=1)
             if machine=='J90':
                 self.cw(',int *iflag)')
             else:
                 self.cw(')')
             self.cw('{')
-            self.cw('  /* Get pointers for the arrays */')
+            self.cw('  /* Grabs pointer for the array */')
             self.cw('  (*obj)->farrays[*i].data.s = (char *)p;')
             if machine=='J90':
                 self.cw('    if (iflag) {')
                 self.cw('      (*obj)->farrays[*i].data.s=_fcdtocp((_fcd)p);}')
             self.cw('}')
 
-            self.cw('void '+fname(self.fsub(t,'setarraypointersobj'))+
+            self.cw('void '+fname(self.fsub(t,'grabarraypointersobj'))+
                     '(Fortranarray *farray,char *p',noreturn=1)
             if machine=='J90':
                 self.cw(',int *iflag)')
             else:
                 self.cw(')')
             self.cw('{')
-            self.cw('  /* Get pointers for the arrays */')
+            self.cw('  /* Grabs pointer for the array */')
             self.cw('  farray->data.s = (char *)p;')
             if machine=='J90':
                 self.cw('    if (iflag) {')
@@ -680,10 +680,10 @@ class ForthonDerivedType:
             self.fw('  call init'+t.name+'py(int(-1,'+isz+'),newobj__,newobj__%cobj__,s,d)')
             self.fw('  RETURN')
             self.fw('END SUBROUTINE InitPyRef'+t.name)
-            self.fw('SUBROUTINE IncRef'+t.name+'(obj__)')
+            self.fw('SUBROUTINE IncRef'+t.name+'(fobj__)')
             self.fw('  USE '+t.name+'module')
-            self.fw('  TYPE('+t.name+'):: obj__')
-            self.fw('  call incref'+t.name+'py(obj__%cobj__,obj__)')
+            self.fw('  TYPE('+t.name+'):: fobj__')
+            self.fw('  call incref'+t.name+'py(fobj__%cobj__,fobj__)')
             self.fw('  RETURN')
             self.fw('END SUBROUTINE IncRef'+t.name)
             self.fw('SUBROUTINE DecRef'+t.name+'(oldobj__)')
@@ -726,36 +726,41 @@ class ForthonDerivedType:
             # --- memory leaks. A better way would be to force the coder to
             # --- either explicitly call IncRef or use the New routine to allocate
             # --- the instance (which also creates a python object).
-            self.fw('SUBROUTINE '+t.name+'allot(obj__)')
+            self.fw('SUBROUTINE '+t.name+'allot(fobj__)')
             self.fw('  USE '+t.name+'module')
-            self.fw('  TYPE('+t.name+'):: obj__')
-            self.fw('  if (obj__%cobj__ == 0) CALL IncRef'+t.name+'(obj__)')
-            self.fw('  CALL tallot(obj__%cobj__)')
+            self.fw('  TYPE('+t.name+'):: fobj__')
+            self.fw('  if (fobj__%cobj__ == 0) CALL IncRef'+t.name+'(fobj__)')
+            self.fw('  CALL tallot(fobj__%cobj__)')
             self.fw('  RETURN')
             self.fw('END SUBROUTINE '+t.name+'allot')
-            self.fw('SUBROUTINE '+t.name+'change(obj__)')
+            self.fw('SUBROUTINE '+t.name+'change(fobj__)')
             self.fw('  USE '+t.name+'module')
-            self.fw('  TYPE('+t.name+'):: obj__')
-            self.fw('  if (obj__%cobj__ == 0) CALL IncRef'+t.name+'(obj__)')
-            self.fw('  CALL tchange(obj__%cobj__)')
+            self.fw('  TYPE('+t.name+'):: fobj__')
+            self.fw('  if (fobj__%cobj__ == 0) CALL IncRef'+t.name+'(fobj__)')
+            self.fw('  CALL tchange(fobj__%cobj__)')
             self.fw('  RETURN')
             self.fw('END SUBROUTINE '+t.name+'change')
-            self.fw('SUBROUTINE '+t.name+'free(obj__)')
+            self.fw('SUBROUTINE '+t.name+'free(fobj__)')
             self.fw('  USE '+t.name+'module')
-            self.fw('  TYPE('+t.name+'):: obj__')
-            self.fw('  if (obj__%cobj__ == 0) CALL IncRef'+t.name+'(obj__)')
-            self.fw('  CALL tfree(obj__%cobj__)')
+            self.fw('  TYPE('+t.name+'):: fobj__')
+            self.fw('  if (fobj__%cobj__ == 0) CALL IncRef'+t.name+'(fobj__)')
+            self.fw('  CALL tfree(fobj__%cobj__)')
             self.fw('  RETURN')
             self.fw('END SUBROUTINE '+t.name+'free')
 
             #########################################################################
             self.fw('! '+self.fsub(t,'passpointers',dohash=0))
-            self.fw('SUBROUTINE '+self.fsub(t,'passpointers')+'(obj__,setinitvalues)')
+            self.fw('SUBROUTINE '+self.fsub(t,'passpointers')+'(fobj__,setinitvalues)')
 
             # --- Write out the Use statements
             self.fw('  USE '+t.name+'module')
-            self.fw('  TYPE('+t.name+'):: obj__')
+            self.fw('  TYPE('+t.name+'):: fobj__')
             self.fw('  INTEGER('+isz+'):: setinitvalues')
+
+            # --- This is for legacy code that directly referenced obj__ in the initial values
+            self.fw('  TARGET:: fobj__')
+            self.fw('  TYPE('+t.name+'),pointer:: obj__')
+            self.fw('  obj__ => fobj__')
 
             # --- Write out calls to c routine passing down pointers to scalars
             for i in range(len(slist)):
@@ -764,13 +769,13 @@ class ForthonDerivedType:
                 if s.derivedtype:
                     # --- This is only called for static instances, so deallocatable is
                     # --- set to false (the last argument).
-                    self.fw('  CALL init'+s.type+'py(int(-1,'+isz+'),obj__%'+s.name+
-                            ',obj__%'+s.name+'%cobj__,setinitvalues,int(0,'+isz+'))')
+                    self.fw('  CALL init'+s.type+'py(int(-1,'+isz+'),fobj__%'+s.name+
+                            ',fobj__%'+s.name+'%cobj__,setinitvalues,int(0,'+isz+'))')
                     self.fw('  CALL '+self.fsub(t,'setderivedtypepointers')+'('+
-                            'int('+repr(i)+','+isz+'),obj__%'+s.name+'%cobj__,obj__%cobj__)')
+                            'int('+repr(i)+','+isz+'),fobj__%'+s.name+'%cobj__,fobj__%cobj__)')
                 else:
-                    self.fw('  CALL '+self.fsub(t,'setscalarpointers')+'('+
-                            'int('+repr(i)+','+isz+'),obj__%'+s.name+',obj__%cobj__',noreturn=1)
+                    self.fw('  CALL '+self.fsub(t,'grabscalarpointers')+'('+
+                            'int('+repr(i)+','+isz+'),fobj__%'+s.name+',fobj__%cobj__',noreturn=1)
                     if machine == 'J90':
                         if s.type == 'string' or s.type == 'character':
                             self.fw(',int(1,'+isz+'))')
@@ -780,7 +785,7 @@ class ForthonDerivedType:
                         self.fw(')')
 
             # --- Write out calls to c routine passing down pointers to arrays
-            # --- For f90, setpointers is not needed for dynamic arrays but is called
+            # --- For f90, grabpointers is not needed for dynamic arrays but is called
             # --- anyway to get the numbering of arrays correct.
             if machine == 'J90':
                 if a.type == 'string' or a.type == 'character':
@@ -795,18 +800,18 @@ class ForthonDerivedType:
                     if not a.derivedtype:
                         # --- This assumes that a scalar is given which is broadcasted
                         # --- to fill the array.
-                        #if a.data: self.fw('  obj__%'+a.name+' = '+a.data[1:-1])
-                        self.fw('  CALL '+self.fsub(t,'setarraypointers')+'('+'int('+repr(i)+','+isz+')'+
-                                ',obj__%'+a.name+',obj__%cobj__'+str)
+                        #if a.data: self.fw('  fobj__%'+a.name+' = '+a.data[1:-1])
+                        self.fw('  CALL '+self.fsub(t,'grabarraypointers')+'('+'int('+repr(i)+','+isz+')'+
+                                ',fobj__%'+a.name+',fobj__%cobj__'+str)
 
             # --- Set the initial values only if the input flag is 1.
             self.fw('  if (setinitvalues == 1) then')
             for s in slist:
                 if s.dynamic or s.derivedtype or not s.data: continue
-                self.fw('    obj__%'+s.name+' = '+s.data[1:-1])
+                self.fw('    fobj__%'+s.name+' = '+s.data[1:-1])
             for a in alist:
                 if a.dynamic or a.derivedtype or not a.data: continue
-                self.fw('    obj__%'+a.name+' = '+a.data[1:-1])
+                self.fw('    fobj__%'+a.name+' = '+a.data[1:-1])
             self.fw('  endif')
 
             # --- Finish the routine
@@ -820,18 +825,18 @@ class ForthonDerivedType:
             # --- Pointers must be explicitly nullified in order to get
             # --- associated to return a false value.
             self.fw('! '+self.fsub(t,'nullifypointers',dohash=0))
-            self.fw('SUBROUTINE '+self.fsub(t,'nullifypointers')+'(obj__)')
+            self.fw('SUBROUTINE '+self.fsub(t,'nullifypointers')+'(fobj__)')
 
             # --- Write out the Use statements
             self.fw('  USE '+t.name+'module')
-            self.fw('  TYPE('+t.name+'):: obj__')
+            self.fw('  TYPE('+t.name+'):: fobj__')
 
             for i in range(len(slist)):
                 s = slist[i]
-                if s.dynamic: self.fw('  NULLIFY(obj__%'+s.name+')')
+                if s.dynamic: self.fw('  NULLIFY(fobj__%'+s.name+')')
             for i in range(len(alist)):
                 a = alist[i]
-                if a.dynamic: self.fw('  NULLIFY(obj__%'+a.name+')')
+                if a.dynamic: self.fw('  NULLIFY(fobj__%'+a.name+')')
 
             self.fw('  return')
             self.fw('end')
@@ -840,35 +845,35 @@ class ForthonDerivedType:
             # --- Write routine for each dynamic variable which gets the pointer
             # --- from the wrapper
             for s in slist:
-                self.fw('! '+self.fsub(t,'setpointer',s.name,dohash=0))
-                self.fw('SUBROUTINE '+self.fsub(t,'setpointer',s.name)+'(p__,obj__,nullit__)')
+                self.fw('! '+self.fsub(t,'setscalarpointer',s.name,dohash=0))
+                self.fw('SUBROUTINE '+self.fsub(t,'setscalarpointer',s.name)+'(p__,fobj__,nullit__)')
                 self.fw('  USE '+t.name+'module')
-                self.fw('  TYPE('+t.name+'):: obj__')
+                self.fw('  TYPE('+t.name+'):: fobj__')
                 self.fw('  '+fvars.ftof(s.type)+',target:: p__')
                 self.fw('  INTEGER('+isz+'):: nullit__')
                 if s.dynamic:
                     self.fw('  if (nullit__ == 0) then')
-                    self.fw('    obj__%'+s.name+' => p__')
+                    self.fw('    fobj__%'+s.name+' => p__')
                     self.fw('  else')
-                    self.fw('    NULLIFY(obj__%'+s.name+')')
+                    self.fw('    NULLIFY(fobj__%'+s.name+')')
                     self.fw('  endif')
                 else:
-                    self.fw('  obj__%'+s.name+' = p__')
+                    self.fw('  fobj__%'+s.name+' = p__')
                 self.fw('  RETURN')
                 self.fw('END')
                 if s.dynamic:
-                    self.fw('SUBROUTINE '+self.fsub(t,'getpointer',s.name)+
-                                    '(cobj__,obj__,createnew__)')
+                    self.fw('SUBROUTINE '+self.fsub(t,'getscalarpointer',s.name)+
+                                    '(cobj__,fobj__,createnew__)')
                     self.fw('  USE '+t.name+'module')
                     self.fw('  integer('+isz+'):: cobj__')
                     self.fw('  integer(4):: createnew__')
-                    self.fw('  TYPE('+t.name+'):: obj__')
-                    self.fw('  if (ASSOCIATED(obj__%'+s.name+')) then')
-                    self.fw('    if (obj__%'+s.name+'%cobj__ == 0 .and. createnew__==1) then')
-                    self.fw('      call init'+s.type+'py(int(-1,'+isz+'),obj__%'+s.name+','+
-                                                         'obj__%'+s.name+'%cobj__,int(0,'+isz+'),int(0,'+isz+'))')
+                    self.fw('  TYPE('+t.name+'):: fobj__')
+                    self.fw('  if (ASSOCIATED(fobj__%'+s.name+')) then')
+                    self.fw('    if (fobj__%'+s.name+'%cobj__ == 0 .and. createnew__==1) then')
+                    self.fw('      call init'+s.type+'py(int(-1,'+isz+'),fobj__%'+s.name+','+
+                                                         'fobj__%'+s.name+'%cobj__,int(0,'+isz+'),int(0,'+isz+'))')
                     self.fw('    endif')
-                    self.fw('    cobj__ = obj__%'+s.name+'%cobj__')
+                    self.fw('    cobj__ = fobj__%'+s.name+'%cobj__')
                     self.fw('  else')
                     self.fw('    cobj__ = 0')
                     self.fw('  endif')
@@ -877,10 +882,10 @@ class ForthonDerivedType:
 
             for a in alist:
                 if a.dynamic:
-                    self.fw('! '+self.fsub(t,'setpointer',a.name,dohash=0))
-                    self.fw('SUBROUTINE '+self.fsub(t,'setpointer',a.name)+'(p__,obj__,dims__)')
+                    self.fw('! '+self.fsub(t,'setarraypointer',a.name,dohash=0))
+                    self.fw('SUBROUTINE '+self.fsub(t,'setarraypointer',a.name)+'(p__,fobj__,dims__)')
                     self.fw('  USE '+t.name+'module')
-                    self.fw('  TYPE('+t.name+'):: obj__')
+                    self.fw('  TYPE('+t.name+'):: fobj__')
                     self.fw('  integer('+isz+'):: dims__('+repr(len(a.dims))+')')
                     if a.type == 'character':
                         self.fw('  character(len='+a.dims[0].high+'),target:: '+
@@ -888,25 +893,25 @@ class ForthonDerivedType:
                     else:
                         self.fw('  '+fvars.ftof(a.type)+',target:: '+
                                 'p__'+self.prefixdimsf(re.sub('[ \t\n]','',a.dimstring),sdict)+'')
-                    self.fw('  obj__%'+a.name+' => p__')
+                    self.fw('  fobj__%'+a.name+' => p__')
                     self.fw('  RETURN')
                     self.fw('END')
                     if a.dynamic or re.search('fassign',a.attr):
-                        self.fw('! '+self.fsub(t,'getpointer',a.name,dohash=0))
-                        self.fw('SUBROUTINE '+self.fsub(t,'getpointer',a.name)+'(i__,obj__)')
+                        self.fw('! '+self.fsub(t,'getarraypointer',a.name,dohash=0))
+                        self.fw('SUBROUTINE '+self.fsub(t,'getarraypointer',a.name)+'(farray__,fobj__)')
                         self.fw('  USE '+t.name+'module')
-                        self.fw('  integer('+isz+'):: i__')
+                        self.fw('  integer('+isz+'):: farray__')
                         self.fw('  integer('+isz+'):: ss(%d)'%(len(a.dims)))
-                        self.fw('  TYPE('+t.name+'):: obj__')
-                        self.fw('  if (.not. associated(obj__%'+a.name+')) return ')
-                        self.fw('  call '+self.fsub(t,'setarraypointersobj')+
-                                                               '(i__,obj__%'+a.name+')')
+                        self.fw('  TYPE('+t.name+'):: fobj__')
+                        self.fw('  if (.not. associated(fobj__%'+a.name+')) return ')
+                        self.fw('  call '+self.fsub(t,'grabarraypointersobj')+
+                                                               '(farray__,fobj__%'+a.name+')')
                         if a.type == 'character':
-                            self.fw('  ss(1:%d)'%(len(a.dims)-1)+' = shape(obj__%'+a.name+')')
+                            self.fw('  ss(1:%d)'%(len(a.dims)-1)+' = shape(fobj__%'+a.name+')')
                             self.fw('  ss(%d)'%(len(a.dims))+' = %s'%a.dims[0].high)
                         else:
-                            self.fw('  ss = shape(obj__%'+a.name+')')
-                        self.fw('  call '+self.fsub(t,'setarraydims')+ '(i__,ss)')
+                            self.fw('  ss = shape(fobj__%'+a.name+')')
+                        self.fw('  call '+self.fsub(t,'setarraydims')+ '(farray__,ss)')
                         self.fw('  return')
                         self.fw('end')
 
@@ -941,10 +946,10 @@ class ForthonDerivedType:
             self.fw('  CALL '+t.name+'dealloc(oldobj__)')
             self.fw('  RETURN')
             self.fw('END SUBROUTINE '+self.fsub(t,'deallocatef'))
-            self.fw('SUBROUTINE '+self.fsub(t,'nullifycobjf')+'(obj__)')
+            self.fw('SUBROUTINE '+self.fsub(t,'nullifycobjf')+'(fobj__)')
             self.fw('  USE '+t.name+'module')
-            self.fw('  TYPE('+t.name+'):: obj__')
-            self.fw('  obj__%cobj__ = 0')
+            self.fw('  TYPE('+t.name+'):: fobj__')
+            self.fw('  fobj__%cobj__ = 0')
             self.fw('  RETURN')
             self.fw('END SUBROUTINE '+self.fsub(t,'nullifycobjf'))
 

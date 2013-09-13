@@ -47,6 +47,7 @@ static PyArrayObject* FARRAY_FROMOBJECT(PyObject *A2, int ARRAY_TYPE) {
 /* # Write definition of scalar and array structures. Note that if these   */
 /* # are changed, then the declarations written out in wrappergenerator    */
 /* # must also be changed. */
+struct ForthonObject_;
 typedef struct {
   int type;
   char *typename;
@@ -56,21 +57,22 @@ typedef struct {
   char* attributes;
   char* comment;
   int dynamic;
-  void (*setpointer)();
-  void (*getpointer)();
+  void (*setscalarpointer)(char *,char *,npy_intp *);
+  void (*getscalarpointer)(struct ForthonObject_ **,char *,int *);
   void (*setaction)();
   void (*getaction)();
   } Fortranscalar;
 
-typedef struct {
+struct Fortranarray_;
+typedef struct Fortranarray_{
   int type;
   int dynamic;
   int nd;
   npy_intp* dimensions;
   char* name;
   union {char* s;char** d;} data;
-  void (*setpointer)();
-  void (*getpointer)();
+  void (*setarraypointer)(char *,char *,npy_intp *);
+  void (*getarraypointer)(struct Fortranarray_ *,char*);
   void (*setaction)();
   void (*getaction)();
   double initvalue;
@@ -83,7 +85,7 @@ typedef struct {
 
 /* ######################################################################### */
 /* # Write definition of fortran package type */
-typedef struct {
+typedef struct ForthonObject_ {
   PyObject_HEAD
   char *name;
   char *typename;
@@ -296,16 +298,16 @@ static void ForthonPackage_updatearray(ForthonObject *self,long i)
 {
   Fortranarray *farray = &(self->farrays[i]);
   int j;
-  /* If the getpointer routine exists, call it to assign a value to data.s */
-  if (farray->getpointer != NULL) {
+  /* If the getarraypointer routine exists, call it to assign a value to data.s */
+  if (farray->getarraypointer != NULL) {
     /* Force the pointer to be null, since if the array is not associated, */
-    /* the getpointer routine just returns and does nothing. This ensures  */
+    /* the getarraypointer routine just returns and does nothing. This ensures  */
     /* that when the fortan array has been nullified, that garbage data    */
     /* will not be returned when the array is access from python.          */
     /* If the array is associated, then farray->data.s will be set         */
-    /* appropriately by getpointer.                                        */
+    /* appropriately by getarraypointer.                                        */
     farray->data.s = NULL;
-    (farray->getpointer)(farray,self->fobj);
+    (farray->getarraypointer)(farray,self->fobj);
     /* If the data.s is NULL, then the fortran array is not associated. */
     /* Decrement the python object counter if there is one. */
     /* Set the pointer to the python object to NULL and clear out the */
@@ -393,10 +395,10 @@ static void ForthonPackage_updatederivedtype(ForthonObject *self,long i,
   ForthonObject *objid;
   PyObject *oldobj;
   if (self->fscalars[i].type == PyArray_OBJECT && self->fscalars[i].dynamic) {
-    /* If dynamic, use getpointer to get the current address of the */
+    /* If dynamic, use getscalarpointer to get the current address of the */
     /* python object from the fortran variable. */
     /* This is needed since the association may have changed in fortran. */
-    (self->fscalars[i].getpointer)(&objid,self->fobj,&createnew);
+    (self->fscalars[i].getscalarpointer)(&objid,self->fobj,&createnew);
     /* If the address has changed, that means that a reassignment was done */
     /* in fortran. The data needs to be updated and the reference */
     /* count possibly incremented. */
@@ -549,7 +551,7 @@ static int Forthon_freearray(ForthonObject *self,void *closure)
       totmembytes -= (long)PyArray_NBYTES(farray->pya);
       Py_XDECREF(farray->pya);
       farray->pya = NULL;
-      (farray->setpointer)(0,(self->fobj),farray->dimensions);
+      (farray->setarraypointer)(0,(self->fobj),farray->dimensions);
       }
     }
   return 0;
@@ -692,7 +694,7 @@ static int Forthon_setscalarderivedtype(ForthonObject *self,PyObject *value,
         d = (void *)((ForthonObject *)fscalar->data)->fobjdeallocate;
         if (d != NULL) {
           nullit = 1;
-          (fscalar->setpointer)(0,(self->fobj),&nullit);
+          (fscalar->setscalarpointer)(0,(self->fobj),&nullit);
           }
         fscalar->data = NULL;
         Py_DECREF(oldobj);
@@ -731,9 +733,9 @@ static int Forthon_setscalarderivedtype(ForthonObject *self,PyObject *value,
 
   /* This does the assignment in Fortran. */
   nullit = 0;
-  (fscalar->setpointer)(((ForthonObject *)value)->fobj,(self->fobj),&nullit);
+  (fscalar->setscalarpointer)(((ForthonObject *)value)->fobj,(self->fobj),&nullit);
 
-  /* Call this after the setpointer so that the updates will refer to the */
+  /* Call this after the setscalarpointer so that the updates will refer to the */
   /* data. */
   if (!(fscalar->dynamic)) {
     Forthon_updatederivedtypeelements((ForthonObject *)(fscalar->data),
@@ -810,8 +812,8 @@ static int Forthon_setarray(ForthonObject *self,PyObject *value,
         }
       if (farray->pya != NULL) {Py_XDECREF(farray->pya);}
       farray->pya = ax;
-      (farray->setpointer)(PyArray_BYTES(farray->pya),(self->fobj),
-                           PyArray_DIMS(farray->pya));
+      (farray->setarraypointer)(PyArray_BYTES(farray->pya),(self->fobj),
+                                PyArray_DIMS(farray->pya));
       r = 0;}
     else {
       r = -1;
@@ -908,7 +910,7 @@ static int Forthon_clear(ForthonObject *self)
         oldobj = (PyObject *)self->fscalars[i].data;
         self->fscalars[i].data = NULL;
         if (d != NULL && self->fscalars[i].dynamic) {
-          (self->fscalars[i].setpointer)(0,(self->fobj),&nullit);
+          (self->fscalars[i].setscalarpointer)(0,(self->fobj),&nullit);
           }
         /* Only delete the object after deleting references to it. */
         Py_DECREF(oldobj);
@@ -1131,8 +1133,8 @@ static PyObject *ForthonPackage_forceassign(PyObject *_self_,PyObject *args)
       Forthon_freearray(self,(void *)i);
       /* Point to the new one */
       self->farrays[i].pya = ax;
-      (self->farrays[i].setpointer)(PyArray_BYTES(self->farrays[i].pya),(self->fobj),
-                                    PyArray_DIMS(self->farrays[i].pya));
+      (self->farrays[i].setarraypointer)(PyArray_BYTES(self->farrays[i].pya),(self->fobj),
+                                         PyArray_DIMS(self->farrays[i].pya));
       totmembytes += (long)PyArray_NBYTES(self->farrays[i].pya);
       returnnone;}
     else if (PyArray_NDIM(ax) == self->farrays[i].nd) {
@@ -1232,9 +1234,9 @@ static PyObject *ForthonPackage_gallot(PyObject *_self_,PyObject *args)
           exit(EXIT_FAILURE);
           }
         /* Point fortran pointer to new space */
-        (self->farrays[i].setpointer)(PyArray_BYTES(self->farrays[i].pya),
-                                      (self->fobj),
-                                      PyArray_DIMS(self->farrays[i].pya));
+        (self->farrays[i].setarraypointer)(PyArray_BYTES(self->farrays[i].pya),
+                                           (self->fobj),
+                                           PyArray_DIMS(self->farrays[i].pya));
         /* Fill array with initial value. A check could probably be made */
         /* of whether the initial value is zero since the initialization */
         /* doesn't need to be done then. Not having the check gaurantees */
@@ -1392,9 +1394,9 @@ static PyObject *ForthonPackage_gchange(PyObject *_self_,PyObject *args)
         Forthon_freearray(self,(void *)i);
         /* Point pointers to new space. */
         self->farrays[i].pya = ax;
-        (self->farrays[i].setpointer)(PyArray_BYTES(self->farrays[i].pya),
-                                      (self->fobj),
-                                      PyArray_DIMS(self->farrays[i].pya));
+        (self->farrays[i].setarraypointer)(PyArray_BYTES(self->farrays[i].pya),
+                                           (self->fobj),
+                                           PyArray_DIMS(self->farrays[i].pya));
         /* Add the array size to totmembytes. */
         totmembytes += (long)PyArray_NBYTES(self->farrays[i].pya);
         if (iverbose) printf("Allocating %s.%s %d\n",self->name,self->farrays[i].name,
@@ -2135,7 +2137,7 @@ static PyObject *ForthonPackage_setdict(PyObject *_self_,PyObject *args)
       }
     }
   /* Now arrays can be set. */
-  /* This is done this way since the setpointer routine uses the farray */
+  /* This is done this way since the setarraypointer routine uses the farray */
   /* dimensions instead of the dimensions from the PyArrayObject.       */
   pos = 0;
   while (PyDict_Next(dict,&pos,&key,&value)) {

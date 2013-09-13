@@ -278,22 +278,24 @@ class PyWrap:
         self.cw('')
 
         # --- setpointer and getpointer routines for f90
-        # --- Note that setpointers get written out for all derived types -
+        # --- Note that setpointer gets written out for all derived types -
         # --- for non-dynamic derived types, the setpointer routine does a copy.
+        # --- The double underscores in the argument names are to avoid name
+        # --- collisions with package variables.
         if self.f90:
             for s in self.slist:
                 if s.dynamic or s.derivedtype:
-                    self.cw('extern void '+fname(self.fsub('setpointer',s.name))+
-                            '(char *p,long *cobj__,npy_intp *nullit__);')
+                    self.cw('extern void '+fname(self.fsub('setscalarpointer',s.name))+
+                            '(char *p__,char *fobj__,npy_intp *nullit__);')
                 if s.dynamic:
-                    self.cw('extern void '+fname(self.fsub('getpointer',s.name))+
-                            '(ForthonObject **cobj__,long *obj,int *createnew);')
+                    self.cw('extern void '+fname(self.fsub('getscalarpointer',s.name))+
+                            '(ForthonObject **cobj__,char *fobj__,int *createnew__);')
             for a in self.alist:
-                self.cw('extern void '+fname(self.fsub('setpointer',a.name))+
-                        '(char *p,long *cobj__,npy_intp *dims__);')
+                self.cw('extern void '+fname(self.fsub('setarraypointer',a.name))+
+                        '(char *p__,char *fobj__,npy_intp *dims__);')
                 if re.search('fassign',a.attr):
-                    self.cw('extern void '+fname(self.fsub('getpointer',a.name))+
-                            '(long *i,long *cobj__);')
+                    self.cw('extern void '+fname(self.fsub('getarraypointer',a.name))+
+                            '(Fortranarray *farray__,char *fobj__);')
         self.cw('')
 
         # --- setaction and getaction routines for f90
@@ -338,8 +340,8 @@ class PyWrap:
                          '"%s",'%s.attr +
                          '"%s",'%repr(s.comment)[1:-1].replace('"','\\"') +
                          '%i,'%s.dynamic +
-                         'NULL,' + # setpointer
-                         'NULL,' + # getpointer
+                         'NULL,' + # setscalarpointer
+                         'NULL,' + # getscalarpointer
                          'NULL,' + # setaction
                          'NULL' + # getaction
                          '}',noreturn=1)
@@ -365,8 +367,8 @@ class PyWrap:
                           'NULL,' +
                           '"%s",'%a.name +
                           '{NULL},' +
-                          'NULL,' + # setpointer
-                          'NULL,' + # getpointer
+                          'NULL,' + # setarraypointer
+                          'NULL,' + # getarraypointer
                           'NULL,' + # setaction
                           'NULL,' + # getaction
                           '%s,'%initvalue +
@@ -388,11 +390,11 @@ class PyWrap:
         for i in range(len(self.slist)):
             s = self.slist[i]
             if (self.f90) and s.derivedtype:
-                setpointer = '*'+fname(self.fsub('setpointer',s.name))
-                self.cw('obj->fscalars[%d].setpointer = %s;'%(i,setpointer))
+                setscalarpointer = '*'+fname(self.fsub('setscalarpointer',s.name))
+                self.cw('obj->fscalars[%d].setscalarpointer = %s;'%(i,setscalarpointer))
                 if s.dynamic:
-                    getpointer = '*'+fname(self.fsub('getpointer',s.name))
-                    self.cw('obj->fscalars[%d].getpointer = %s;'%(i,getpointer))
+                    getscalarpointer = '*'+fname(self.fsub('getscalarpointer',s.name))
+                    self.cw('obj->fscalars[%d].getscalarpointer = %s;'%(i,getscalarpointer))
             if s.setaction is not None:
                 setaction = '*'+fname(self.fsub('setaction',s.name))
                 self.cw('obj->fscalars[%d].setaction = %s;'%(i,setaction))
@@ -404,11 +406,11 @@ class PyWrap:
         for i in range(len(self.alist)):
             a = self.alist[i]
             if (self.f90) and a.dynamic:
-                setpointer = '*'+fname(self.fsub('setpointer',a.name))
-                self.cw('obj->farrays[%d].setpointer = %s;'%(i,setpointer))
+                setarraypointer = '*'+fname(self.fsub('setarraypointer',a.name))
+                self.cw('obj->farrays[%d].setarraypointer = %s;'%(i,setarraypointer))
             if (self.f90) and re.search('fassign',a.attr):
-                getpointer = '*'+fname(self.fsub('getpointer',a.name))
-                self.cw('obj->farrays[%d].getpointer = %s;'%(i,getpointer))
+                getarraypointer = '*'+fname(self.fsub('getarraypointer',a.name))
+                self.cw('obj->farrays[%d].getarraypointer = %s;'%(i,getarraypointer))
             if a.setaction is not None:
                 setaction = '*'+fname(self.fsub('setaction',a.name))
                 self.cw('obj->farrays[%d].setaction = %s;'%(i,setaction))
@@ -801,14 +803,14 @@ class PyWrap:
 
         ###########################################################################
         # --- Write set pointers routine which gets all of the fortran pointers
-        self.cw('void '+fname(self.fsub('setscalarpointers'))+
+        self.cw('void '+fname(self.fsub('grabscalarpointers'))+
                 '(long *i,char *p',noreturn=1)
         if machine=='J90':
             self.cw(',int *iflag)')
         else:
             self.cw(')')
         self.cw('{')
-        self.cw('  /* Get pointers for the scalars */')
+        self.cw('  /* Gabs pointer for the scalar */')
         self.cw('  '+self.pname+'_fscalars[*i].data = (char *)p;')
         if machine=='J90':
             self.cw('    if (iflag) {')
@@ -820,19 +822,19 @@ class PyWrap:
         self.cw('void '+fname(self.fsub('setderivedtypepointers'))+
                 '(long *i,char **p)')
         self.cw('{')
-        self.cw('  /* Get pointers for the scalars */')
+        self.cw('  /* Gabs pointer for the scalar */')
         self.cw('  '+self.pname+'_fscalars[*i].data = (char *)(*p);')
         self.cw('}')
 
         # --- Get pointer to an array. This takes an integer to specify which array
-        self.cw('void '+fname(self.fsub('setarraypointers'))+
+        self.cw('void '+fname(self.fsub('grabarraypointers'))+
                 '(long *i,char *p',noreturn=1)
         if machine=='J90':
             self.cw(',int *iflag)')
         else:
             self.cw(')')
         self.cw('{')
-        self.cw('  /* Get pointers for the arrays */')
+        self.cw('  /* Grabs pointer for the array */')
         self.cw('  '+self.pname+'_farrays[*i].data.s = (char *)p;')
         if machine=='J90':
             self.cw('    if (iflag) {')
@@ -840,14 +842,14 @@ class PyWrap:
         self.cw('}')
 
         # --- This takes a Fortranarray object directly.
-        self.cw('void '+fname(self.fsub('setarraypointersobj'))+
+        self.cw('void '+fname(self.fsub('grabarraypointersobj'))+
                 '(Fortranarray *farray,char *p',noreturn=1)
         if machine=='J90':
             self.cw(',int *iflag)')
         else:
             self.cw(')')
         self.cw('{')
-        self.cw('  /* Get pointers for the arrays */')
+        self.cw('  /* Grabs pointer for the array */')
         self.cw('  farray->data.s = (char *)p;')
         if machine=='J90':
             self.cw('    if (iflag) {')
@@ -1037,7 +1039,7 @@ class PyWrap:
                         s.name+'%cobj__,int(1,'+self.isz+'),int(0,'+self.isz+'))')
                 self.fw('  call '+self.fsub('setderivedtypepointers')+'(int('+repr(i)+','+self.isz+'),'+s.name+'%cobj__)')
             else:
-                self.fw('  call '+self.fsub('setscalarpointers')+'(int('+repr(i)+','+self.isz+'),'+s.name,
+                self.fw('  call '+self.fsub('grabscalarpointers')+'(int('+repr(i)+','+self.isz+'),'+s.name,
                         noreturn=1)
                 if machine == 'J90':
                     if s.type == 'string' or s.type == 'character':
@@ -1048,7 +1050,7 @@ class PyWrap:
                     self.fw(')')
 
         # --- Write out calls to c routine passing down pointers to arrays
-        # --- For f90, setpointers is not needed for dynamic arrays but is called
+        # --- For f90, grabarraypointers is not needed for dynamic arrays but is called
         # --- anyway to get the numbering of arrays correct.
         if machine == 'J90':
             if a.type == 'string' or a.type == 'character':
@@ -1061,10 +1063,10 @@ class PyWrap:
             a = self.alist[i]
             if a.dynamic:
                 if not self.f90:
-                    self.fw('  call '+self.fsub('setarraypointers')+'(int('+repr(i)+','+self.isz+'),'+
+                    self.fw('  call '+self.fsub('grabarraypointers')+'(int('+repr(i)+','+self.isz+'),'+
                             'p'+a.name+str)
             else:
-                self.fw('  call '+self.fsub('setarraypointers')+'(int('+repr(i)+','+self.isz+'),'+a.name+str)
+                self.fw('  call '+self.fsub('grabarraypointers')+'(int('+repr(i)+','+self.isz+'),'+a.name+str)
 
         # --- Finish the routine
         self.fw('  return')
@@ -1096,9 +1098,9 @@ class PyWrap:
         # --- wrapper
         if self.f90:
             for s in self.slist:
-                self.fw('SUBROUTINE '+self.fsub('setpointer',s.name)+'(p__,cobj__,nullit__)')
+                self.fw('SUBROUTINE '+self.fsub('setscalarpointer',s.name)+'(p__,fobj__,nullit__)')
                 self.fw('  USE '+s.group)
-                self.fw('  integer('+self.isz+'):: cobj__')
+                self.fw('  INTEGER('+self.isz+'):: fobj__')
                 self.fw('  INTEGER('+self.isz+'):: nullit__')
                 if s.type == 'character':
                     self.fw('  character(len='+s.dims[0].high+'),target:: p__')
@@ -1117,11 +1119,11 @@ class PyWrap:
                 if s.dynamic:
                     # --- In all cases, it is not desirable to create a new instance,
                     # --- for example when the object is being deleted.
-                    self.fw('SUBROUTINE '+self.fsub('getpointer',s.name)+
-                                           '(cobj__,obj__,createnew__)')
+                    self.fw('SUBROUTINE '+self.fsub('getscalarpointer',s.name)+
+                                           '(cobj__,fobj__,createnew__)')
                     self.fw('  USE '+s.group)
-                    self.fw('  integer('+self.isz+'):: cobj__,obj__')
-                    self.fw('  integer(4):: createnew__')
+                    self.fw('  INTEGER('+self.isz+'):: cobj__,fobj__')
+                    self.fw('  INTEGER(4):: createnew__')
                     self.fw('  if (ASSOCIATED('+s.name+')) then')
                     self.fw('    if ('+s.name+'%cobj__ == 0 .and. createnew__ == 1) then')
                     self.fw('      call init'+s.type+'py(int(-1,'+self.isz+'),'+s.name+','+
@@ -1136,7 +1138,7 @@ class PyWrap:
 
             for a in self.alist:
                 if a.dynamic:
-                    self.fw('SUBROUTINE '+self.fsub('setpointer',a.name)+'(p__,cobj__,dims__)')
+                    self.fw('SUBROUTINE '+self.fsub('setarraypointer',a.name)+'(p__,fobj__,dims__)')
                     groups = self.dimsgroups(a.dimstring,self.sdict,self.slist)
                     groupsprinted = [a.group]
                     for g in groups:
@@ -1144,7 +1146,7 @@ class PyWrap:
                             self.fw('  USE '+g)
                             groupsprinted.append(g)
                     self.fw('  USE '+a.group)
-                    self.fw('  integer('+self.isz+'):: cobj__')
+                    self.fw('  integer('+self.isz+'):: fobj__')
                     self.fw('  integer('+self.isz+'):: dims__('+repr(len(a.dims))+')')
 
                     if a.type == 'character':
@@ -1157,14 +1159,14 @@ class PyWrap:
                     self.fw('  return')
                     self.fw('end')
                     if re.search('fassign',a.attr):
-                        self.fw('SUBROUTINE '+self.fsub('getpointer',a.name)+'(i__,obj__)')
+                        self.fw('SUBROUTINE '+self.fsub('getarraypointer',a.name)+'(farray__,fobj__)')
                         self.fw('  USE '+a.group)
-                        self.fw('  integer('+self.isz+'):: i__,obj__')
+                        self.fw('  integer('+self.isz+'):: farray__,fobj__')
                         self.fw('  integer('+self.isz+'):: ss(%d)'%(len(a.dims)))
                         self.fw('  if (.not. associated('+a.name+')) return')
-                        self.fw('  call '+self.fsub('setarraypointersobj')+'(i__,'+a.name+')')
+                        self.fw('  call '+self.fsub('grabarraypointersobj')+'(farray__,'+a.name+')')
                         self.fw('  ss = shape('+a.name+')')
-                        self.fw('  call '+self.fsub('setarraydims')+'(i__,ss)')
+                        self.fw('  call '+self.fsub('setarraydims')+'(farray__,ss)')
                         self.fw('  return')
                         self.fw('end')
 
