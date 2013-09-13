@@ -13,20 +13,24 @@ much more versatile Python language.
 
 Release Notes:
 
-0.8.11: (beta)
+0.8.12: September 13, 2013
  - Added dyanamic arrays of strings
  - Updated the example
  - With debug, adds -O0 argument when compiling the wrapper
  - Checks the version of gfortran (skipping buggy older versions)
  - Imports PWpickle and PRpickle as PW and PR if PyPDB is not installed
+ - Cleaned up Portland Group complier options
+ - Some internal clean up, removing obsolete code
 
-0.8.10: November 30, 2012
+0.8.11: November 30, 2012
+ - callpythonfunc now raises errors if there are any problems
+
+0.8.10: August 7, 2012
  - Put the version number in an automatically generated file, version.py
  - Removed old cvs version numbers
  - Fix for darwin in setup.py when not using the system python
  - The compile_first argument can now include the fortran suffix
  - Now accepts files with the "for" suffix
- - callpythonfunc now raises errors if there are any problems
 
 0.8.9: June 29, 2012
  - Added getgroupsizes
