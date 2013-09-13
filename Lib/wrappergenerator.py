@@ -284,7 +284,7 @@ class PyWrap:
             for s in self.slist:
                 if s.dynamic or s.derivedtype:
                     self.cw('extern void '+fname(self.fsub('setpointer',s.name))+
-                            '(char *p,long *cobj__);')
+                            '(char *p,long *cobj__,npy_intp *nullit__);')
                 if s.dynamic:
                     self.cw('extern void '+fname(self.fsub('getpointer',s.name))+
                             '(ForthonObject **cobj__,long *obj,int *createnew);')
@@ -1096,15 +1096,20 @@ class PyWrap:
         # --- wrapper
         if self.f90:
             for s in self.slist:
-                self.fw('SUBROUTINE '+self.fsub('setpointer',s.name)+'(p__,cobj__)')
+                self.fw('SUBROUTINE '+self.fsub('setpointer',s.name)+'(p__,cobj__,nullit__)')
                 self.fw('  USE '+s.group)
                 self.fw('  integer('+self.isz+'):: cobj__')
+                self.fw('  INTEGER('+self.isz+'):: nullit__')
                 if s.type == 'character':
                     self.fw('  character(len='+s.dims[0].high+'),target:: p__')
                 else:
                     self.fw('  '+fvars.ftof(s.type)+',target:: p__')
                 if s.dynamic:
-                    self.fw('  '+s.name+' => p__')
+                    self.fw('  if (nullit__ == 0) then')
+                    self.fw('    '+s.name+' => p__')
+                    self.fw('  else')
+                    self.fw('    NULLIFY('+s.name+')')
+                    self.fw('  endif')
                 else:
                     self.fw('  '+s.name+' = p__')
                 self.fw('  RETURN')

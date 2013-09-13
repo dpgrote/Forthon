@@ -674,16 +674,17 @@ static int Forthon_setscalarderivedtype(ForthonObject *self,PyObject *value,
   long i = (long)closure;
   Fortranscalar *fscalar = &(self->fscalars[i]);
   void *d;
-  int createnew,nullit;
+  int createnew;
+  npy_intp nullit;
   PyObject *oldobj;
 
   /* Only create a new instance if a non-NULL value is passed in. */
-  /* With a NULL value, the object will be decref'ed so there's no */
+  /* With a NULL or None value, the object will be decref'ed so there's no */
   /* point creating a new one. */
   createnew = (value != NULL);
   ForthonPackage_updatederivedtype(self,i,createnew);
 
-  if (value == NULL) {
+  if (value == NULL || value == Py_None) {
     if (fscalar->dynamic) {
       if (fscalar->data != NULL) {
         /* Decrement the reference counter and nullify the fortran pointer. */
@@ -893,7 +894,8 @@ static int Forthon_clear(ForthonObject *self)
 {
   /* Note that this is called by Forthon_dealloc. */
   int i;
-  int createnew=0,nullit=1;
+  int createnew=0;
+  npy_intp nullit=1;
   void *d;
   PyObject *oldobj;
 

@@ -149,7 +149,7 @@ class ForthonDerivedType:
             # --- for non-dynamic derived types, the setpointer routine does a copy.
             for s in slist:
                 self.cw('extern void '+fname(self.fsub(t,'setpointer',s.name))+
-                        '(char *p,char *fobj,int *nullit);')
+                        '(char *p,char *fobj,npy_intp *nullit__);')
                 if s.dynamic:
                     self.cw('extern void '+fname(self.fsub(t,'getpointer',s.name))+
                             '(ForthonObject **cobj__,char *obj,int *createnew__);')
@@ -845,7 +845,7 @@ class ForthonDerivedType:
                 self.fw('  USE '+t.name+'module')
                 self.fw('  TYPE('+t.name+'):: obj__')
                 self.fw('  '+fvars.ftof(s.type)+',target:: p__')
-                self.fw('  INTEGER(4):: nullit__')
+                self.fw('  INTEGER('+isz+'):: nullit__')
                 if s.dynamic:
                     self.fw('  if (nullit__ == 0) then')
                     self.fw('    obj__%'+s.name+' => p__')
