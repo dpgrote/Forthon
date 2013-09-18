@@ -141,8 +141,8 @@ class ForthonDerivedType:
             self.cw('extern void '+fname(self.fsub(t,'nullifypointers'))+
                                                              '(char *fobj);')
             self.cw('extern PyObject *'+fname(self.fsub(t,'newf'))+'(void);')
-            self.cw('extern void '+fname(self.fsub(t,'deallocatef'))+'(void);')
-            self.cw('extern void '+fname(self.fsub(t,'nullifycobjf'))+'(void);')
+            self.cw('extern void '+fname(self.fsub(t,'deallocatef'))+'(char *);')
+            self.cw('extern void '+fname(self.fsub(t,'nullifycobjf'))+'(char *);')
 
             # --- setpointer and getpointer routine
             # --- Note that setpointer get written out for all derived types -

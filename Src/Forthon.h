@@ -93,14 +93,14 @@ typedef struct ForthonObject_ {
   Fortranscalar *fscalars;
   int narrays;
   Fortranarray *farrays;
-  void (*setdims)();
-  void (*setstaticdims)();
+  void (*setdims)(char *,struct ForthonObject_ *,long);
+  void (*setstaticdims)(struct ForthonObject_ *);
   PyMethodDef *fmethods;
   PyObject *scalardict,*arraydict;
   PyObject *__module__;
   char *fobj;
-  void (*fobjdeallocate)();
-  void (*nullifycobj)();
+  void (*fobjdeallocate)(char *);
+  void (*nullifycobj)(char *);
   int allocated;
   int garbagecollected;
 } ForthonObject;
