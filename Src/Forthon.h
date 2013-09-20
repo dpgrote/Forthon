@@ -276,7 +276,7 @@ static PyArrayObject *ForthonPackage_PyArrayFromFarray(Fortranarray *farray,void
                                      farray->type,NULL,
                                      data,itemsize,NPY_ARRAY_FARRAY,NULL);
 
-  if (farray->type == PyArray_STRING) PyMem_Free(dimensions);
+  if (farray->type == NPY_STRING) PyMem_Free(dimensions);
 
   return pya;
 }
