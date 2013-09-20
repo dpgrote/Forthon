@@ -8,6 +8,7 @@ typedef int Py_ssize_t;
 #define PY_SSIZE_T_MIN INT_MIN
 #endif
 
+#define NPY_NO_DEPRECATED_API 7
 #include <numpy/arrayobject.h>
 
 #ifndef NPY_ARRAY_BEHAVED_NS
@@ -144,17 +145,17 @@ static int Forthon_checksubroutineargtype(PyObject *pyobj,int type_num)
   if (PyArray_Check(pyobj)) {
     /* If the input argument is an array, make sure that it is of the */
     /* correct type. */
-    ret = (PyArray_TYPE(pyobj) == type_num);
+    ret = (PyArray_TYPE((PyArrayObject *)pyobj) == type_num);
     if (!ret) {
       /* If it is not, do some more checking. In some cases, LONG and INT */
       /* or DOUBLE and FLOAT may be equivalent. */
-      if (type_num == PyArray_LONG &&
-          PyArray_EquivTypenums(PyArray_LONG,PyArray_INT)) {
-        ret = (PyArray_TYPE(pyobj) == PyArray_INT);
+      if (type_num == NPY_LONG &&
+          PyArray_EquivTypenums(NPY_LONG,NPY_INT)) {
+        ret = (PyArray_TYPE((PyArrayObject *)pyobj) == NPY_INT);
         }
-      else if (type_num == PyArray_DOUBLE &&
-          PyArray_EquivTypenums(PyArray_DOUBLE,PyArray_FLOAT)) {
-        ret = (PyArray_TYPE(pyobj) == PyArray_FLOAT);
+      else if (type_num == NPY_DOUBLE &&
+          PyArray_EquivTypenums(NPY_DOUBLE,NPY_FLOAT)) {
+        ret = (PyArray_TYPE((PyArrayObject *)pyobj) == NPY_FLOAT);
         }
       }
     }
@@ -237,7 +238,7 @@ static PyArrayObject *ForthonPackage_PyArrayFromFarray(Fortranarray *farray,void
   PyArrayObject *pya;
 
   /* Strings need special treatment. */
-  if (farray->type == PyArray_STRING) {
+  if (farray->type == NPY_STRING) {
     /* First, note that strings are always treated as arrays. */
     /* The numpy array type is set so that the element size is the */
     /* length of the associated fortran character variable. If the */
@@ -368,7 +369,7 @@ static void ForthonPackage_staticarrays(ForthonObject *self)
                self->farrays[i].name);
         exit(EXIT_FAILURE);}
       /* For strings, replace nulls with blank spaces */
-      if (self->farrays[i].type == PyArray_STRING) {
+      if (self->farrays[i].type == NPY_STRING) {
         int itemsize = PyArray_ITEMSIZE(self->farrays[i].pya);
         if ((c=memchr(self->farrays[i].data.s,0,
                       PyArray_SIZE(self->farrays[i].pya)*itemsize)))
@@ -394,7 +395,7 @@ static void ForthonPackage_updatederivedtype(ForthonObject *self,long i,
 {
   ForthonObject *objid;
   PyObject *oldobj;
-  if (self->fscalars[i].type == PyArray_OBJECT && self->fscalars[i].dynamic) {
+  if (self->fscalars[i].type == NPY_OBJECT && self->fscalars[i].dynamic) {
     /* If dynamic, use getscalarpointer to get the current address of the */
     /* python object from the fortran variable. */
     /* This is needed since the association may have changed in fortran. */
@@ -427,7 +428,7 @@ static void Forthon_updatederivedtypeelements(ForthonObject *self,
   /* to the new. For static, the data is copied (and the structure is      */
   /* unchanged), but check for pointers in the subelements.                */
   for (i=0;i<self->nscalars;i++) {
-    if (self->fscalars[i].type == PyArray_OBJECT) {
+    if (self->fscalars[i].type == NPY_OBJECT) {
       if (self->fscalars[i].dynamic) {
         oldobj = (PyObject *)self->fscalars[i].data;
         self->fscalars[i].data = value->fscalars[i].data;
@@ -837,11 +838,13 @@ static int Forthon_setarray(ForthonObject *self,PyObject *value,
      * will do the appropriate truncation. This also fills in the string
      * with spaces to clear out any existing characters. */
     d = -1;
-    if (farray->type == PyArray_STRING) {
+    if (farray->type == NPY_STRING) {
       PyArray_FILLWBYTE(farray->pya,(int)' ');
       if (PyArray_ITEMSIZE(ax) < PyArray_ITEMSIZE(farray->pya)){
         d = PyArray_ITEMSIZE(farray->pya);
-        PyArray_ITEMSIZE(farray->pya) = PyArray_ITEMSIZE(ax);
+        /* PyArray_ITEMSIZE(farray->pya) = PyArray_ITEMSIZE(ax); */
+        /* Is there a better way to do this? */
+        (((PyArrayObject_fields *)(farray->pya))->descr->elsize) = PyArray_ITEMSIZE(ax);
         }
       }
     /* Copy input data into the array. This does the copy */
@@ -851,7 +854,8 @@ static int Forthon_setarray(ForthonObject *self,PyObject *value,
     r = PyArray_CopyInto(farray->pya,ax);
     /* Reset the value of the itemsize if it was          */
     /* changed to accomodate a string.                    */
-    if (d > -1) PyArray_ITEMSIZE(farray->pya) = d;
+    /* if (d > -1) PyArray_ITEMSIZE(farray->pya) = d; */
+    if (d > -1) (((PyArrayObject_fields *)(farray->pya))->descr->elsize) = d;
     Py_XDECREF(ax);
   }
   return r;
@@ -879,7 +883,7 @@ static int Forthon_traverse(ForthonObject *self,visitproc visit,void *arg)
   int i;
   int createnew=0;
   for (i=0;i<self->nscalars;i++) {
-    if (self->fscalars[i].type == PyArray_OBJECT &&
+    if (self->fscalars[i].type == NPY_OBJECT &&
         self->fscalars[i].dynamic &&
         strcmp(self->typename,self->fscalars[i].typename) != 0) {
       ForthonPackage_updatederivedtype(self,i,createnew);
@@ -902,7 +906,7 @@ static int Forthon_clear(ForthonObject *self)
   PyObject *oldobj;
 
   for (i=0;i<self->nscalars;i++) {
-    if (self->fscalars[i].type == PyArray_OBJECT)
+    if (self->fscalars[i].type == NPY_OBJECT)
       {
       ForthonPackage_updatederivedtype(self,i,createnew);
       if (self->fscalars[i].data != NULL) {
@@ -969,7 +973,7 @@ static PyObject *ForthonPackage_allocated(PyObject *_self_,PyObject *args)
   pyi = PyDict_GetItemString(self->scalardict,name);
   if (pyi != NULL) {
     PyArg_Parse(pyi,"i",&i);
-    if (self->fscalars[i].type == PyArray_OBJECT) {
+    if (self->fscalars[i].type == NPY_OBJECT) {
       ForthonPackage_updatederivedtype(self,(long)i,createnew);
       if (self->fscalars[i].data == NULL) {return Py_BuildValue("i",0);}
       else {
@@ -1016,15 +1020,15 @@ static PyObject *ForthonPackage_getdict(PyObject *_self_,PyObject *args)
   /* Py_DECREF(n); */
   for (j=0;j<self->nscalars;j++) {
     s = self->fscalars + j;
-    if (s->type == PyArray_DOUBLE) {
+    if (s->type == NPY_DOUBLE) {
       v = Forthon_getscalardouble(self,(void *)j);}
-    else if (s->type == PyArray_CDOUBLE) {
+    else if (s->type == NPY_CDOUBLE) {
       v = Forthon_getscalarcdouble(self,(void *)j);}
-    else if (s->type == PyArray_FLOAT) {
+    else if (s->type == NPY_FLOAT) {
       v = Forthon_getscalarfloat(self,(void *)j);}
-    else if (s->type == PyArray_CFLOAT) {
+    else if (s->type == NPY_CFLOAT) {
       v = Forthon_getscalarcfloat(self,(void *)j);}
-    else if (s->type == PyArray_OBJECT) {
+    else if (s->type == NPY_OBJECT) {
       v = Forthon_getscalarderivedtype(self,(void *)j);}
     else {
       v = Forthon_getscalarinteger(self,(void *)j);}
@@ -1103,7 +1107,7 @@ static PyObject *ForthonPackage_getfunctions(PyObject *_self_,PyObject *args)
 /* ######################################################################### */
 /* # Create routine to force assignment of arrays                            */
 /* The routines forces assignment of arrays. It takes two                    */
-/* arguments, a string (the array name) and a PyArray_object.                */
+/* arguments, a string (the array name) and a NPY_object.                    */
 /* For dynamic arrays, the array is pointed to the input array               */
 /* regardless of its dimension sizes. For static arrays, a copy              */
 /* is done similar to that done in gchange, where what ever                  */
@@ -1115,7 +1119,7 @@ static PyObject *ForthonPackage_forceassign(PyObject *_self_,PyObject *args)
   ForthonObject *self = (ForthonObject *)_self_;
   long i;
   int j,r=-1;
-  npy_intp *d,*pyadims,*axdims;
+  npy_intp *pyadims,*axdims;
   PyObject *pyobj;
   PyArrayObject *ax;
   PyObject *pyi;
@@ -1144,21 +1148,23 @@ static PyObject *ForthonPackage_forceassign(PyObject *_self_,PyObject *args)
       /* This code ensures that the dimensions of ax        */
       /* remain intact since there may be other references  */
       /* to it.                                             */
-      d = (npy_intp *)PyMem_Malloc(self->farrays[i].nd*sizeof(npy_intp));
+      pyadims = PyDimMem_NEW(PyArray_NDIM(ax));
+      axdims = PyDimMem_NEW(PyArray_NDIM(ax));
       for (j=0;j<PyArray_NDIM(ax);j++) {
-        if (PyArray_DIMS(self->farrays[i].pya)[j] < PyArray_DIMS(ax)[j]) {
-          d[j] = PyArray_DIMS(self->farrays[i].pya)[j];}
+        pyadims[j] = PyArray_DIM(self->farrays[i].pya,j);
+        axdims[j] = PyArray_DIM(ax,j);
+        if (PyArray_DIM(ax,j) < PyArray_DIM(self->farrays[i].pya,j)) {
+          PyArray_DIMS(self->farrays[i].pya)[j] = PyArray_DIM(ax,j);}
         else {
-          d[j] = PyArray_DIMS(ax)[j];}
+          PyArray_DIMS(ax)[j] = PyArray_DIM(self->farrays[i].pya,j);}
         }
-      pyadims = PyArray_DIMS(self->farrays[i].pya);
-      axdims = PyArray_DIMS(ax);
-      PyArray_DIMS(self->farrays[i].pya) = d;
-      PyArray_DIMS(ax) = d;
       r = PyArray_CopyInto(self->farrays[i].pya,ax);
-      PyArray_DIMS(self->farrays[i].pya) = pyadims;
-      PyArray_DIMS(ax) = axdims;
-      PyMem_Free(d);
+      for (j=0;j<PyArray_NDIM(ax);j++) {
+        PyArray_DIMS(self->farrays[i].pya)[j] = pyadims[j];
+        PyArray_DIMS(ax)[j] = axdims[j];
+        }
+      PyDimMem_FREE(pyadims);
+      PyDimMem_FREE(axdims);
       Py_XDECREF(ax);
       if (r == 0) {
         returnnone;}
@@ -1194,7 +1200,7 @@ static PyObject *ForthonPackage_gallot(PyObject *_self_,PyObject *args)
   for (i=0;i<self->nscalars;i++) {
     if (strcmp(s,self->fscalars[i].group)==0 || strcmp(s,"*")==0) {
       if (!(self->fscalars[i].dynamic)) {
-        if (self->fscalars[i].type == PyArray_OBJECT &&
+        if (self->fscalars[i].type == NPY_OBJECT &&
             self->fscalars[i].data != NULL) {
           r = 1;
           star = Py_BuildValue("(s)","*");
@@ -1241,18 +1247,18 @@ static PyObject *ForthonPackage_gallot(PyObject *_self_,PyObject *args)
         /* of whether the initial value is zero since the initialization */
         /* doesn't need to be done then. Not having the check gaurantees */
         /* that it is set correctly, but is slower. */
-        if (self->farrays[i].type == PyArray_STRING) {
+        if (self->farrays[i].type == NPY_STRING) {
           PyArray_FILLWBYTE(self->farrays[i].pya,(int)' ');
           }
-        else if (self->farrays[i].type == PyArray_LONG) {
+        else if (self->farrays[i].type == NPY_LONG) {
           for (j=0;j<PyArray_SIZE(self->farrays[i].pya);j++)
             *((long *)(PyArray_BYTES(self->farrays[i].pya))+j) = self->farrays[i].initvalue;
           }
-        else if (self->farrays[i].type == PyArray_DOUBLE) {
+        else if (self->farrays[i].type == NPY_DOUBLE) {
           for (j=0;j<PyArray_SIZE(self->farrays[i].pya);j++)
             *((double *)(PyArray_BYTES(self->farrays[i].pya))+j) = self->farrays[i].initvalue;
           }
-        else if (self->farrays[i].type == PyArray_FLOAT) {
+        else if (self->farrays[i].type == NPY_FLOAT) {
           for (j=0;j<PyArray_SIZE(self->farrays[i].pya);j++)
             *((float *)(PyArray_BYTES(self->farrays[i].pya))+j) = (float)self->farrays[i].initvalue;
           }
@@ -1280,7 +1286,7 @@ static PyObject *ForthonPackage_gchange(PyObject *_self_,PyObject *args)
   int r=0;
   PyArrayObject *ax;
   int j,rt,changeit,freeit,iverbose=0;
-  npy_intp *d,*pyadims,*axdims;
+  npy_intp *pyadims,*axdims;
   PyObject *star;
 
   if (!PyArg_ParseTuple(args,"|si",&s,&iverbose)) return NULL;
@@ -1291,7 +1297,7 @@ static PyObject *ForthonPackage_gchange(PyObject *_self_,PyObject *args)
   for (i=0;i<self->nscalars;i++) {
     if (strcmp(s,self->fscalars[i].group)==0 || strcmp(s,"*")==0) {
       if (!(self->fscalars[i].dynamic)) {
-        if (self->fscalars[i].type == PyArray_OBJECT &&
+        if (self->fscalars[i].type == NPY_OBJECT &&
             self->fscalars[i].data != NULL) {
           r = 1;
           star = Py_BuildValue("(s)","*");
@@ -1344,18 +1350,18 @@ static PyObject *ForthonPackage_gchange(PyObject *_self_,PyObject *args)
         /* of whether the initial value is zero since the initialization */
         /* doesn't need to be done then. Not having the check gaurantees */
         /* that it is set correctly, but is slower. */
-        if (self->farrays[i].type == PyArray_STRING) {
+        if (self->farrays[i].type == NPY_STRING) {
           PyArray_FILLWBYTE(ax,(int)' ');
           }
-        else if (self->farrays[i].type == PyArray_LONG) {
+        else if (self->farrays[i].type == NPY_LONG) {
           for (j=0;j<PyArray_SIZE(ax);j++)
             *((long *)(PyArray_BYTES(ax))+j) = self->farrays[i].initvalue;
           }
-        else if (self->farrays[i].type == PyArray_DOUBLE) {
+        else if (self->farrays[i].type == NPY_DOUBLE) {
           for (j=0;j<PyArray_SIZE(ax);j++)
             *((double *)(PyArray_BYTES(ax))+j) = self->farrays[i].initvalue;
           }
-        else if (self->farrays[i].type == PyArray_FLOAT) {
+        else if (self->farrays[i].type == NPY_FLOAT) {
           for (j=0;j<PyArray_SIZE(ax);j++)
             *((float *)(PyArray_BYTES(ax))+j) = (float)self->farrays[i].initvalue;
           }
@@ -1371,24 +1377,26 @@ static PyObject *ForthonPackage_gchange(PyObject *_self_,PyObject *args)
         /* remain intact since there may be other references  */
         /* to it.                                             */
         if (self->farrays[i].pya != NULL) {
-          d = (npy_intp *)PyMem_Malloc(self->farrays[i].nd*sizeof(npy_intp));
-          for (j=0;j<self->farrays[i].nd;j++) {
-            if (PyArray_DIMS(ax)[j] < PyArray_DIMS(self->farrays[i].pya)[j]) {
-              d[j] = PyArray_DIMS(ax)[j];}
+          pyadims = PyDimMem_NEW(PyArray_NDIM(ax));
+          axdims = PyDimMem_NEW(PyArray_NDIM(ax));
+          for (j=0;j<PyArray_NDIM(ax);j++) {
+            pyadims[j] = PyArray_DIM(self->farrays[i].pya,j);
+            axdims[j] = PyArray_DIM(ax,j);
+            if (PyArray_DIM(ax,j) < PyArray_DIM(self->farrays[i].pya,j)) {
+              PyArray_DIMS(self->farrays[i].pya)[j] = PyArray_DIM(ax,j);}
             else {
-              d[j] = PyArray_DIMS(self->farrays[i].pya)[j];}
+              PyArray_DIMS(ax)[j] = PyArray_DIM(self->farrays[i].pya,j);}
             }
-          pyadims = PyArray_DIMS(self->farrays[i].pya);
-          axdims = PyArray_DIMS(ax);
-          PyArray_DIMS(self->farrays[i].pya) = d;
-          PyArray_DIMS(ax) = d;
           rt = PyArray_CopyInto(ax,self->farrays[i].pya);
           if (rt)
             printf("gchange: error copying data for the array %s",
                    self->farrays[i].name);
-          PyArray_DIMS(self->farrays[i].pya) = pyadims;
-          PyArray_DIMS(ax) = axdims;
-          PyMem_Free(d);
+          for (j=0;j<PyArray_NDIM(ax);j++) {
+            PyArray_DIMS(self->farrays[i].pya)[j] = pyadims[j];
+            PyArray_DIMS(ax)[j] = axdims[j];
+            }
+          PyDimMem_FREE(pyadims);
+          PyDimMem_FREE(axdims);
           }
         /* Free the old array */
         Forthon_freearray(self,(void *)i);
@@ -1751,10 +1759,10 @@ static PyObject *ForthonPackage_getstrides(PyObject *_self_,PyObject *args)
   /* Note that the second argument gives the dimensions of the 1-d array. */
   dims = (npy_intp *)PyMem_Malloc(sizeof(npy_intp));
   dims[0] = (npy_intp)(PyArray_NDIM(ax));
-  result = PyArray_SimpleNew((int)1,dims,PyArray_LONG);
+  result = (PyObject *)PyArray_SimpleNew((int)1,dims,NPY_LONG);
   PyMem_Free(dims);
 
-  strides = (long *)PyArray_BYTES(result);
+  strides = (long *)PyArray_BYTES((PyArrayObject *)result);
   for (i=0;i<PyArray_NDIM(ax);i++)
     strides[i] = (long)(PyArray_STRIDES(ax)[i]);
 
@@ -1773,7 +1781,7 @@ static PyObject *ForthonPackage_printtypenum(PyObject *_self_,PyObject *args)
     return NULL;
     }
 
-  printf("Typenum = %d\n",PyArray_TYPE(pyobj));
+  printf("Typenum = %d\n",PyArray_TYPE((PyArrayObject *)pyobj));
 
   returnnone;
 }
@@ -1828,7 +1836,7 @@ static PyObject *ForthonPackage_gfree(PyObject *_self_,PyObject *args)
   for (i=0;i<self->nscalars;i++) {
     if (strcmp(s,self->fscalars[i].group)==0 || strcmp(s,"*")==0) {
       if (!(self->fscalars[i].dynamic)) {
-        if (self->fscalars[i].type == PyArray_OBJECT &&
+        if (self->fscalars[i].type == NPY_OBJECT &&
             self->fscalars[i].data != NULL) {
           r = 1;
           star = Py_BuildValue("(s)","*");
@@ -1867,7 +1875,7 @@ static PyObject *ForthonPackage_gsetdims(PyObject *_self_,PyObject *args)
   for (i=0;i<self->nscalars;i++) {
     if (strcmp(s,self->fscalars[i].group)==0 || strcmp(s,"*")==0) {
       if (!(self->fscalars[i].dynamic)) {
-        if (self->fscalars[i].type == PyArray_OBJECT &&
+        if (self->fscalars[i].type == NPY_OBJECT &&
             self->fscalars[i].data != NULL) {
           star = Py_BuildValue("(s)","*");
           ForthonPackage_gsetdims((PyObject *)self->fscalars[i].data,star);
@@ -1900,17 +1908,17 @@ static PyObject *ForthonPackage_getvartype(PyObject *_self_,PyObject *args)
   pyi = PyDict_GetItemString(self->scalardict,name);
   if (pyi != NULL) {
     PyArg_Parse(pyi,"i",&i);
-    if (self->fscalars[i].type == PyArray_STRING) {
+    if (self->fscalars[i].type == NPY_STRING) {
       return PyUnicode_FromString("character");}
-    else if (self->fscalars[i].type == PyArray_LONG) {
+    else if (self->fscalars[i].type == NPY_LONG) {
       return PyUnicode_FromString("integer");}
-    else if (self->fscalars[i].type == PyArray_DOUBLE) {
+    else if (self->fscalars[i].type == NPY_DOUBLE) {
       return PyUnicode_FromString("double");}
-    else if (self->fscalars[i].type == PyArray_CDOUBLE) {
+    else if (self->fscalars[i].type == NPY_CDOUBLE) {
       return PyUnicode_FromString("double complex");}
-    else if (self->fscalars[i].type == PyArray_FLOAT) {
+    else if (self->fscalars[i].type == NPY_FLOAT) {
       return PyUnicode_FromString("float");}
-    else if (self->fscalars[i].type == PyArray_CFLOAT) {
+    else if (self->fscalars[i].type == NPY_CFLOAT) {
       return PyUnicode_FromString("float complex");}
     }
 
@@ -1919,19 +1927,19 @@ static PyObject *ForthonPackage_getvartype(PyObject *_self_,PyObject *args)
   pyi = PyDict_GetItemString(self->arraydict,name);
   if (pyi != NULL) {
     PyArg_Parse(pyi,"i",&i);
-    if (self->farrays[i].type == PyArray_STRING) {
+    if (self->farrays[i].type == NPY_STRING) {
       charsize = (int)(self->farrays[i].dimensions[0]);
       sprintf(charstring,"character(%d)",charsize);
       return PyUnicode_FromString(charstring);}
-    else if (self->farrays[i].type == PyArray_LONG) {
+    else if (self->farrays[i].type == NPY_LONG) {
       return PyUnicode_FromString("integer");}
-    else if (self->farrays[i].type == PyArray_DOUBLE) {
+    else if (self->farrays[i].type == NPY_DOUBLE) {
       return PyUnicode_FromString("double");}
-    else if (self->farrays[i].type == PyArray_CDOUBLE) {
+    else if (self->farrays[i].type == NPY_CDOUBLE) {
       return PyUnicode_FromString("double complex");}
-    else if (self->farrays[i].type == PyArray_FLOAT) {
+    else if (self->farrays[i].type == NPY_FLOAT) {
       return PyUnicode_FromString("float");}
-    else if (self->farrays[i].type == PyArray_CFLOAT) {
+    else if (self->farrays[i].type == NPY_CFLOAT) {
       return PyUnicode_FromString("float complex");}
     }
 
@@ -1997,20 +2005,20 @@ static PyObject *ForthonPackage_listvar(PyObject *_self_,PyObject *args)
     stringconcatanddel(&doc,"\nAttributes:");
     stringconcatanddel(&doc,self->fscalars[i].attributes);
     stringconcatanddel(&doc,"\nType:       ");
-    if (self->fscalars[i].type == PyArray_STRING) {
+    if (self->fscalars[i].type == NPY_STRING) {
       stringconcatanddel(&doc,"character");}
-    else if (self->fscalars[i].type == PyArray_LONG) {
+    else if (self->fscalars[i].type == NPY_LONG) {
       stringconcatanddel(&doc,"integer");}
-    else if (self->fscalars[i].type == PyArray_DOUBLE) {
+    else if (self->fscalars[i].type == NPY_DOUBLE) {
       stringconcatanddel(&doc,"double");}
-    else if (self->fscalars[i].type == PyArray_CDOUBLE) {
+    else if (self->fscalars[i].type == NPY_CDOUBLE) {
       stringconcatanddel(&doc,"double complex");}
-    else if (self->fscalars[i].type == PyArray_FLOAT) {
+    else if (self->fscalars[i].type == NPY_FLOAT) {
       stringconcatanddel(&doc,"float");}
-    else if (self->fscalars[i].type == PyArray_CFLOAT) {
+    else if (self->fscalars[i].type == NPY_CFLOAT) {
       stringconcatanddel(&doc,"float complex");}
     stringconcatanddel(&doc,"\nAddress:    ");
-    if (self->fscalars[i].type == PyArray_OBJECT)
+    if (self->fscalars[i].type == NPY_OBJECT)
       ForthonPackage_updatederivedtype(self,i,1);
     stringconcatanddellong(&doc,(long)(self->fscalars[i].data));
     stringconcatanddel(&doc,"\nComment:\n");
@@ -2041,21 +2049,21 @@ static PyObject *ForthonPackage_listvar(PyObject *_self_,PyObject *args)
     stringconcatanddel(&doc,")");
 
     stringconcatanddel(&doc,"\nType:       ");
-    if (self->farrays[i].type == PyArray_STRING) {
+    if (self->farrays[i].type == NPY_STRING) {
       charsize = (int)(self->farrays[i].dimensions[0]);
       sprintf(charstring,"character(%d)",charsize);
       stringconcatanddel(&doc,charstring);
       /* stringconcatanddellong(&doc,(long)(self->farrays[i].dimensions[0])); */
       }
-    else if (self->farrays[i].type == PyArray_LONG) {
+    else if (self->farrays[i].type == NPY_LONG) {
       stringconcatanddel(&doc,"integer");}
-    else if (self->farrays[i].type == PyArray_DOUBLE) {
+    else if (self->farrays[i].type == NPY_DOUBLE) {
       stringconcatanddel(&doc,"double");}
-    else if (self->farrays[i].type == PyArray_CDOUBLE) {
+    else if (self->farrays[i].type == NPY_CDOUBLE) {
       stringconcatanddel(&doc,"double complex");}
-    else if (self->farrays[i].type == PyArray_FLOAT) {
+    else if (self->farrays[i].type == NPY_FLOAT) {
       stringconcatanddel(&doc,"float");}
-    else if (self->farrays[i].type == PyArray_CFLOAT) {
+    else if (self->farrays[i].type == NPY_CFLOAT) {
       stringconcatanddel(&doc,"float complex");}
 
     stringconcatanddel(&doc,"\nAddress:    ");
@@ -2270,15 +2278,15 @@ static PyObject *Forthon_getattro(ForthonObject *self,PyObject *oname)
       if (self->fobj == NULL) self->fscalars[i].getaction();
       else                    self->fscalars[i].getaction((self->fobj));
       }
-    if (self->fscalars[i].type == PyArray_DOUBLE) {
+    if (self->fscalars[i].type == NPY_DOUBLE) {
       return Forthon_getscalardouble(self,(void *)i);}
-    else if (self->fscalars[i].type == PyArray_CDOUBLE) {
+    else if (self->fscalars[i].type == NPY_CDOUBLE) {
       return Forthon_getscalarcdouble(self,(void *)i);}
-    else if (self->fscalars[i].type == PyArray_FLOAT) {
+    else if (self->fscalars[i].type == NPY_FLOAT) {
       return Forthon_getscalarfloat(self,(void *)i);}
-    else if (self->fscalars[i].type == PyArray_CFLOAT) {
+    else if (self->fscalars[i].type == NPY_CFLOAT) {
       return Forthon_getscalarcfloat(self,(void *)i);}
-    else if (self->fscalars[i].type == PyArray_OBJECT) {
+    else if (self->fscalars[i].type == NPY_OBJECT) {
       return Forthon_getscalarderivedtype(self,(void *)i);}
     else {
       return Forthon_getscalarinteger(self,(void *)i);}
@@ -2351,15 +2359,15 @@ static int Forthon_setattro(ForthonObject *self,PyObject *oname,PyObject *v)
   pyi = PyDict_GetItem(self->scalardict,oname);
   if (pyi != NULL) {
     PyArg_Parse(pyi,"l",&i);
-    if (self->fscalars[i].type == PyArray_DOUBLE) {
+    if (self->fscalars[i].type == NPY_DOUBLE) {
       return Forthon_setscalardouble(self,v,(void *)i);}
-    else if (self->fscalars[i].type == PyArray_CDOUBLE) {
+    else if (self->fscalars[i].type == NPY_CDOUBLE) {
       return Forthon_setscalarcdouble(self,v,(void *)i);}
-    else if (self->fscalars[i].type == PyArray_FLOAT) {
+    else if (self->fscalars[i].type == NPY_FLOAT) {
       return Forthon_setscalarfloat(self,v,(void *)i);}
-    else if (self->fscalars[i].type == PyArray_CFLOAT) {
+    else if (self->fscalars[i].type == NPY_CFLOAT) {
       return Forthon_setscalarcfloat(self,v,(void *)i);}
-    else if (self->fscalars[i].type == PyArray_OBJECT) {
+    else if (self->fscalars[i].type == NPY_OBJECT) {
       return Forthon_setscalarderivedtype(self,v,(void *)i);}
     else {
       return Forthon_setscalarinteger(self,v,(void *)i);}

@@ -201,7 +201,7 @@ class ForthonDerivedType:
                     getaction = 'NULL'
                 else:
                     getaction = '*'+fname(self.fsub(t,'getaction',s.name))
-                self.cw('obj->fscalars[%d].type = PyArray_%s;'%(i,fvars.ftop(s.type)))
+                self.cw('obj->fscalars[%d].type = NPY_%s;'%(i,fvars.ftop(s.type)))
                 self.cw('obj->fscalars[%d].typename = "%s";'%(i,s.type))
                 self.cw('obj->fscalars[%d].name = "%s";'%(i,s.name))
                 self.cw('obj->fscalars[%d].data = NULL;'%i)
@@ -243,7 +243,7 @@ class ForthonDerivedType:
                     getaction = '*'+fname(self.fsub(t,'getaction',a.name))
                 if a.data and a.dynamic: initvalue = a.data[1:-1]
                 else:                    initvalue = '0'
-                self.cw('obj->farrays[%d].type = PyArray_%s;'%(i,fvars.ftop(a.type)))
+                self.cw('obj->farrays[%d].type = NPY_%s;'%(i,fvars.ftop(a.type)))
                 self.cw('obj->farrays[%d].dynamic = %d;'%(i,a.dynamic))
                 self.cw('obj->farrays[%d].nd = %d;'%(i,len(a.dims)))
                 self.cw('obj->farrays[%d].dimensions = (npy_intp*)NULL;'%i)

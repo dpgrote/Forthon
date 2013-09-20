@@ -323,7 +323,7 @@ class PyWrap:
             self.cw('Fortranscalar '+self.pname+'_fscalars['+repr(len(self.slist))+']={')
             for i in range(len(self.slist)):
                 s = self.slist[i]
-                self.cw('{PyArray_%s,'%fvars.ftop(s.type) +
+                self.cw('{NPY_%s,'%fvars.ftop(s.type) +
                          '"%s",'%s.type +
                          '"%s",'%s.name +
                          'NULL,' +
@@ -352,7 +352,7 @@ class PyWrap:
                     initvalue = a.data[1:-1]
                 else:
                     initvalue = '0'
-                self.cw('{PyArray_%s,'%fvars.ftop(a.type) +
+                self.cw('{NPY_%s,'%fvars.ftop(a.type) +
                           '%d,'%a.dynamic +
                           '%d,'%len(a.dims) +
                           'NULL,' +
@@ -519,17 +519,17 @@ class PyWrap:
             for i in range(len(f.args)):
                 if not fvars.isderivedtype(f.args[i]):
                     self.cw('  if (!Forthon_checksubroutineargtype(pyobj['+repr(i)+'],'+
-                        'PyArray_'+fvars.ftop(f.args[i].type)+')) {')
+                        'NPY_'+fvars.ftop(f.args[i].type)+')) {')
                     self.cw('    sprintf(e,"Argument '+f.args[i].name+ ' in '+f.name+
                                          ' has the wrong type");')
                     self.cw('    PyErr_SetString(ErrorObject,e);')
                     self.cw('    goto err;}')
                     if f.function == 'fsub':
                         self.cw('  ax['+repr(i)+'] = FARRAY_FROMOBJECT('+
-                              'pyobj['+repr(i)+'], PyArray_'+fvars.ftop(f.args[i].type)+');')
+                              'pyobj['+repr(i)+'], NPY_'+fvars.ftop(f.args[i].type)+');')
                     elif f.function == 'csub':
                         self.cw('  ax['+repr(i)+']=(PyArrayObject *)PyArray_ContiguousFromObject('+
-                              'pyobj['+repr(i)+'], PyArray_'+fvars.ftop(f.args[i].type)+',0,0);')
+                              'pyobj['+repr(i)+'], NPY_'+fvars.ftop(f.args[i].type)+',0,0);')
                     self.cw('  if (ax['+repr(i)+'] == NULL) {')
                     self.cw('    sprintf(e,"There is an error in argument '+f.args[i].name+
                                          ' in '+f.name+'");')
