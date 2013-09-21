@@ -11,6 +11,8 @@ typedef int Py_ssize_t;
 #define NPY_NO_DEPRECATED_API 7
 #include <numpy/arrayobject.h>
 
+/* The NPY_ARRAY_ versions were created in numpy version 1.7 */
+/* This is needed for backwards compatibility. */
 #ifndef NPY_ARRAY_BEHAVED_NS
 #define NPY_ARRAY_BEHAVED_NS NPY_BEHAVED_NS
 #define NPY_ARRAY_C_CONTIGUOUS NPY_C_CONTIGUOUS
@@ -18,24 +20,15 @@ typedef int Py_ssize_t;
 #define NPY_ARRAY_FARRAY NPY_FARRAY
 #endif
 
-#define MAKECONTIGUOUS(a) PyArray_UpdateFlags(a,(NPY_ARRAY_C_CONTIGUOUS | NPY_ARRAY_F_CONTIGUOUS))
-
 #include <pythonrun.h>
 #include "forthonf2c.h"
 
 static PyObject *ErrorObject;
-#define onError(message)                                      \
-   { PyErr_SetString(ErrorObject,message); return NULL;}
 
 #define returnnone {Py_INCREF(Py_None);return Py_None;}
-#define MYSTRCMP(S1,L1,S2,L2) (L1==L2?strncmp(S1,S2,L1)==0:0)
 
 /* This converts a python object into a python array,         */
 /* requesting fortran ordering.                               */
-/* If PyArray_FromObject returns NULL meaning the the input   */
-/* can not be converted into an array, A1 is also set to NULL.*/
-/* This probably should be modified to include casting if it  */
-/* is needed.                                                 */
 static PyArrayObject* FARRAY_FROMOBJECT(PyObject *A2, int ARRAY_TYPE) {
   PyArrayObject *A1;
   PyArray_Descr *descr;
@@ -107,7 +100,7 @@ typedef struct ForthonObject_ {
 } ForthonObject;
 static PyTypeObject ForthonType;
 
-/* This is needed to settle circular dependencies */
+/* This is needed here to settle circular dependencies */
 static PyObject *Forthon_getattro(ForthonObject *self,PyObject *name);
 static int Forthon_setattro(ForthonObject *self,PyObject *name,PyObject *v);
 static PyMethodDef *getForthonPackage_methods(void);
@@ -139,6 +132,7 @@ static int strfind(char *v,char *s)
 
 /* ###################################################################### */
 /* Utility routines used in wrapping the subroutines                      */
+/* It checks if the argument can be cast to the desired type.             */
 static int Forthon_checksubroutineargtype(PyObject *pyobj,int type_num)
 {
   int ret;
@@ -167,6 +161,11 @@ static int Forthon_checksubroutineargtype(PyObject *pyobj,int type_num)
   return ret;
 }
 
+/* ###################################################################### */
+/* In some cases, when an array is passed from Python to Fortran, for example */
+/* if the Python array is not contiguous or not in Fortran ordering, a temporary */
+/* copy of the array is made and passed into Fortrh. This routine copies */
+/* the data back into the original Python array after the Fortran routine finishes. */
 static void Forthon_restoresubroutineargs(int n,PyObject **pyobj,
                                           PyArrayObject **ax)
 {
@@ -284,6 +283,9 @@ static PyArrayObject *ForthonPackage_PyArrayFromFarray(Fortranarray *farray,void
 /* ######################################################################### */
 /* # Update the data element of a dynamic, fortran assignable array.         */
 /* ------------------------------------------------------------------------- */
+/* ######################################################################### */
+/* Check if the dimensions as saved in the farray match the dimension of the */
+/* associated numpy array. */
 static int dimensionsmatch(Fortranarray *farray)
 {
   int i;
@@ -294,7 +296,10 @@ static int dimensionsmatch(Fortranarray *farray)
   return result;
 }
 
-/* ------------------------------------------------------------------------- */
+/* ######################################################################### */
+/* Check if the array that the Fortran variable points to has been changed. */
+/* If it points to a new array, create a numpy array to refer to it. If it */
+/* was deallocated, leave the attribute unassociated. */
 static void ForthonPackage_updatearray(ForthonObject *self,long i)
 {
   Fortranarray *farray = &(self->farrays[i]);
@@ -347,7 +352,8 @@ static void ForthonPackage_allotdims(ForthonObject *self)
 }
 
 /* ######################################################################### */
-/* # Static array initialization routines */
+/* Static array initialization routines. Create a numpy array for each */
+/* static array. */
 static void ForthonPackage_staticarrays(ForthonObject *self)
 {
   int i;
@@ -390,6 +396,7 @@ static void ForthonPackage_staticarrays(ForthonObject *self)
 
 /* ######################################################################### */
 /* # Update the data element of a derived type.                              */
+/* Check if the object that the Fortran variable referred to has changed. */
 static void ForthonPackage_updatederivedtype(ForthonObject *self,long i,
                                              int createnew)
 {
@@ -415,7 +422,8 @@ static void ForthonPackage_updatederivedtype(ForthonObject *self,long i,
       }
     }
 }
-/* ------------------------------------------------------------------------- */
+
+/* ######################################################################### */
 static void Forthon_updatederivedtypeelements(ForthonObject *self,
                                               ForthonObject *value)
 {
@@ -520,7 +528,7 @@ static PyObject *Forthon_getarray(ForthonObject *self,void *closure)
   Py_XINCREF(farray->pya);
   if (PyArray_NDIM(farray->pya)==1 &&
       PyArray_STRIDES(farray->pya)[0]==PyArray_ITEMSIZE(farray->pya))
-    MAKECONTIGUOUS(farray->pya);
+    PyArray_UpdateFlags(farray->pya,(NPY_ARRAY_C_CONTIGUOUS | NPY_ARRAY_F_CONTIGUOUS));
   return (PyObject *)farray->pya;
 }
 /* ------------------------------------------------------------------------- */
@@ -877,7 +885,7 @@ static int Forthon_setarraydict(ForthonObject *self,void *closure)
 }
 */
 
-/* ------------------------------------------------------------------------- */
+/* ######################################################################### */
 static int Forthon_traverse(ForthonObject *self,visitproc visit,void *arg)
 {
   int i;
