@@ -18,6 +18,7 @@ typedef int Py_ssize_t;
 #define NPY_ARRAY_C_CONTIGUOUS NPY_C_CONTIGUOUS
 #define NPY_ARRAY_F_CONTIGUOUS NPY_F_CONTIGUOUS
 #define NPY_ARRAY_FARRAY NPY_FARRAY
+typedef PyArrayObject PyArrayObject_fields;
 #endif
 
 #include <pythonrun.h>
