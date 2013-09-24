@@ -39,9 +39,8 @@ with open('Lib/version.py','w') as ff:
 # --- extension to be installed, distutils will put the scripts in
 # --- /usr/lib/... instead of /usr/lib64.
 if distutils.sysconfig.get_config_vars()["LIBDEST"].find('lib64') != -1:
-    import distutils.command.install
-    INSTALL_SCHEMES['unix_prefix']['purelib'] = '$base/lib64/python$py_version_short/site-packages'
-    INSTALL_SCHEMES['unix_home']['purelib'] = '$base/lib64/python$py_version_short/site-packages'
+    for scheme in INSTALL_SCHEMES.values():
+        scheme['purelib'] = scheme['platlib']
 
 # --- With this, the data_files listed in setup will be installed in
 # --- the usual place in site-packages.
