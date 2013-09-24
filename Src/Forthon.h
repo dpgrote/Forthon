@@ -8,7 +8,7 @@ typedef int Py_ssize_t;
 #define PY_SSIZE_T_MIN INT_MIN
 #endif
 
-#define NPY_NO_DEPRECATED_API 7
+#define NPY_NO_DEPRECATED_API 8
 #include <numpy/arrayobject.h>
 
 /* The NPY_ARRAY_ versions were created in numpy version 1.7 */
