@@ -174,6 +174,9 @@ sys.argv += ['--build-temp',build_temp]
 # --- the build directory.
 interfacefile = fixpath(os.path.join(upbuilddir,interfacefile))
 
+# --- Get path to fortranfile relative to the build directory.
+upfortranfile = os.path.join(upbuilddir,fortranfile)
+
 # --- Pick the fortran compiler
 fcompiler = FCompiler(machine=machine,
                       debug=debug,
@@ -211,9 +214,11 @@ for d in dependencies:
 # --- Loop over extrafiles. For each fortran file, append the object name
 # --- to be used in the makefile and for setup. For each C file, add to a
 # --- list to be included in setup. For each object file, add to the list
-# --- of extra objects passed to setup.
+# --- of extra objects passed to setup. Make a string of the extra files,
+# --- with paths relative to the build directory.
 # --- Also, for fortran files, keep a list of suffices so that the appropriate
 # --- build rules can be added to the makefile.
+extrafilesstr = ''
 extraobjectsstr = ''
 extraobjectslist = []
 extracfiles = []
@@ -223,6 +228,7 @@ if machine == 'win32':
 else:
     osuffix = '.o'
 for f in extrafiles:
+    extrafilesstr = extrafilesstr + ' ' + os.path.join(upbuilddir,f)
     root,suffix = os.path.splitext(f)
     if suffix[1:] in ['o','obj']:
         extraobjectsstr = extraobjectsstr + ' ' + root + osuffix
@@ -324,6 +330,11 @@ if len(fortransuffices) > 2:
         del suffix,suffixpath,ff
 
 # --- First, create Makefile.pkg which has all the needed definitions
+# --- Note the two rules for the pymodule file. The first specifies that the
+# --- pymodule.c file should be recreated if the .v file was updatd.
+# --- The second changes the timestamp of the pymodule.c to force a rebuild
+# --- of the .so during the distutils setup if any of the source files have
+# --- been updated.
 makefiletext = """
 %(definesstr)s
 
@@ -341,11 +352,11 @@ Forthon.c:%(forthonhome)s%(pathsep)sForthon.c
 	%(pypreproc)s %(forthonhome)s%(pathsep)sForthon.c Forthon.c
 
 %(pkg)s_p%(osuffix)s:%(pkg)s_p.%(free_suffix)s %(wrapperdependency)s
-	%(f90free)s %(popt)s %(fargs)s -c %(pkg)s_p.%(free_suffix)s
-%(pkg)spymodule.c %(pkg)s_p.%(free_suffix)s:%(interfacefile)s
-	%(forthon)s --realsize %(realsize)s \\
-	%(f90)s -t %(machine)s %(forthonargs)s %(initialgallot)s \\
-	%(othermacstr)s %(dep)s %(pkg)s %(interfacefile)s
+        %(f90free)s %(popt)s %(fargs)s -c %(pkg)s_p.%(free_suffix)s
+%(pkg)spymodule.c %(pkg)s_p.%(free_suffix)s::%(interfacefile)s
+        %(forthon)s --realsize %(realsize)s %(f90)s -t %(machine)s %(forthonargs)s %(initialgallot)s %(othermacstr)s %(dep)s %(pkg)s %(interfacefile)s
+%(pkg)spymodule.c:: %(upfortranfile)s %(extrafilesstr)s
+        @touch %(pkg)spymodule.c
 clean:
 	rm -rf *%(osuffix)s *_p.%(free_suffix)s *.mod *module.c *.scalars *.so Forthon.c Forthon.h forthonf2c.h build
 """%(locals())
