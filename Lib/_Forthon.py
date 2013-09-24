@@ -269,9 +269,11 @@ else:
 def arraytostr(a,strip=true):
     a = array(a)
     if len(shape(a)) == 1:
-        result = ''
-        for c in a:
-            result = result + str(c)
+        result = a[0]
+        if sys.hexversion >= 0x03000000:
+            # --- This is needed for Python3, where string arrays give
+            # --- numpy.bytes_ objects. It needs to be converted to unicode.
+            if isinstance(result,bytes_): result = result.decode()
         if strip: result = result.strip()
     elif len(shape(a)) == 2:
         result = []
