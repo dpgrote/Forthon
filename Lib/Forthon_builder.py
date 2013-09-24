@@ -31,7 +31,7 @@ while len(args) > 0:
 # --- Default values for command line options
 machine        = options.machine
 interfacefile  = options.interfacefile or (pkg + '.v')
-fortranfile    = options.fortranfile or (pkg + '.' + options.fixed_suffix)
+fortranfile    = options.fortranfile
 initialgallot  = options.initialgallot
 dependencies   = options.dependencies
 defines        = options.defines
@@ -75,6 +75,16 @@ else:
     f90 = '--f77'
 
 fargs = ' '.join(fargslist)
+
+if not fortranfile:
+    # --- Find the main fortran file, which should have a name like pkg.suffix
+    # --- where suffix is one of the free or fixed suffices.
+    if os.access(pkg + '.' + options.fixed_suffix,os.F_OK):
+        fortranfile = pkg + '.' + options.fixed_suffix
+    elif os.access(pkg + '.' + options.free_suffix,os.F_OK):
+        fortranfile = pkg + '.' + options.free_suffix
+    else:
+        raise Exception('Main fortran file can not be found, please specify using the fortranfile option')
 
 # --- Set arguments to Forthon, based on defaults and any inputs.
 forthonargs = []
