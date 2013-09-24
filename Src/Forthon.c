@@ -326,7 +326,7 @@ void
   PyObject *f=NULL;
   PyObject *r=NULL;
   int m_is_borrowed = 1;
-  char *errormessage;
+  char *errormessage=NULL;
   cfname = (char *) PyMem_Malloc((FSTRLEN1(fname)+1)*sizeof(char));
   cmname = (char *) PyMem_Malloc((FSTRLEN2(mname)+1)*sizeof(char));
 
@@ -429,7 +429,7 @@ void
   return;
 
 err:
-  if (PyErr_Occurred() == NULL) {
+  if (errormessage != NULL) {
     PyErr_SetString(PyExc_RuntimeError,errormessage);
     PyMem_Free(errormessage);
     }
