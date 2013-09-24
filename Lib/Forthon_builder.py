@@ -352,11 +352,11 @@ Forthon.c:%(forthonhome)s%(pathsep)sForthon.c
 	%(pypreproc)s %(forthonhome)s%(pathsep)sForthon.c Forthon.c
 
 %(pkg)s_p%(osuffix)s:%(pkg)s_p.%(free_suffix)s %(wrapperdependency)s
-        %(f90free)s %(popt)s %(fargs)s -c %(pkg)s_p.%(free_suffix)s
+	%(f90free)s %(popt)s %(fargs)s -c %(pkg)s_p.%(free_suffix)s
 %(pkg)spymodule.c %(pkg)s_p.%(free_suffix)s::%(interfacefile)s
-        %(forthon)s --realsize %(realsize)s %(f90)s -t %(machine)s %(forthonargs)s %(initialgallot)s %(othermacstr)s %(dep)s %(pkg)s %(interfacefile)s
+	%(forthon)s --realsize %(realsize)s %(f90)s -t %(machine)s %(forthonargs)s %(initialgallot)s %(othermacstr)s %(dep)s %(pkg)s %(interfacefile)s
 %(pkg)spymodule.c:: %(upfortranfile)s %(extrafilesstr)s
-        @touch %(pkg)spymodule.c
+	@touch %(pkg)spymodule.c
 clean:
 	rm -rf *%(osuffix)s *_p.%(free_suffix)s *.mod *module.c *.scalars *.so Forthon.c Forthon.h forthonf2c.h build
 """%(locals())
