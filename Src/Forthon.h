@@ -2267,14 +2267,17 @@ static void Forthon_dealloc(ForthonObject *self)
 
 /* ######################################################################### */
 /* # Get attribute handler                                                   */
+#if PY_MAJOR_VERSION >= 3
+#define CMPSTR(s) PyUnicode_CompareWithASCIIString(oname,s)
+#else
+#define CMPSTR(s) strcmp(name,s)
+#endif
 static PyObject *Forthon_getattro(ForthonObject *self,PyObject *oname)
 {
   long i;
   PyObject *pyi;
   PyMethodDef *ml;
-#if PY_MAJOR_VERSION >= 3
-  const char *name;
-#else
+#if PY_MAJOR_VERSION < 3
   char *name;
 #endif
 
@@ -2313,24 +2316,22 @@ static PyObject *Forthon_getattro(ForthonObject *self,PyObject *oname)
     return Forthon_getarray(self,(void *)i);}
 
   /* Now convert oname into the actual string, checking for errors. */
-#if PY_MAJOR_VERSION >= 3
-  name = PyUnicode_AS_DATA(oname);
-#else
+#if PY_MAJOR_VERSION < 3
   name = PyString_AsString(oname);
-#endif
   if (name == NULL) return NULL;
+#endif
 
   /* Check if asking for one of the dictionaries or other names*/
   /* Note that these should probably not be accessable */
-  if (strcmp(name,"scalardict") == 0) {
+  if (CMPSTR("scalardict") == 0) {
     Py_INCREF(self->scalardict);
     return self->scalardict;
     }
-  if (strcmp(name,"arraydict") == 0) {
+  if (CMPSTR("arraydict") == 0) {
     Py_INCREF(self->arraydict);
     return self->arraydict;
     }
-  if (strcmp(name,"__module__") == 0) {
+  if (CMPSTR("__module__") == 0) {
     Py_INCREF(self->__module__);
     return self->__module__;
     }
@@ -2340,14 +2341,14 @@ static PyObject *Forthon_getattro(ForthonObject *self,PyObject *oname)
   /* Look through the Forthon generic methods */
   ml = getForthonPackage_methods();
   for (; ml->ml_name != NULL; ml++) {
-    if (strcmp(name,ml->ml_name) == 0) {
+    if (CMPSTR(ml->ml_name) == 0) {
       return (PyObject *)PyCFunction_New(ml,(PyObject *)self);
     }
   }
   /* Look through the object specific methods */
   ml = self->fmethods;
   for (; ml->ml_name != NULL; ml++) {
-    if (strcmp(name,ml->ml_name) == 0) {
+    if (CMPSTR(ml->ml_name) == 0) {
       return (PyObject *)PyCFunction_New(ml,(PyObject *)self);
     }
   }
