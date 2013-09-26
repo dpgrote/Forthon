@@ -898,7 +898,7 @@ class PyWrap:
         self.cw('  '+self.pname+'Object->garbagecollected = 0;')
         self.cw('  PyModule_AddObject(m,"'+self.pname+'",(PyObject *)'+
                     self.pname+'Object);')
-        self.cw('  ErrorObject = PyUnicode_FromString("'+self.pname+'py.error");')
+        self.cw('  ErrorObject = PyErr_NewException("'+self.pname+'py.error",NULL,NULL);')
         self.cw('  PyModule_AddObject(m,"'+self.pname+'error", ErrorObject);')
         self.cw('  PyModule_AddObject(m,"fcompname",'+
                    'PyUnicode_FromString("'+self.fcompname+'"));')
