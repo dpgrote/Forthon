@@ -9,11 +9,9 @@ import __main__
 
 # --- Only numpy is now supported.
 from numpy import *
-ArrayType = ndarray
 def gettypecode(x):
     return x.dtype.char
 
-from types import *
 import re
 import os
 import copy
@@ -60,7 +58,7 @@ else:
 ##############################################################################
 # --- Functions needed for object pickling. These should be moved to C.
 def forthonobject_constructor(typename,arg=None):
-    if isinstance(arg,StringType):
+    if isinstance(arg,str):
         mname = arg
     else:
         # --- In old versions, second arg was None or a dict.
@@ -72,7 +70,7 @@ def forthonobject_constructor(typename,arg=None):
         obj = typecreator()
         # --- For old pickle files, a dict will still be passed in, relying on
         # --- this rather than setstate.
-        if isinstance(arg,DictType): obj.setdict(arg)
+        if isinstance(arg,dict): obj.setdict(arg)
         return obj
     else:
         # --- When typecreator is not callable, this means that it is a top
@@ -283,16 +281,20 @@ def arraytostr(a,strip=true):
 
 # --- Allows int operation on arrrays
 builtinint = int
-def int(x):
-    if isinstance(x,ArrayType):
+def aint(x):
+    if isinstance(x,ndarray):
         return x.astype('l')
     else:
         return builtinint(x)
 
+if sys.hexversion < 0x03000000:
+    # --- This is needed for legacy code
+    int = aint
+
 # --- Return the nearest integer
 def nint(x):
-    if isinstance(x,ArrayType):
-        return where(greater(x,0),int(x+0.5),-int(abs(x)+0.5))
+    if isinstance(x,ndarray):
+        return where(greater(x,0),aint(x+0.5),-aint(abs(x)+0.5))
     else:
         if x >= 0: return int(x+0.5)
         else: return -int(abs(x)+0.5)
@@ -326,7 +328,7 @@ def doc(f,printit=1):
     # --- The for loop only gives the code something to break out of. There's
     # --- probably a better way of doing this.
     for i in range(1):
-        if type(f) == StringType:
+        if isinstance(f,str):
             # --- Check if it is a WARP variable
             try:
                 d = listvar(f)
@@ -380,7 +382,8 @@ def determineoriginatingfile(o):
     introspection is used to find the file name. Note there are cases
     where the file name can not be determined - None is returned.
     """
-    if type(o) is StringType:
+    import types
+    if isinstance(o,str):
         # --- First, deal with strings
         try:
             # --- Look in __main__
@@ -400,25 +403,25 @@ def determineoriginatingfile(o):
     # --- coding.
     # --- For all other types, either the information is not available,
     # --- or it doesn't make sense.
-    if type(o) is ModuleType:
+    if isinstance(o,types.ModuleType):
         try:
             return o.__file__
         except AttributeError:
             return '%s (statically linked into python)'%o.__name__
-    if type(o) in [MethodType,UnboundMethodType]:
+    if isinstance(o,(types.MethodType,types.UnboundMethodType)):
         return determineoriginatingfile(o.im_class)
-    if type(o) in [FunctionType,LambdaType]:
+    if isinstance(o,(types.FunctionType,types.LambdaType)):
         return determineoriginatingfile(o.func_code)
-    if type(o) in [BuiltinFunctionType,BuiltinMethodType]:
+    if isinstance(o,(types.BuiltinFunctionType,types.BuiltinMethodType)):
         try: m = __import__(o.__module__)
         except AttributeError: return None
         if m is not None: return determineoriginatingfile(m)
         else:             return None
-    if type(o) is CodeType:
+    if isinstance(o,types.CodeType):
         return o.co_filename
-    if type(o) is InstanceType:
+    if isinstance(o,types.InstanceType):
         return determineoriginatingfile(o.__class__)
-    if type(o) in [ClassType,TypeType]:
+    if isinstance(o,(types.ClassType,types.TypeType)):
         return determineoriginatingfile(__import__(o.__module__))
 
 # --- Get size of an object, recursively including anything inside of it.
@@ -445,9 +448,9 @@ def oldgetobjectsize(pkg,grp='',recursive=1):
 
 
     # --- Return sizes of shallow objects
-    if type(pkg) in [IntType,FloatType]:
+    if isinstance(pkg,(int,float)):
         result = 1
-    elif isinstance(pkg,ArrayType):
+    elif isinstance(pkg,ndarray):
         result = product(array(shape(pkg)))
     else:
         result = 0
@@ -456,9 +459,9 @@ def oldgetobjectsize(pkg,grp='',recursive=1):
     # --- affects Forthon objects.
     if IsForthonType(pkg):
         ll = pkg.varlist(grp)
-    elif type(pkg) == DictType:
+    elif isinstance(pkg,dict):
         ll = pkg.iterkeys()
-    elif type(pkg) in [ListType,TupleType]:
+    elif isinstance(pkg,(list,tuple)):
         ll = pkg
     else:
         try:
@@ -474,9 +477,9 @@ def oldgetobjectsize(pkg,grp='',recursive=1):
         if IsForthonType(pkg):
             # --- This is needed so unallocated arrays will only return None
             vv = pkg.getpyobject(v)
-        elif type(pkg) == DictType:
+        elif isinstance(pkg,dict):
             vv = pkg[v]
-        elif type(pkg) in [ListType,TupleType]:
+        elif isinstance(pkg,(list,tuple)):
             vv = v
         else:
             vv = getattr(pkg,v)
@@ -513,9 +516,9 @@ def getobjectsize(pkg,grp='',recursive=1,grouplist=None):
     grouplist.append(id(pkg))
 
     # --- Return sizes of shallow objects
-    if type(pkg) in [IntType,FloatType,bool]:
+    if isinstance(pkg,(int,float,bool)):
         return 1
-    elif isinstance(pkg,ArrayType):
+    elif isinstance(pkg,ndarray):
         return product(array(shape(pkg)))
 
     # --- The object itself gets count of 1
@@ -523,12 +526,12 @@ def getobjectsize(pkg,grp='',recursive=1,grouplist=None):
 
     # --- Get the list of variables to check. Note that the grp option only
     # --- affects Forthon objects.
-    import operator
+    import collections
     if IsForthonType(pkg):
         ll = pkg.varlist(grp)
-    elif type(pkg) == DictType:
+    elif isinstance(pkg,dict):
         ll = pkg.iterkeys()
-    elif type(pkg) in [ListType,TupleType]:
+    elif isinstance(pkg,(list,tuple)):
         ll = pkg
     else:
         try:
@@ -544,10 +547,10 @@ def getobjectsize(pkg,grp='',recursive=1,grouplist=None):
         if IsForthonType(pkg):
             # --- This is needed so unallocated arrays will only return None
             vv = pkg.getpyobject(v)
-        elif type(pkg) == DictType:
+        elif isinstance(pkg,dict):
             result += 1 # --- Add one for the key
             vv = pkg[v]
-        elif operator.isSequenceType(pkg):
+        elif isinstance(pkg,(ndarray,collections.Sequence)):
             vv = v
         else:
             try:
@@ -608,7 +611,7 @@ def printgroup(pkg,group='',maxelements=10,sumarrays=0):
       - sumarrays=0: when true, prints the total sum of arrays rather than the
                      first several elements
     """
-    if type(pkg) == StringType: pkg = __main__.__dict__[pkg]
+    if isinstance(pkg,str): pkg = __main__.__dict__[pkg]
     try:
         vlist = pkg.varlist(group)
     except AttributeError:
@@ -623,7 +626,7 @@ def printgroup(pkg,group='',maxelements=10,sumarrays=0):
             v = pkg.__dict__[vname]
         if v is None:
             print vname+' is not allocated'
-        elif not isinstance(v,ArrayType):
+        elif not isinstance(v,ndarray):
             print vname+' = '+str(v)
         else:
             if gettypecode(v) == 'c':
@@ -680,7 +683,7 @@ def pydumpforthonobject(ff,attr,objname,obj,varsuffix,writtenvars,fobjlist,
     # --- Get variables in this package which have attribute attr.
     vlist = []
     for a in attr:
-        if type(a) == StringType: vlist = vlist + obj.varlist(a)
+        if isinstance(a,str): vlist = vlist + obj.varlist(a)
     # --- Loop over list of variables
     for vname in vlist:
         # --- Check if object is available (i.e. check if dynamic array is
@@ -715,7 +718,7 @@ def pydumpforthonobject(ff,attr,objname,obj,varsuffix,writtenvars,fobjlist,
         # --- If lonlymakespace is true, then use defent to create space in the
         # --- file for arrays but don't write out any data. Scalars are still
         # --- written out.
-        if lonlymakespace and type(v) not in [IntType,FloatType]:
+        if lonlymakespace and not isinstance(v,(int,float)):
             ff.defent(vname+varsuffix,v,shape(v))
         else:
             ff.write(vname+varsuffix,v)
@@ -818,7 +821,7 @@ def pydump(fname=None,attr=["dump"],vars=[],serial=0,ff=None,varsuffix=None,
         ff.file_type = 'oldPDB'
 
     # --- Convert attr into a list if needed
-    if not (type(attr) == ListType): attr = [attr]
+    if not isinstance(attr,list): attr = [attr]
 
     # --- Loop through all of the packages (getting pkg object).
     # --- When varsuffix is specified, the list of variables already written
@@ -855,7 +858,7 @@ def pydump(fname=None,attr=["dump"],vars=[],serial=0,ff=None,varsuffix=None,
         # --- Write out the source of functions. Note that the source of functions
         # --- typed in interactively is not retrieveable - inspect.getsource
         # --- returns an IOError.
-        if type(vval) in [FunctionType]:
+        if callable(vval):
             source = None
             try:
                 # --- Check if the source had been saved as an attribute of itself.
@@ -883,7 +886,7 @@ def pydump(fname=None,attr=["dump"],vars=[],serial=0,ff=None,varsuffix=None,
                 if verbose: print "could not write python function "+vname
             continue
         # --- Zero length arrays cannot by written out.
-        if isinstance(vval,ArrayType) and product(array(shape(vval))) == 0:
+        if isinstance(vval,ndarray) and product(array(shape(vval))) == 0:
             continue
         # --- Check if variable is a Forthon object.
          #if IsForthonType(vval):
@@ -1212,11 +1215,11 @@ def pyrestoreforthonobject(ff,gname,vlist,fobjdict,varsuffix,verbose,doarrays,
 
         try:
             val = ff.__getattr__(vpdbname)
-            if not isinstance(val,ArrayType) and not doarrays:
+            if not isinstance(val,ndarray) and not doarrays:
                 # --- Simple assignment is done for scalars, using the exec command
                 if verbose: print "reading in "+fullname
                 doassignment(fullname,val)
-            elif isinstance(val,ArrayType) and doarrays:
+            elif isinstance(val,ndarray) and doarrays:
                 pkg = eval(gname,__main__.__dict__)
                 # --- forceassign is used, allowing the array read in to have a
                 # --- different size than the current size of the warp array.
