@@ -32,7 +32,7 @@ class FCompiler:
                       static=0,implicitnone=1,twounderscores=0):
         if machine is None: machine = sys.platform
         self.machine = machine
-        if self.machine <> 'win32':
+        if self.machine != 'win32':
             self.processor = os.uname()[4]
         else:
             self.processor = 'i686'
