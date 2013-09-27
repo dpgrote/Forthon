@@ -663,12 +663,12 @@ static int Forthon_setscalarinteger(ForthonObject *self,PyObject *value,
 {
   Fortranscalar *fscalar = &(self->fscalars[(long)closure]);
   long lv;
-  int e;
   if (value == NULL) {
     PyErr_SetString(PyExc_TypeError, "Cannot delete the attribute");
     return -1;}
-  e = PyArg_Parse(value,"l",&lv);
-  if (e) {
+  /* This will convert floats to ints if needed */
+  lv = PyLong_AsLong(value);
+  if (!PyErr_Occurred()) {
     if (fscalar->setaction != NULL) {
       if (self->fobj == NULL) fscalar->setaction(&lv);
       else                    fscalar->setaction((self->fobj),&lv);
