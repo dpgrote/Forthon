@@ -1805,16 +1805,12 @@ static PyObject *ForthonPackage_printtypenum(PyObject *_self_,PyObject *args)
 static char feenableexcept_doc[] = "Turns on or off trapping of floating point exceptions";
 static PyObject *ForthonPackage_feenableexcept(PyObject *_self_,PyObject *args)
 {
-  PyObject *pyobj;
+  long flag;
 
-  if (!PyArg_ParseTuple(args,"O",&pyobj)) return NULL;
+  if (!PyArg_ParseTuple(args,"l",&flag)) return NULL;
 
-  if (!PyInt_Check(pyobj)) {
-    PyErr_SetString(PyExc_TypeError,"Input argument must be an integer");
-    return NULL;
-    }
 #ifdef WITH_FEENABLEEXCEPT
-    if (PyInt_AS_LONG(pyobj)) {
+    if (flag) {
       feenableexcept(FE_DIVBYZERO | FE_OVERFLOW | FE_INVALID);
     }
     else {
