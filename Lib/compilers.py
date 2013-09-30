@@ -166,10 +166,17 @@ class FCompiler:
     def isgfortranversionok(self,fcompexec):
         fcomp = os.path.join(self.findfile(fcompexec,followlinks=0),fcompexec)
         ff = os.popen(fcomp+' -dumpversion')
-        version = ff.readline()[:-1]
+        dumpversion = ff.readline()[:-1]
         ff.close()
-        vv = version.split('.')
-        vfloat = float('.'.join(vv[0:2]))
+        # --- The format of dumpversion is not consistent - really annoying.
+        # --- For version 4.4 and older, there was extra text output.
+        # --- Search through it to find a version number.
+        for version in dumpversion.split():
+            if re.match('[0-9]',version[0]): break
+        else:
+            # --- Version not found, set to zero
+            version = '0,0'
+        vfloat = float('.'.join(version.split('.')[0:2]))
         if vfloat < 4.3:
             print "gfortran will not be used, it's version is too old or unknown - upgrade to a newer version"
             return False
