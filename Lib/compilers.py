@@ -57,7 +57,7 @@ class FCompiler:
         # --- When adding a new compiler, it must be listed here under the correct
         # --- machine name.
         while 1:
-            if self.machine in ['linux2','linux3']:
+            if self.machine in ['linux','linux2','linux3']:
                 if self.linux_intel() is not None: break
                 if self.linux_g95() is not None: break
                 if self.linux_gfortran() is not None: break

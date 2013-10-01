@@ -30,7 +30,7 @@ fpsize = 'kind=%s'%realsize
 if machine in ['aix4','aix5','win32','MAC']:
     def fname(n):
         return n.lower()
-elif machine in ['linux2','linux3','darwin','SOL','AXP','DOS','cygwin']:
+elif machine in ['linux','linux2','linux3','darwin','SOL','AXP','DOS','cygwin']:
     if underscoring:
         if twounderscores:
             def fname(n):
@@ -50,7 +50,7 @@ else:
 # Sets up C macros which are used to take the place of the length
 # of a string passed from Fortran to C.
 
-if machine in ['linux2','linux3','darwin','SOL','DOS','aix4','aix5','win32','cygwin']:
+if machine in ['linux','linux2','linux3','darwin','SOL','DOS','aix4','aix5','win32','cygwin']:
     charlen_at_end = 1
     forthonf2c = """
 #define FSTRING char*
