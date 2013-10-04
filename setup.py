@@ -25,7 +25,7 @@ except:
     print('Permissions on License.txt and Src files needs to be set by hand')
 
 # --- Write out version information to the version.py file.
-version = '0.8.12'
+version = '0.8.13'
 try:
     commithash = os.popen('git log -n 1 --pretty=%h').read().strip()
 except OSError:

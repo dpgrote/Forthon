@@ -13,6 +13,10 @@ much more versatile Python language.
 
 Release Notes:
 
+0.8.13: October 4, 2013
+ - Forthon is now compatible with python3
+ - Forthon is compatible with numpy API version 1.8
+
 0.8.12: September 13, 2013
  - Added dyanamic arrays of strings
  - Updated the example
