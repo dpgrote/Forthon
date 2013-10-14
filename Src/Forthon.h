@@ -685,7 +685,6 @@ static int Forthon_setscalarderivedtype(ForthonObject *self,PyObject *value,
 {
   long i = (long)closure;
   Fortranscalar *fscalar = &(self->fscalars[i]);
-  void *d;
   int createnew;
   npy_intp nullit;
   PyObject *oldobj;
@@ -701,11 +700,8 @@ static int Forthon_setscalarderivedtype(ForthonObject *self,PyObject *value,
       if (fscalar->data != NULL) {
         /* Decrement the reference counter and nullify the fortran pointer. */
         oldobj = (PyObject *)fscalar->data;
-        d = (void *)((ForthonObject *)fscalar->data)->fobjdeallocate;
-        if (d != NULL) {
-          nullit = 1;
-          (fscalar->setscalarpointer)(0,(self->fobj),&nullit);
-          }
+        nullit = 1;
+        (fscalar->setscalarpointer)(0,(self->fobj),&nullit);
         fscalar->data = NULL;
         Py_DECREF(oldobj);
         }
@@ -763,7 +759,7 @@ static int Forthon_setarray(ForthonObject *self,PyObject *value,
   PyObject *pyobj;
   PyArrayObject *ax;
 
-  if (value == NULL) {
+  if (value == NULL || value == Py_None) {
     if (farray->dynamic) {
       /* Deallocate the dynamic array. */
       r = Forthon_freearray(self,closure);
