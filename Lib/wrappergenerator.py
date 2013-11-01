@@ -652,7 +652,7 @@ class PyWrap:
                 istr = 0
                 for a in f.args:
                     if a.type == 'string' or a.type == 'character':
-                        self.cw(',PyArray_ITEMSIZE(ax['+repr(i)+'])',noreturn=1)
+                        self.cw(',(int)PyArray_ITEMSIZE(ax['+repr(i)+'])',noreturn=1)
                         istr = istr + 1
                     i = i + 1
 

@@ -377,7 +377,7 @@ static void ForthonPackage_staticarrays(ForthonObject *self)
         exit(EXIT_FAILURE);}
       /* For strings, replace nulls with blank spaces */
       if (self->farrays[i].type == NPY_STRING) {
-        int itemsize = PyArray_ITEMSIZE(self->farrays[i].pya);
+        long itemsize = (long)PyArray_ITEMSIZE(self->farrays[i].pya);
         if ((c=memchr(self->farrays[i].data.s,0,
                       PyArray_SIZE(self->farrays[i].pya)*itemsize)))
           /* Note that long is used since c and data.s are addresses. */
@@ -846,10 +846,10 @@ static int Forthon_setarray(ForthonObject *self,PyObject *value,
     if (farray->type == NPY_STRING) {
       PyArray_FILLWBYTE(farray->pya,(int)' ');
       if (PyArray_ITEMSIZE(ax) < PyArray_ITEMSIZE(farray->pya)){
-        d = PyArray_ITEMSIZE(farray->pya);
+        d = (int)PyArray_ITEMSIZE(farray->pya);
         /* PyArray_ITEMSIZE(farray->pya) = PyArray_ITEMSIZE(ax); */
         /* Is there a better way to do this? */
-        (((PyArrayObject_fields *)(farray->pya))->descr->elsize) = PyArray_ITEMSIZE(ax);
+        (((PyArrayObject_fields *)(farray->pya))->descr->elsize) = (int)PyArray_ITEMSIZE(ax);
         }
       }
     /* Copy input data into the array. This does the copy */
