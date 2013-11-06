@@ -62,6 +62,8 @@ parser.add_option('-L','--libdirs',action='append',default=[],help='Additional l
 parser.add_option('-t','--machine',default=sys.platform,help='Machine type. Will automatically be determined if not supplied. Can be one of linux2, linux3, aix4, aix5, darwin, win32.')
 parser.add_option('--macros',action='append',dest='othermacros',default=[],metavar="MACROS",help='Other interface files whose macros are needed')
 
+parser.add_option('--pkgbase',default=None,help='Base name of code, when installed as part of a larger code.')
+
 parser.add_option('--realsize',choices=['4','8'],default='8',metavar='[4,8]',help='The size of reals to use for variables that are declared to of type real in the variable description file. It defaults to 8.')
 
 parser.add_option('--static',action='store_true',default=False,help='Build the static version of the code by default, rather than the dynamically linker version. Not yet supported.')
