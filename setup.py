@@ -55,10 +55,15 @@ for scheme in INSTALL_SCHEMES.values():
     else:
         scheme['data'] = scheme['purelib']
 
+if sys.hexversion < 0x03000000:
+    Forthonroot = 'Forthon'
+elif sys.hexversion >= 0x03000000:
+    Forthonroot = 'Forthon3'
+
 # --- Normally, the package building script is called Forthon, but on Windows,
 # --- it works better if it is called Forthon.py.
 if sys.platform == 'win32':
-    Forthon = 'Forthon.bat'
+    Forthon = Forthonroot+'.bat'
     ff = open(Forthon,'w')
     file = """\
 @echo off
@@ -74,7 +79,7 @@ GOTO Loop
     ff.write(file)
     ff.close()
 else:
-    Forthon = 'Forthon'
+    Forthon = Forthonroot
 
 # --- Force the deletion of the build directory so that a fresh install is
 # --- done every time. This is needed since otherwise, after the first install,
