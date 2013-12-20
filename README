@@ -17,6 +17,7 @@ Release Notes:
  - Added pkgbase option. Also, changed the install location of packages to
    be either the package name or pkgbase.
  - Arrays and derived types can be set to None to deallocate them.
+ - Removed references to warp, mostly effecting callpyfunc
 
 0.8.13: October 4, 2013
  - Forthon is now compatible with python3

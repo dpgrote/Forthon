@@ -431,6 +431,8 @@ if with_feenableexcept:
 if pkgbase is None:
     pkgbase = pkg
 
+define_macros.append(('FORTHON_PKGNAME','"%s"'%pkgbase))
+
 setup(name = pkg,
       ext_modules = [Extension('.'.join([pkgbase,pkg+'py']),
                                cfiles+extracfiles,
