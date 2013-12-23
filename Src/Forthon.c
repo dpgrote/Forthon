@@ -340,11 +340,11 @@ void
 
   // Some fancy footwork is needed to find the module to import. Depending
   // on how the modules are setup, the module's name in python could either
-  // be modulename or warp.modulename. The latter if using an egg or if the
-  // warp scripts are installed in site-packages. The module should have
+  // be modulename or pkg.modulename. The latter if using an egg or if the
+  // pkg scripts are installed in site-packages. The module should have
   // already been imported, so get it from ModuleDict (same as sys.modules).
   // First look for it under the name modulename. If it is not found try
-  // warp.modulename. If it is still not found, then try importing it.
+  // pkg.modulename. If it is still not found, then try importing it.
   // Note that the module reference from the module dict is borrowed (and
   // should not be decremented), but the one from ImportModule is new (and
   // should be decremented). Once the module is found, the function can
@@ -353,9 +353,10 @@ void
   m = PyDict_GetItemString(modules,cmname);
 
   if (m == NULL) {
-    // Try warp.modulename
-    cpname = (char *) PyMem_Malloc((FSTRLEN2(mname)+1+5)*sizeof(char));
-    strcpy(cpname,"warp.");
+    // Try pkg.modulename
+    cpname = (char *) PyMem_Malloc((FSTRLEN2(mname)+strlen(FORTHON_PKGNAME)+2)*sizeof(char));
+    strcpy(cpname,FORTHON_PKGNAME);
+    strcat(cpname,".");
     strcat(cpname,cmname);
     m = PyDict_GetItemString(modules,cpname);
     PyMem_Free(cpname);

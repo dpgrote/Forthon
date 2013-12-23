@@ -329,7 +329,7 @@ def doc(f,printit=1):
     # --- probably a better way of doing this.
     for i in range(1):
         if isinstance(f,str):
-            # --- Check if it is a WARP variable
+            # --- Check if it is a Forthon variable
             try:
                 d = listvar(f)
                 break
@@ -1222,7 +1222,7 @@ def pyrestoreforthonobject(ff,gname,vlist,fobjdict,varsuffix,verbose,doarrays,
             elif isinstance(val,ndarray) and doarrays:
                 pkg = eval(gname,__main__.__dict__)
                 # --- forceassign is used, allowing the array read in to have a
-                # --- different size than the current size of the warp array.
+                # --- different size than the current size of the array.
                 if verbose: print "reading in "+fullname
                 # --- Original version
                 #pkg.forceassign(vname,val)
@@ -1251,7 +1251,7 @@ def pyrestoreforthonobject(ff,gname,vlist,fobjdict,varsuffix,verbose,doarrays,
                 #getattr(pkg,vname)[...] = val
         except:
             # --- The catches errors in cases where the variable is not an
-            # --- actual warp variable, for example if it had been deleted
+            # --- actual variable in the package, for example if it had been deleted
             # --- after the dump was originally made.
             print "Warning: There was a problem restoring %s"% (fullname)
             # --- Print out information about exactly what went wrong.

@@ -61,6 +61,7 @@ build_temp     = options.build_temp
 verbose        = options.verbose
 dobuild        = options.dobuild
 with_feenableexcept = options.with_feenableexcept
+pkgbase        = options.pkgbase
 
 # --- There options require special handling
 
@@ -446,8 +447,13 @@ if not verbose:
 if with_feenableexcept:
     define_macros.append(('WITH_FEENABLEEXCEPT',1))
 
+if pkgbase is None:
+    pkgbase = pkg
+
+define_macros.append(('FORTHON_PKGNAME','"%s"'%pkgbase))
+
 setup(name = pkg,
-      ext_modules = [Extension(pkg+'py',
+      ext_modules = [Extension('.'.join([pkgbase,pkg+'py']),
                                cfiles+extracfiles,
                                include_dirs=[forthonhome]+includedirs,
                                extra_objects=ofiles,
