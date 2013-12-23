@@ -211,6 +211,14 @@ dep = ''
 for d in dependencies:
     dep = dep + ' -d %s.scalars'%d
 
+sourcedirs = []
+def getpathbasename(f):
+    dirname,basename = os.path.split(f)
+    rootname,suffix = os.path.splitext(basename)
+    if dirname not in sourcedirs:
+        sourcedirs.append(dirname)
+    return rootname,suffix
+
 # --- Loop over extrafiles. For each fortran file, append the object name
 # --- to be used in the makefile and for setup. For each C file, add to a
 # --- list to be included in setup. For each object file, add to the list
@@ -229,7 +237,7 @@ else:
     osuffix = '.o'
 for f in extrafiles:
     extrafilesstr = extrafilesstr + ' ' + os.path.join(upbuilddir,f)
-    root,suffix = os.path.splitext(f)
+    root,suffix = getpathbasename(f)
     if suffix[1:] in ['o','obj']:
         extraobjectsstr = extraobjectsstr + ' ' + root + osuffix
         extraobjectslist = extraobjectslist + [root + osuffix]
@@ -242,7 +250,7 @@ for f in extrafiles:
         extracfiles.append(f)
 
 if compile_first != '':
-    compile_firstroot,compile_firstsuffix = os.path.splitext(compile_first)
+    compile_firstroot,compile_firstsuffix = getpathbasename(compile_first)
     compile_firstobject = compile_firstroot + osuffix
 else:
     compile_firstobject = ''
@@ -259,7 +267,7 @@ for d in (defines + fcompiler.defines):
     definesstr = definesstr + d + '\n'
 
 # --- Define default rule. Note that static doesn't work yet.
-fortranroot,suffix = os.path.splitext(fortranfile)
+fortranroot,suffix = getpathbasename(fortranfile)
 if fcompiler.static:
     defaultrule = 'static:'
     raise InputError('Static linking not supported at this time')
@@ -329,6 +337,20 @@ if len(fortransuffices) > 2:
     """%locals()
         del suffix,suffixpath,ff
 
+compilerulestemplate = """
+%%%(osuffix)s: %(fixedpath)s %(modulecontainer)s%(osuffix)s
+	%(f90fixed)s %(fopt)s %(fargs)s -c $<
+%%%(osuffix)s: %(freepath)s %(modulecontainer)s%(osuffix)s
+	%(f90free)s %(fopt)s %(fargs)s -c $<
+"""
+compilerules = ''
+for sourcedir in sourcedirs:
+    # --- Create path to fortran files for the Makefile since they will be
+    # --- referenced from the build directory.
+    freepath = os.path.join(os.path.join(upbuilddir,sourcedir),'%%.%(free_suffix)s'%locals())
+    fixedpath = os.path.join(os.path.join(upbuilddir,sourcedir),'%%.%(fixed_suffix)s'%locals())
+    compilerules += compilerulestemplate%locals()
+
 # --- First, create Makefile.pkg which has all the needed definitions
 # --- Note the two rules for the pymodule file. The first specifies that the
 # --- pymodule.c file should be recreated if the .v file was updatd.
@@ -341,10 +363,7 @@ makefiletext = """
 %(defaultrule)s
 
 %(compile_firstrule)s
-%%%(osuffix)s: %(fixedpath)s %(modulecontainer)s%(osuffix)s
-	%(f90fixed)s %(fopt)s %(fargs)s -c $<
-%%%(osuffix)s: %(freepath)s %(modulecontainer)s%(osuffix)s
-	%(f90free)s %(fopt)s %(fargs)s -c $<
+%(compilerules)s
 %(extrafortranrules)s
 Forthon.h:%(forthonhome)s%(pathsep)sForthon.h
 	%(pypreproc)s %(forthonhome)s%(pathsep)sForthon.h Forthon.h
