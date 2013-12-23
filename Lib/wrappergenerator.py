@@ -91,14 +91,14 @@ class PyWrap:
                     pass
         return False
 
-    def prefixdimsc(self,dim,sdict):
+    def prefixdimsc(self,dim):
         # --- Convert fortran variable name into reference from list of variables.
         sl=re.split('[ ()/\*\+\-]',dim)
         for ss in sl:
             if re.search('[a-zA-Z]',ss) != None:
-                if ss in sdict:
+                if ss in self.sdict:
                     dim = re.sub(ss,
-                             '*(long *)'+self.pname+'_fscalars['+repr(sdict[ss])+'].data',
+                             '*(long *)'+self.pname+'_fscalars['+repr(self.sdict[ss])+'].data',
                              dim,count=1)
                 else:
                     for other_vars in self.other_scalar_vars:
@@ -121,15 +121,15 @@ class PyWrap:
         dim = '(' + ','.join(sl) + ')'
         return dim.lower()
 
-    def dimsgroups(self,dim,sdict,slist):
+    def dimsgroups(self,dim):
         # --- Returns a list of group names that contain the variables listed in
         # --- a dimension statement
         groups = []
         sl=re.split('[ (),:/\*\+\-]',dim)
         for ss in sl:
             if re.search('[a-zA-Z]',ss) != None:
-                if ss in sdict:
-                    groups.append(slist[sdict[ss]].group)
+                if ss in self.sdict:
+                    groups.append(self.slist[self.sdict[ss]].group)
                 else:
                     for other_vars in self.other_scalar_vars:
                         other_dict = other_vars[0]
@@ -749,13 +749,13 @@ class PyWrap:
                     else:
                         if not self.dimisparameter(d.high):
                             raise SyntaxError('%s: static dims must be constants or parameters'%a.name)
-                        self.cw('('+self.prefixdimsc(d.high,self.sdict)+')-',noreturn=1)
+                        self.cw('('+self.prefixdimsc(d.high)+')-',noreturn=1)
                     if re.search('[a-zA-Z]',d.low) == None:
                         self.cw('('+d.low+')+1);')
                     else:
                         if not self.dimisparameter(d.low):
                             raise SyntaxError('%s: static dims must be constants or parameters'%a.name)
-                        self.cw('('+self.prefixdimsc(d.low,self.sdict)+')+1);')
+                        self.cw('('+self.prefixdimsc(d.low)+')+1);')
 
         self.cw('}')
         self.cw('')
@@ -798,11 +798,11 @@ class PyWrap:
                     if re.search('[a-zA-Z]',d.high) == None:
                         self.cw('('+d.high+')-',noreturn=1)
                     else:
-                        self.cw('('+self.prefixdimsc(d.high,self.sdict)+')-',noreturn=1)
+                        self.cw('('+self.prefixdimsc(d.high)+')-',noreturn=1)
                     if re.search('[a-zA-Z]',d.low) == None:
                         self.cw('('+d.low+')+1);')
                     else:
-                        self.cw('('+self.prefixdimsc(d.low,self.sdict)+')+1);')
+                        self.cw('('+self.prefixdimsc(d.low)+')+1);')
                 self.cw('  }')
 
         if currentgroup != '':
@@ -1106,7 +1106,7 @@ class PyWrap:
         for a in self.alist:
             if a.dynamic:
                 self.fw('SUBROUTINE '+self.fsub('setarraypointer',a.name)+'(p__,fobj__,dims__)')
-                groups = self.dimsgroups(a.dimstring,self.sdict,self.slist)
+                groups = self.dimsgroups(a.dimstring)
                 groupsprinted = [a.group]
                 for g in groups:
                     if g not in groupsprinted:
@@ -1143,9 +1143,9 @@ class PyWrap:
         self.ffile.close()
 
         scalar_pickle_file = open(self.pname + '.scalars','wb')
-        self.sdict ['_module_name_'] = self.pname
-        pickle.dump (self.sdict, scalar_pickle_file)
-        pickle.dump (self.slist, scalar_pickle_file)
+        self.sdict['_module_name_'] = self.pname
+        pickle.dump(self.sdict, scalar_pickle_file)
+        pickle.dump(self.slist, scalar_pickle_file)
         scalar_pickle_file.close()
 
     def writef90modules(self):

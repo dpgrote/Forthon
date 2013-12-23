@@ -53,20 +53,20 @@ class ForthonDerivedType:
                     pass
         return False
 
-    def prefixdimsc(self,dim,sdict):
+    def prefixdimsc(self,dim):
         # --- Convert fortran variable name into reference from list of variables.
         sl=re.split('[ ()/\*\+\-]',dim)
         for ss in sl:
             if re.search('[a-zA-Z]',ss) != None:
-                if ss in sdict:
-                    dim = re.sub(ss,'*(long *)obj->fscalars['+repr(sdict[ss])+'].data',
+                if ss in self.sdict:
+                    dim = re.sub(ss,'*(long *)obj->fscalars['+repr(self.sdict[ss])+'].data',
                                  dim,count=1)
                 else:
                     raise SyntaxError('%s from dim %s is not declared in a .v file'%(ss,dim))
         return dim.lower()
 
     # --- Convert variable names in to type elements
-    def prefixdimsf(self,dim,sdict):
+    def prefixdimsf(self,dim):
         sl=re.split('[ ()/\*\+\-:,]',dim)
         # --- Loop over the list of items twice. The first time, add in the 'obj%'
         # --- prefix but overwrite the item with '=='. Then go back again and
@@ -77,11 +77,11 @@ class ForthonDerivedType:
         # --- But this works as is and is fast enough.
         for ss in sl:
             if re.search('[a-zA-Z]',ss) != None:
-                if ss in sdict:
+                if ss in self.sdict:
                     dim = re.sub(ss,'fobj__%==',dim,count=1)
         for ss in sl:
             if re.search('[a-zA-Z]',ss) != None:
-                if ss in sdict:
+                if ss in self.sdict:
                     dim = re.sub('==',ss,dim,count=1)
         # --- Check for any unspecified dimensions and replace it with an element
         # --- from the dims array.
@@ -127,13 +127,13 @@ class ForthonDerivedType:
             # --- The dictionary is used to get number of the variables use as
             # --- dimensions for arrays.
             slist = []
-            sdict = {}
+            self.sdict = {}
             i = 0
             temp = vlist[:]
             for v in temp:
                 if not v.dims and not v.function:
                     slist.append(v)
-                    sdict[v.name] = i
+                    self.sdict[v.name] = i
                     i = i + 1
                     vlist.remove(v)
 
@@ -147,6 +147,8 @@ class ForthonDerivedType:
                     i = i + 1
                     vlist.remove(v)
             temp = []
+
+            self.slist = slist
 
             #########################################################################
             # --- Print out the external commands
@@ -331,13 +333,13 @@ class ForthonDerivedType:
                         else:
                             if not self.dimisparameter(d.high):
                                 raise SyntaxError('%s: static dims must be constants or parameters'%a.name)
-                            self.cw('('+self.prefixdimsc(d.high,sdict)+')-',noreturn=1)
+                            self.cw('('+self.prefixdimsc(d.high)+')-',noreturn=1)
                         if re.search('[a-zA-Z]',d.low) == None:
                             self.cw('('+d.low+')+1);')
                         else:
                             if not self.dimisparameter(d.low):
                                 raise SyntaxError('%s: static dims must be constants or parameters'%a.name)
-                            self.cw('('+self.prefixdimsc(d.low,sdict)+')+1);')
+                            self.cw('('+self.prefixdimsc(d.low)+')+1);')
             self.cw('}')
 
             #########################################################################
@@ -369,11 +371,11 @@ class ForthonDerivedType:
                         if re.search('[a-zA-Z]',d.high) == None:
                             self.cw('('+d.high+')-',noreturn=1)
                         else:
-                            self.cw('('+self.prefixdimsc(d.high,sdict)+')-',noreturn=1)
+                            self.cw('('+self.prefixdimsc(d.high)+')-',noreturn=1)
                         if re.search('[a-zA-Z]',d.low) == None:
                             self.cw('('+d.low+')+1);')
                         else:
-                            self.cw('('+self.prefixdimsc(d.low,sdict)+')+1);')
+                            self.cw('('+self.prefixdimsc(d.low)+')+1);')
                     self.cw('  }')
             self.cw('}')
 
@@ -884,10 +886,10 @@ class ForthonDerivedType:
                     self.fw('  integer('+isz+'):: dims__('+repr(len(a.dims))+')')
                     if a.type == 'character':
                         self.fw('  character(len='+a.dims[0].high+'),target:: '+
-                                'p__'+self.prefixdimsf(re.sub('[ \t\n]','',a.dimstring),sdict)+'')
+                                'p__'+self.prefixdimsf(re.sub('[ \t\n]','',a.dimstring))+'')
                     else:
                         self.fw('  '+fvars.ftof(a.type)+',target:: '+
-                                'p__'+self.prefixdimsf(re.sub('[ \t\n]','',a.dimstring),sdict)+'')
+                                'p__'+self.prefixdimsf(re.sub('[ \t\n]','',a.dimstring))+'')
                     self.fw('  fobj__%'+a.name+' => p__')
                     self.fw('  RETURN')
                     self.fw('END')
