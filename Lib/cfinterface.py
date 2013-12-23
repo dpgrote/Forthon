@@ -99,8 +99,9 @@ elif machine in ['MAC']:
 else:
     raise ValueError('Machine %s not supported'%machine)
 
-# --- Create the forthonf2c.h file
-ff = open('forthonf2c.h','w')
-ff.write(forthonf2c)
-ff.close()
+def writeforthonf2c():
+    # --- Create the forthonf2c.h file
+    ff = open('forthonf2c.h','w')
+    ff.write(forthonf2c)
+    ff.close()
 

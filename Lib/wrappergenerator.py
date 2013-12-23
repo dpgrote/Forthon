@@ -1248,6 +1248,8 @@ def wrappergenerator_main(argv=None,writef90modulesonly=0):
     else:
         cc.createmodulefile()
 
+    # --- forthonf2c.h is imported by Forthon.h, and defines macros needed for strings.
+    writeforthonf2c()
 
 # --- This might make some of the write statements cleaner.
 # --- From http://aspn.activestate.com/ASPN/Python/Cookbook/
