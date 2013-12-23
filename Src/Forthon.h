@@ -52,6 +52,7 @@ typedef struct {
   char* attributes;
   char* comment;
   int dynamic;
+  int parameter;
   void (*setscalarpointer)(char *,char *,npy_intp *);
   void (*getscalarpointer)(struct ForthonObject_ **,char *,int *);
   void (*setaction)();
@@ -2361,6 +2362,10 @@ static int Forthon_setattro(ForthonObject *self,PyObject *oname,PyObject *v)
   pyi = PyDict_GetItem(self->scalardict,oname);
   if (pyi != NULL) {
     PyArg_Parse(pyi,"l",&i);
+    if (self->fscalars[i].parameter) {
+      PyErr_SetString(PyExc_TypeError, "Cannot set a parameter");
+      return -1;
+      }
     if (self->fscalars[i].type == NPY_DOUBLE) {
       return Forthon_setscalardouble(self,v,(void *)i);}
     else if (self->fscalars[i].type == NPY_CDOUBLE) {

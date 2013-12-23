@@ -77,6 +77,20 @@ class PyWrap:
             hash = hashlib.md5(name).digest().translate(transtable)
         return name[:15] + hash
 
+    def dimisparameter(self,dim):
+        # --- Convert fortran variable name into reference from list of variables
+        # --- and check if it is a parameter.
+        sl=re.split('[ ()/\*\+\-]',dim)
+        for ss in sl:
+            if re.search('[a-zA-Z]',ss) != None:
+                try:
+                    v = self.slist[self.sdict[ss]]
+                    if v.parameter:
+                        return True
+                except KeyError:
+                    pass
+        return False
+
     def prefixdimsc(self,dim,sdict):
         # --- Convert fortran variable name into reference from list of variables.
         sl=re.split('[ ()/\*\+\-]',dim)
@@ -275,7 +289,7 @@ class PyWrap:
         # --- The double underscores in the argument names are to avoid name
         # --- collisions with package variables.
         for s in self.slist:
-            if s.dynamic or s.derivedtype:
+            if (s.dynamic or s.derivedtype) and not s.parameter:
                 self.cw('extern void '+fname(self.fsub('setscalarpointer',s.name))+
                         '(char *p__,char *fobj__,npy_intp *nullit__);')
             if s.dynamic:
@@ -331,6 +345,7 @@ class PyWrap:
                          '"%s",'%s.attr +
                          '"%s",'%repr(s.comment)[1:-1].replace('"','\\"') +
                          '%i,'%s.dynamic +
+                         '%i,'%s.parameter +
                          'NULL,' + # setscalarpointer
                          'NULL,' + # getscalarpointer
                          'NULL,' + # setaction
@@ -380,7 +395,7 @@ class PyWrap:
         # --- Scalars
         for i in range(len(self.slist)):
             s = self.slist[i]
-            if s.derivedtype:
+            if (s.dynamic or s.derivedtype) and not s.parameter:
                 setscalarpointer = '*'+fname(self.fsub('setscalarpointer',s.name))
                 self.cw('obj->fscalars[%d].setscalarpointer = %s;'%(i,setscalarpointer))
                 if s.dynamic:
@@ -725,9 +740,22 @@ class PyWrap:
             if a.dims and not a.dynamic:
                 j = 0
                 for d in a.dims:
-                    self.cw('  '+vname+'.dimensions['+repr(j)+'] = (npy_intp)(('+
-                            d.high+') - ('+d.low+') + 1);')
+                    if d.high == '': continue
+                    self.cw('   '+vname+'.dimensions['+repr(j)+']=(npy_intp)((int)',
+                            noreturn=1)
                     j = j + 1
+                    if re.search('[a-zA-Z]',d.high) == None:
+                        self.cw('('+d.high+')-',noreturn=1)
+                    else:
+                        if not self.dimisparameter(d.high):
+                            raise SyntaxError('%s: static dims must be constants or parameters'%a.name)
+                        self.cw('('+self.prefixdimsc(d.high,self.sdict)+')-',noreturn=1)
+                    if re.search('[a-zA-Z]',d.low) == None:
+                        self.cw('('+d.low+')+1);')
+                    else:
+                        if not self.dimisparameter(d.low):
+                            raise SyntaxError('%s: static dims must be constants or parameters'%a.name)
+                        self.cw('('+self.prefixdimsc(d.low,self.sdict)+')+1);')
 
         self.cw('}')
         self.cw('')
@@ -1036,24 +1064,25 @@ class PyWrap:
         # --- Write routine for each dynamic variable which gets the pointer from the
         # --- wrapper
         for s in self.slist:
-            self.fw('SUBROUTINE '+self.fsub('setscalarpointer',s.name)+'(p__,fobj__,nullit__)')
-            self.fw('  USE '+s.group)
-            self.fw('  INTEGER('+self.isz+'):: fobj__')
-            self.fw('  INTEGER('+self.isz+'):: nullit__')
-            if s.type == 'character':
-                self.fw('  character(len='+s.dims[0].high+'),target:: p__')
-            else:
-                self.fw('  '+fvars.ftof(s.type)+',target:: p__')
-            if s.dynamic:
-                self.fw('  if (nullit__ == 0) then')
-                self.fw('    '+s.name+' => p__')
-                self.fw('  else')
-                self.fw('    NULLIFY('+s.name+')')
-                self.fw('  endif')
-            else:
-                self.fw('  '+s.name+' = p__')
-            self.fw('  RETURN')
-            self.fw('END')
+            if (s.dynamic or s.derivedtype) and not s.parameter:
+                self.fw('SUBROUTINE '+self.fsub('setscalarpointer',s.name)+'(p__,fobj__,nullit__)')
+                self.fw('  USE '+s.group)
+                self.fw('  INTEGER('+self.isz+'):: fobj__')
+                self.fw('  INTEGER('+self.isz+'):: nullit__')
+                if s.type == 'character':
+                    self.fw('  character(len='+s.dims[0].high+'),target:: p__')
+                else:
+                    self.fw('  '+fvars.ftof(s.type)+',target:: p__')
+                if s.dynamic:
+                    self.fw('  if (nullit__ == 0) then')
+                    self.fw('    '+s.name+' => p__')
+                    self.fw('  else')
+                    self.fw('    NULLIFY('+s.name+')')
+                    self.fw('  endif')
+                else:
+                    self.fw('  '+s.name+' = p__')
+                self.fw('  RETURN')
+                self.fw('END')
             if s.dynamic:
                 # --- In all cases, it is not desirable to create a new instance,
                 # --- for example when the object is being deleted.

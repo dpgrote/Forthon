@@ -20,6 +20,7 @@ class Fvars:
     array = 0
     function = 0
     derivedtype = 0
+    parameter = 0
     setaction = None
     getaction = None
 

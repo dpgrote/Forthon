@@ -39,8 +39,22 @@ class ForthonDerivedType:
             hash = hashlib.md5(name).digest().translate(transtable)
         return name[:15] + hash
 
-    # --- Convert fortran variable name into reference from list of variables.
+    def dimisparameter(self,dim):
+        # --- Convert fortran variable name into reference from list of variables
+        # --- and check if it is a parameter.
+        sl=re.split('[ ()/\*\+\-]',dim)
+        for ss in sl:
+            if re.search('[a-zA-Z]',ss) != None:
+                try:
+                    v = self.slist[self.sdict[ss]]
+                    if v.parameter:
+                        return True
+                except KeyError:
+                    pass
+        return False
+
     def prefixdimsc(self,dim,sdict):
+        # --- Convert fortran variable name into reference from list of variables.
         sl=re.split('[ ()/\*\+\-]',dim)
         for ss in sl:
             if re.search('[a-zA-Z]',ss) != None:
@@ -148,8 +162,9 @@ class ForthonDerivedType:
             # --- Note that setpointer get written out for all derived types -
             # --- for non-dynamic derived types, the setpointer routine does a copy.
             for s in slist:
-                self.cw('extern void '+fname(self.fsub(t,'setscalarpointer',s.name))+
-                        '(char *p,char *fobj__,npy_intp *nullit__);')
+                if (s.dynamic or s.derivedtype) and not s.parameter:
+                    self.cw('extern void '+fname(self.fsub(t,'setscalarpointer',s.name))+
+                            '(char *p,char *fobj__,npy_intp *nullit__);')
                 if s.dynamic:
                     self.cw('extern void '+fname(self.fsub(t,'getscalarpointer',s.name))+
                             '(ForthonObject **cobj__,char *fobj__,int *createnew__);')
@@ -190,7 +205,10 @@ class ForthonDerivedType:
                 self.cw('obj->fscalars = NULL;')
             for i in range(len(slist)):
                 s = slist[i]
-                setscalarpointer = '*'+fname(self.fsub(t,'setscalarpointer',s.name))
+                if (s.dynamic or s.derivedtype) and not s.parameter:
+                    setscalarpointer = '*'+fname(self.fsub(t,'setscalarpointer',s.name))
+                else:
+                    setscalarpointer = 'NULL'
                 if s.dynamic: getscalarpointer = '*'+fname(self.fsub(t,'getscalarpointer',s.name))
                 else:         getscalarpointer = 'NULL'
                 if s.setaction is None:
@@ -212,6 +230,7 @@ class ForthonDerivedType:
                                      # The repr is used so newlines get written out
                                      # as \n.
                 self.cw('obj->fscalars[%d].dynamic = %d;'%(i,s.dynamic))
+                self.cw('obj->fscalars[%d].parameter = %d;'%(i,s.parameter))
                 self.cw('obj->fscalars[%d].setscalarpointer = %s;'%(i,setscalarpointer))
                 self.cw('obj->fscalars[%d].getscalarpointer = %s;'%(i,getscalarpointer))
                 self.cw('obj->fscalars[%d].setaction = %s;'%(i,setaction))
@@ -303,9 +322,22 @@ class ForthonDerivedType:
                 if a.dims and not a.dynamic:
                     j = 0
                     for d in a.dims:
-                        self.cw('  '+vname+'.dimensions['+repr(j)+'] = (npy_intp)(('+
-                                d.high+') - ('+d.low+') + 1);')
+                        if d.high == '': continue
+                        self.cw('   '+vname+'.dimensions['+repr(j)+']=(npy_intp)((int)',
+                                noreturn=1)
                         j = j + 1
+                        if re.search('[a-zA-Z]',d.high) == None:
+                            self.cw('('+d.high+')-',noreturn=1)
+                        else:
+                            if not self.dimisparameter(d.high):
+                                raise SyntaxError('%s: static dims must be constants or parameters'%a.name)
+                            self.cw('('+self.prefixdimsc(d.high,sdict)+')-',noreturn=1)
+                        if re.search('[a-zA-Z]',d.low) == None:
+                            self.cw('('+d.low+')+1);')
+                        else:
+                            if not self.dimisparameter(d.low):
+                                raise SyntaxError('%s: static dims must be constants or parameters'%a.name)
+                            self.cw('('+self.prefixdimsc(d.low,sdict)+')+1);')
             self.cw('}')
 
             #########################################################################
@@ -807,22 +839,23 @@ class ForthonDerivedType:
             # --- Write routine for each dynamic variable which gets the pointer
             # --- from the wrapper
             for s in slist:
-                self.fw('! '+self.fsub(t,'setscalarpointer',s.name,dohash=0))
-                self.fw('SUBROUTINE '+self.fsub(t,'setscalarpointer',s.name)+'(p__,fobj__,nullit__)')
-                self.fw('  USE '+t.name+'module')
-                self.fw('  TYPE('+t.name+'):: fobj__')
-                self.fw('  '+fvars.ftof(s.type)+',target:: p__')
-                self.fw('  INTEGER('+isz+'):: nullit__')
-                if s.dynamic:
-                    self.fw('  if (nullit__ == 0) then')
-                    self.fw('    fobj__%'+s.name+' => p__')
-                    self.fw('  else')
-                    self.fw('    NULLIFY(fobj__%'+s.name+')')
-                    self.fw('  endif')
-                else:
-                    self.fw('  fobj__%'+s.name+' = p__')
-                self.fw('  RETURN')
-                self.fw('END')
+                if (s.dynamic or s.derivedtype) and not s.parameter:
+                    self.fw('! '+self.fsub(t,'setscalarpointer',s.name,dohash=0))
+                    self.fw('SUBROUTINE '+self.fsub(t,'setscalarpointer',s.name)+'(p__,fobj__,nullit__)')
+                    self.fw('  USE '+t.name+'module')
+                    self.fw('  TYPE('+t.name+'):: fobj__')
+                    self.fw('  '+fvars.ftof(s.type)+',target:: p__')
+                    self.fw('  INTEGER('+isz+'):: nullit__')
+                    if s.dynamic:
+                        self.fw('  if (nullit__ == 0) then')
+                        self.fw('    fobj__%'+s.name+' => p__')
+                        self.fw('  else')
+                        self.fw('    NULLIFY(fobj__%'+s.name+')')
+                        self.fw('  endif')
+                    else:
+                        self.fw('  fobj__%'+s.name+' = p__')
+                    self.fw('  RETURN')
+                    self.fw('END')
                 if s.dynamic:
                     self.fw('SUBROUTINE '+self.fsub(t,'getscalarpointer',s.name)+
                                     '(cobj__,fobj__,createnew__)')

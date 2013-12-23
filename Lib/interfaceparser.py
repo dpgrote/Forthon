@@ -286,6 +286,13 @@ def processfile(packname,filename,othermacros=[],timeroutines=0):
                 timerv.attr = attributes
                 vlist.append(timerv)
 
+        # Check if variable is a parameter, i.e. not writable
+        elif re.match('parameter\s',text):
+            if v.array or v.function:
+                raise SyntaxError('%s: only scalar variables can be a parameter'%v.name)
+            v.parameter = 1
+            i = 8
+
         # Check if there are any dimensions
         elif text[0] == '(':
             v.array = 1
