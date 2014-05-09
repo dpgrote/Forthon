@@ -165,11 +165,12 @@ if builddir is None:
 else:
     upbuilddir = os.getcwd()
 
-# --- Add the build-temp option. This is needed since distutils would otherwise
-# --- put the object files from compiling the pkgnamepy.c file in a temp
-# --- directory relative to the file. build_temp defaults to an empty string,
-# --- so the .o files are put in the same place as the .c files.
-sys.argv += ['--build-temp',build_temp]
+if dobuild:
+    # --- Add the build-temp option. This is needed since distutils would otherwise
+    # --- put the object files from compiling the pkgnamepy.c file in a temp
+    # --- directory relative to the file. build_temp defaults to an empty string,
+    # --- so the .o files are put in the same place as the .c files.
+    sys.argv += ['--build-temp',build_temp]
 
 # --- Add prefix to interfacefile since it will only be referenced from
 # --- the build directory.
