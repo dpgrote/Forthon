@@ -13,6 +13,9 @@ much more versatile Python language.
 
 Release Notes:
 
+0.8.15:
+ - Minor change, fixing commithash
+
 0.8.14:
  - Added pkgbase option. Also, changed the install location of packages to
    be either the package name or pkgbase.

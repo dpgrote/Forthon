@@ -1,4 +1,4 @@
-"0.8.14"
+"0.8.15"
 commithash = "93bfdcd"
 
 import string
