@@ -15,3 +15,5 @@ scp Forthon-$vvv.tgz docs/index.html License.txt grote@hifweb:/web/html/Forthon
 ssh hifweb "chmod -R go+rX /web/html/Forthon"
 rm -f Forthon-$vvv.tgz version.pyc
 
+# --- upload to Pypi
+python setup.py sdist upload
