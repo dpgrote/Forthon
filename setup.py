@@ -30,10 +30,9 @@ version = '0.8.14'
 try:
     commithash = subprocess.check_output('git log -n 1 --pretty=%h',stderr=subprocess.STDOUT,shell=True).strip()
 except subprocess.CalledProcessError:
-    # --- This version was obtained from a non-git distrobition. Use the
-    # --- saved commit hash for the release.
-    with open('.commithash','r') as ff:
-        commithash = ff.readline().strip()
+    # --- This version was obtained from a non-git distrobution. Use the
+    # --- saved commit hash from the release.
+    commithash = '93bfdcd'
 
 with open('Lib/version.py','w') as ff:
     ff.write("version = '%s'\n"%version)

@@ -1,4 +1,5 @@
 "0.8.14"
+commithash = "93bfdcd"
 
 import string
 import version
@@ -22,8 +23,13 @@ def update():
     # --- Update the version number in the files.
     updatefile('version.py',vvold,vvnew)
     updatefile('docs/index.html',vvold,vvnew)
-    updatefile('Lib/__init__.py',vvold,vvnew)
     updatefile('setup.py',vvold,vvnew)
+
+    # --- Update the commithash of the release.
+    # --- This line is the same as the line in setup.py.
+    commithash = subprocess.check_output('git log -n 1 --pretty=%h',stderr=subprocess.STDOUT,shell=True).strip()
+    updatefile('version.py',version.commithash,commithash)
+    updatefile('setup.py',version.commithash,commithash)
 
 if __name__ == "__main__":
     print version.__doc__
