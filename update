@@ -4,6 +4,8 @@ git pull
 python -c "import version;version.update()"
 set vvv=`python version.py`
 
+git log -n 1 --pretty=%h > .commithash
+
 git commit -a -m "version $vvv"
 git tag $vvv
 git push --tags
