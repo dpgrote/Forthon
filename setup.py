@@ -3,6 +3,7 @@
 #       python setup.py install
 #
 import os, sys, stat
+import subprocess
 
 try:
     import distutils
@@ -27,9 +28,12 @@ except:
 # --- Write out version information to the version.py file.
 version = '0.8.13'
 try:
-    commithash = os.popen('git log -n 1 --pretty=%h').read().strip()
-except OSError:
-    commithash = 'Unknown'
+    commithash = subprocess.check_output('git log -n 1 --pretty=%h',stderr=subprocess.STDOUT,shell=True).strip()
+except subprocess.CalledProcessError:
+    # --- This version was obtained from a non-git distrobition. Use the
+    # --- saved commit hash for the release.
+    with open('.commithash','r') as ff:
+        commithash = ff.readline().strip()
 
 with open('Lib/version.py','w') as ff:
     ff.write("version = '%s'\n"%version)
