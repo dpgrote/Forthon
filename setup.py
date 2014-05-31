@@ -26,7 +26,7 @@ except:
     print('Permissions on License.txt and Src files needs to be set by hand')
 
 # --- Write out version information to the version.py file.
-version = '0.8.13'
+version = '0.8.14'
 try:
     commithash = subprocess.check_output('git log -n 1 --pretty=%h',stderr=subprocess.STDOUT,shell=True).strip()
 except subprocess.CalledProcessError:

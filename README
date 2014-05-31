@@ -20,6 +20,7 @@ Release Notes:
  - Removed references to warp, mostly effecting callpyfunc
  - Allowed source files to be in a subdirectory
  - Added parameter variable attribute
+ - Updates for uploading to PyPI
 
 0.8.13: October 4, 2013
  - Forthon is now compatible with python3
