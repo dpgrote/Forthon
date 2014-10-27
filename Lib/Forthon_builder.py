@@ -269,7 +269,7 @@ for d in (defines + fcompiler.defines):
     definesstr = definesstr + d + '\n'
 
 # --- Define default rule. Note that static doesn't work yet.
-fortranroot,suffix = getpathbasename(fortranfile)
+fortranroot,fortransuffix = getpathbasename(fortranfile)
 if fcompiler.static:
     defaultrule = 'static:'
     raise InputError('Static linking not supported at this time')
@@ -317,8 +317,8 @@ if not verbose:
 compile_firstrule = ''
 if compile_first != '' and compile_firstsuffix != '':
     suffixpath = os.path.join(upbuilddir,'%(compile_first)s'%locals())
-    if compile_firstsuffix == '90': ff = f90free
-    else:                           ff = f90fixed
+    if compile_firstsuffix[-2:] == '90': ff = f90free
+    else:                                ff = f90fixed
     compile_firstrule = """
 %(compile_firstobject)s: %(suffixpath)s
 	%(ff)s %(fopt)s %(fargs)s -c $<
@@ -345,7 +345,20 @@ compilerulestemplate = """
 %%%(osuffix)s: %(freepath)s %(modulecontainer)s%(osuffix)s
 	%(f90free)s %(fopt)s %(fargs)s -c $<
 """
-compilerules = ''
+
+if not writemodules:
+    # --- If not writing modules, create a rule to compile the main fortran file
+    # --- that does not have a dependency on itself. That self dependency causes
+    # --- problems when the fortran file is in a subdirectory.
+    if fortransuffix[-2:] == '90': ff = f90free
+    else:                          ff = f90fixed
+    compilerules = """
+%(wrapperdependency)s: %(upfortranfile)s
+	%(ff)s %(fopt)s %(fargs)s -c $<
+"""%locals()
+else:
+    compilerules = ''
+
 for sourcedir in sourcedirs:
     # --- Create path to fortran files for the Makefile since they will be
     # --- referenced from the build directory.
