@@ -62,6 +62,7 @@ verbose        = options.verbose
 dobuild        = options.dobuild
 with_feenableexcept = options.with_feenableexcept
 pkgbase        = options.pkgbase
+pkgdir         = options.pkgdir
 
 # --- There options require special handling
 
@@ -466,7 +467,18 @@ if pkgbase is None:
 
 define_macros.append(('FORTHON_PKGNAME','"%s"'%pkgbase))
 
+package_dir = None
+packages = None
+if not dobuild:
+    # --- When installing, add the package directory if specified so that the
+    # --- other files are installed.
+    if pkgdir is not None:
+        package_dir = {pkg:pkgdir}
+        packages = [pkg]
+
 setup(name = pkg,
+      packages = packages,
+      package_dir = package_dir,
       ext_modules = [Extension('.'.join([pkgbase,pkg+'py']),
                                cfiles+extracfiles,
                                include_dirs=[forthonhome]+includedirs,
