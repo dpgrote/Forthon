@@ -13,10 +13,14 @@ much more versatile Python language.
 
 Release Notes:
 
-0.8.15:
+0.8.16:
+ - Added pkgdir option
+ - Internal fix in the makefile when not building fortran modules
+
+0.8.15: May 30, 2014
  - Minor change, fixing commithash
 
-0.8.14:
+0.8.14: May 30, 2014
  - Added pkgbase option. Also, changed the install location of packages to
    be either the package name or pkgbase.
  - Arrays and derived types can be set to None to deallocate them.
