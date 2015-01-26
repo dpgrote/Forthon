@@ -1,3 +1,6 @@
+**** THIS EXAMPLE IS BROKEN AND DOES NOT WORK ****
+It is saved for legacy purposes.
+
 This contains an example which shows the use of Forthon in cases where the
 fortran90 modules already exist and fortran derived types are being used. If
 no derived types are being used, the original fortran should be able to be
