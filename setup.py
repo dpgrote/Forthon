@@ -28,7 +28,10 @@ except:
 # --- Write out version information to the version.py file.
 version = '0.8.15'
 try:
-    commithash = subprocess.check_output('git log -n 1 --pretty=%h',stderr=subprocess.STDOUT,shell=True).strip()
+    # --- In python3, check_output returns a byte string that needs to be decoded to get the string.
+    # --- The decode method is mostly harmless in python2.
+    bcommithash = subprocess.check_output('git log -n 1 --pretty=%h',stderr=subprocess.STDOUT,shell=True).strip()
+    commithash = bcommithash.decode()
 except subprocess.CalledProcessError:
     # --- This version was obtained from a non-git distrobution. Use the
     # --- saved commit hash from the release.
