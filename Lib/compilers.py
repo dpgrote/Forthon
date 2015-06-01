@@ -121,6 +121,10 @@ class FCompiler:
 
     def findfile(self,file,followlinks=1):
         if self.machine == 'win32': file = file + '.exe'
+        if os.path.isabs(file):
+            if os.access(file, os.X_OK):
+                return file
+            return None
         for path in self.paths:
             try:
                 if file in os.listdir(path) and os.path.isfile(os.path.join(path,file)):
@@ -763,4 +767,3 @@ class FCompiler:
             self.libs = ['pghpf'] # ???
             self.fopt = '-fast -Mcache_align'
             return 1
-
