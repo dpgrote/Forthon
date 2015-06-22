@@ -166,8 +166,8 @@ class FCompiler:
     # --- Makes sure libdirs is not [''], because that can change the semantics
     # --- of how gcc linking works. A -L'' argument will cause global libraries
     # --- to not be found.
-    def findgnulibdirs(self,*args):
-        libroot = self.findgnulibroot(*args)
+    def findgnulibdirs(self,fcompname,fcompexec):
+        libroot = self.findgnulibroot(fcompname,fcompexec)
         if libroot:
             return [libroot]
         return []
