@@ -121,6 +121,10 @@ class FCompiler:
 
     def findfile(self,file,followlinks=1):
         if self.machine == 'win32': file = file + '.exe'
+        if os.path.isabs(file):
+            if os.access(file, os.X_OK):
+                return file
+            return None
         for path in self.paths:
             try:
                 if file in os.listdir(path) and os.path.isfile(os.path.join(path,file)):
@@ -157,8 +161,16 @@ class FCompiler:
         ff.close()
         # --- Strip off the actual library name to get the path.
         libroot = os.path.dirname(gcclib)
-        # --- That's it!
         return libroot
+
+    # --- Makes sure libdirs is not [''], because that can change the semantics
+    # --- of how gcc linking works. A -L'' argument will cause global libraries
+    # --- to not be found.
+    def findgnulibdirs(self,fcompname,fcompexec):
+        libroot = self.findgnulibroot(fcompname,fcompexec)
+        if libroot:
+            return [libroot]
+        return []
 
     # --- Make sure tha the version of gfortran is new enough. Older versions
     # --- had a bug - array dimensions were not setup properly for array arguments,
@@ -236,8 +248,7 @@ class FCompiler:
                 self.f90free  += ' -fno-second-underscore'
                 self.f90fixed += ' -fno-second-underscore'
             self.popt = '-O'
-            flibroot = self.findgnulibroot('g95',self.fcompexec)
-            self.libdirs = [flibroot]
+            self.libdirs = self.findgnulibdirs('g95',self.fcompexec)
             self.libs = ['f95']
             cpuinfo = open('/proc/cpuinfo','r').read()
             if re.search('Pentium III',cpuinfo):
@@ -275,8 +286,7 @@ class FCompiler:
             else:
                 self.f90free  += ' -fno-second-underscore'
                 self.f90fixed += ' -fno-second-underscore'
-            flibroot = self.findgnulibroot('gfortran',self.fcompexec)
-            self.libdirs = [flibroot]
+            self.libdirs = self.findgnulibdirs('gfortran',self.fcompexec)
             self.libs = ['gfortran']
             self.fopt = '-O3 -ftree-vectorize -ftree-vectorizer-verbose=0'
             return 1
@@ -467,8 +477,8 @@ class FCompiler:
 #           -fstrict-aliasing'
 #      self.extra_link_args = ['-flat_namespace','-undefined suppress','-lg2c']
             self.extra_link_args = ['-flat_namespace','--allow-shlib-undefined','-Wl,--export-all-symbols','-Wl,-export-dynamic','-Wl,--unresolved-symbols=ignore-all','-lg2c']
-            flibroot = self.findgnulibroot('g95',self.fcompexec)
-            self.libdirs = [flibroot,'/lib/w32api']
+            self.libdirs = self.findgnulibdirs('g95',self.fcompexec)
+            self.libdirs.append('/lib/w32api')
             self.libs = ['f95']
             return 1
 
@@ -498,8 +508,7 @@ class FCompiler:
                  -ffast-math -fstrict-aliasing'
 #      self.fopt = '-O3  -mtune=G5 -mcpu=G5 -mpowerpc64'
             self.extra_link_args = ['-flat_namespace']
-            flibroot = self.findgnulibroot('g95',self.fcompexec)
-            self.libdirs = [flibroot]
+            self.libdirs = self.findgnulibdirs('g95',self.fcompexec)
             self.libs = ['f95']
             return 1
 
@@ -537,8 +546,7 @@ class FCompiler:
             self.fopt = '-O3 -ftree-vectorize -ftree-vectorizer-verbose=0'
 #      self.extra_link_args = ['-flat_namespace','-lg2c']
             self.extra_link_args = ['-flat_namespace']
-            flibroot = self.findgnulibroot('gfortran',self.fcompexec)
-            self.libdirs = [flibroot]
+            self.libdirs = self.findgnulibdirs('gfortran',self.fcompexec)
             self.libs = ['gfortran']
             return 1
 
@@ -763,4 +771,3 @@ class FCompiler:
             self.libs = ['pghpf'] # ???
             self.fopt = '-fast -Mcache_align'
             return 1
-
