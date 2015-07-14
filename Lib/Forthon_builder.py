@@ -252,7 +252,7 @@ for f in extrafiles:
         extraobjectslist = extraobjectslist + [root + osuffix]
         if suffix[1:] not in fortransuffices:
             fortransuffices.append(suffix[1:])
-    elif suffix[1:] in ['c']:
+    elif suffix[1:] in ['c', 'cc', 'cpp', 'cxx']:
         extracfiles.append(f)
 
 if compile_first != '':
