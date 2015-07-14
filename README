@@ -16,6 +16,8 @@ Release Notes:
 0.8.16:
  - Added pkgdir option
  - Internal fix in the makefile when not building fortran modules
+ - Added build-base option
+ - Allowed for c++ file suffices (for simple c-interface)
 
 0.8.15: May 30, 2014
  - Minor change, fixing commithash
