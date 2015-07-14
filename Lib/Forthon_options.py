@@ -28,6 +28,7 @@ parser = optparse.OptionParser(usage=usage,description=description,version=versi
 parser.disable_interspersed_args()
 
 parser.add_option('--build',action='store_true',default=True,dest='dobuild',help='build the package only, the default')
+parser.add_option('--build-base',default='',help='Location where the build related temporary files are put.')
 parser.add_option('--build-temp',default='',help='Location where the *pymodule.o files should be placed. This is relative to the builddir. This defaults to the builddir.')
 parser.add_option('--builddir',help='Location where the temporary compilation files (such as object files) should be placed. This defaults to build/temp-osname.')
 
