@@ -1,8 +1,9 @@
-"0.8.15"
-commithash = "93bfdcd"
+"0.8.16"
+commithash = "fca52d4"
 
 import string
 import version
+import subprocess
 
 def updatefile(filename,vvold,vvnew):
     # --- Update the version number in the given file.
