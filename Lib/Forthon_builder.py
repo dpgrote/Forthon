@@ -476,10 +476,10 @@ if not dobuild:
     # --- When installing, add the package directory if specified so that the
     # --- other files are installed.
     if pkgdir is not None:
-        package_dir = {pkg:pkgdir}
-        packages = [pkg]
+        package_dir = {pkgbase:pkgdir}
+        packages = [pkgbase]
 
-setup(name = pkg,
+setup(name = pkgbase,
       packages = packages,
       package_dir = package_dir,
       ext_modules = [Extension('.'.join([pkgbase,pkg+'py']),
