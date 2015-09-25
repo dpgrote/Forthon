@@ -14,7 +14,8 @@ much more versatile Python language.
 Release Notes:
 
 0.8.17:
- - pkgbase not works in combination with pkgdir
+ - pkgbase now works in combination with pkgdir
+ - minor fix avoid redundant dependency in the makefile
 
 0.8.16: July 16, 2015
  - Added pkgdir option

@@ -350,10 +350,12 @@ compilerulestemplate = """
 	%(f90free)s %(fopt)s %(fargs)s -c $<
 """
 
-if not writemodules:
+if not writemodules and not fortranfile == compile_first:
     # --- If not writing modules, create a rule to compile the main fortran file
     # --- that does not have a dependency on itself. That self dependency causes
     # --- problems when the fortran file is in a subdirectory.
+    # --- Skip this if the fortranfile is the same as compile_first to avoid the
+    # --- redundant dependency in the makefile.
     if fortransuffix[-2:] == '90': ff = f90free
     else:                          ff = f90fixed
     compilerules = """
