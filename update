@@ -1,5 +1,5 @@
 #!/usr/bin/env tcsh
-git pull
+git pull --tags
 
 python -c "import version;version.update()"
 set vvv=`python version.py`
@@ -10,12 +10,11 @@ git commit -a -m "version $vvv"
 git tag $vvv
 git push --tags
 
-git archive --worktree-attributes --format=tar --prefix=Forthon-$vvv/ $vvv | gzip > Forthon-$vvv.tgz
+#git archive --worktree-attributes --format=tar --prefix=Forthon-$vvv/ $vvv | gzip > Forthon-$vvv.tgz
 
-
-scp Forthon-$vvv.tgz docs/index.html License.txt grote@hifweb:/web/html/Forthon
-ssh hifweb "chmod -R go+rX /web/html/Forthon"
-rm -f Forthon-$vvv.tgz version.pyc
+#scp Forthon-$vvv.tgz docs/index.html License.txt grote@hifweb:/web/html/Forthon
+#ssh hifweb "chmod -R go+rX /web/html/Forthon"
+#rm -f Forthon-$vvv.tgz version.pyc
 
 # --- upload to Pypi
 python setup.py sdist upload

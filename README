@@ -13,7 +13,10 @@ much more versatile Python language.
 
 Release Notes:
 
-0.8.17:
+0.8.18:
+ - clean up of update
+
+0.8.17: September 29, 2015
  - pkgbase now works in combination with pkgdir
  - minor fix avoid redundant dependency in the makefile
 
