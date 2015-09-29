@@ -26,7 +26,7 @@ except:
     print('Permissions on License.txt and Src files needs to be set by hand')
 
 # --- Write out version information to the version.py file.
-version = '0.8.16'
+version = '0.8.17'
 try:
     # --- In python3, check_output returns a byte string that needs to be decoded to get the string.
     # --- The decode method is mostly harmless in python2.
@@ -35,7 +35,7 @@ try:
 except subprocess.CalledProcessError:
     # --- This version was obtained from a non-git distrobution. Use the
     # --- saved commit hash from the release.
-    commithash = 'd1fb7be'
+    commithash = 'aa336d1'
 
 with open('Lib/version.py','w') as ff:
     ff.write("version = '%s'\n"%version)
