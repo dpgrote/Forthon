@@ -19,9 +19,9 @@ except ImportError:
 
 try:
     perm644 = stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH | stat.S_IWUSR
-    os.chmod('License.txt',perm644)
-    os.chmod('Src/Forthon.h',perm644)
-    os.chmod('Src/Forthon.c',perm644)
+    os.chmod('source/License.txt',perm644)
+    os.chmod('source/Forthon.h',perm644)
+    os.chmod('source/Forthon.c',perm644)
 except:
     print('Permissions on License.txt and Src files needs to be set by hand')
 
@@ -35,9 +35,10 @@ try:
 except subprocess.CalledProcessError:
     # --- This version was obtained from a non-git distrobution. Use the
     # --- saved commit hash from the release.
+    # --- This is automatically updated by version.py.
     commithash = 'aa336d1'
 
-with open('Lib/version.py','w') as ff:
+with open('source/version.py','w') as ff:
     ff.write("version = '%s'\n"%version)
     ff.write("gitversion = '%s'\n"%commithash)
 
@@ -47,19 +48,6 @@ with open('Lib/version.py','w') as ff:
 if distutils.sysconfig.get_config_vars()["LIBDEST"].find('lib64') != -1:
     for scheme in INSTALL_SCHEMES.values():
         scheme['purelib'] = scheme['platlib']
-
-# --- With this, the data_files listed in setup will be installed in
-# --- the usual place in site-packages.
-for scheme in INSTALL_SCHEMES.values():
-    if (sys.platform == 'darwin' and
-        sys.prefix == os.path.join('/System/Library/Frameworks/Python.framework/Versions',sys.version[:3])):
-        # --- A special hack is needed for darwin when running with the system python.
-        # --- In dist_utils/command/install.py, install_purelib is modified to the form below,
-        # --- but install_data is not. Without this hack, the data files would be installed
-        # --- in the Python directory in /System/Library, which is not by default user accessible.
-        scheme['data'] = os.path.join('/Library/Python', sys.version[:3], 'site-packages')
-    else:
-        scheme['data'] = scheme['purelib']
 
 if sys.hexversion < 0x03000000:
     Forthonroot = 'Forthon'
@@ -110,8 +98,8 @@ building of extension modules is also included. Versions using Numeric and
 Numpy are available.""",
        platforms = "Linux, Unix, Windows (cygwin), Mac OSX",
        packages = ['Forthon'],
-       package_dir = {'Forthon': 'Lib'},
-       data_files = [('Forthon', ['License.txt','Src/Forthon.h','Src/Forthon.c'])],
+       package_dir = {'Forthon': 'source'},
+       package_data = {'Forthon': ['License.txt','Forthon.h','Forthon.c']},
        scripts = [Forthon],
        cmdclass = {'build_py':build_py}
        )
