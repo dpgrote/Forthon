@@ -8,6 +8,7 @@ git log -n 1 --pretty=%h > .commithash
 
 git commit -a -m "version $vvv"
 git tag $vvv
+git push
 git push --tags
 
 #git archive --worktree-attributes --format=tar --prefix=Forthon-$vvv/ $vvv | gzip > Forthon-$vvv.tgz
@@ -17,4 +18,5 @@ git push --tags
 #rm -f Forthon-$vvv.tgz version.pyc
 
 # --- upload to Pypi
+# --- create a ~/.pypirc file with username and password information.
 python setup.py sdist upload
