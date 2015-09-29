@@ -13,8 +13,10 @@ much more versatile Python language.
 
 Release Notes:
 
-0.8.18:
- - clean up of update
+0.8.18: September 29, 2015
+ - Clean up of update
+ - Rearranged the source, moving Src and Lib into source
+ - This fixes install problem when using pip
 
 0.8.17: September 29, 2015
  - pkgbase now works in combination with pkgdir

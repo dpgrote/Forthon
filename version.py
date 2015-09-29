@@ -1,5 +1,5 @@
-"0.8.17"
-commithash = "aa336d1"
+"0.8.18"
+commithash = "36d0e50"
 
 import string
 import version
