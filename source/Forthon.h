@@ -1642,7 +1642,7 @@ static PyObject *ForthonPackage_delvarattr(PyObject *_self_,PyObject *args)
     /* Check if attr was found, and make sure it is surrounded by spaces. */
     if (ind == -1 ||
         (ind > 0 && self->fscalars[i].attributes[ind-1] != ' ') ||
-        (ind < strlen(self->fscalars[i].attributes) &&
+        (ind < (int)strlen(self->fscalars[i].attributes) &&
          self->fscalars[i].attributes[ind+strlen(attr)] != ' ')) {
       PyErr_SetString(ErrorObject,"Variable has no such attribute");
       return NULL;
@@ -1667,7 +1667,7 @@ static PyObject *ForthonPackage_delvarattr(PyObject *_self_,PyObject *args)
     /* Check if attr was found, and make sure it is surrounded by spaces. */
     if (ind == -1 ||
         (ind > 0 && self->farrays[i].attributes[ind-1] != ' ') ||
-        (ind < strlen(self->farrays[i].attributes) &&
+        (ind < (int)strlen(self->farrays[i].attributes) &&
          self->farrays[i].attributes[ind+strlen(attr)] != ' ')) {
       PyErr_SetString(ErrorObject,"Variable has no such attribute");
       return NULL;
