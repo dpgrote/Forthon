@@ -1,5 +1,7 @@
 build
 Lib/version.py
 
+source/version.py
+
 *.egg-info/
 *.so
