@@ -553,7 +553,7 @@ class ForthonDerivedType:
                     else:
                         if a.type == 'character':
                             self.fw('    CHARACTER(LEN='+a.dims[0].high+'):: '+
-                                    a.name+re.sub('[ \t\n]','',a.dimstring),noreturn=1)
+                                    a.name+re.sub('[ \t\n]','',a.dimstring))
                         else:
                             self.fw('    '+fvars.ftof(a.type)+':: '+
                                     a.name+re.sub('[ \t\n]','',a.dimstring))
