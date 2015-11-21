@@ -931,7 +931,7 @@ def pydump(fname=None,attr=["dump"],vars=[],serial=0,ff=None,varsuffix=None,
 # global dictionary.
 def pyrestore(filename=None,fname=None,verbose=0,skip=[],ff=None,
               varsuffix=None,ls=0,lreturnfobjdict=0,lreturnff=0,
-              datareader=None):
+              datareader=None,main=None):
     """
     Restores all of the variables in the specified file.
       - filename: file to read in from (assumes PDB format)
@@ -948,6 +948,8 @@ def pyrestore(filename=None,fname=None,verbose=0,skip=[],ff=None,
               when 2 prints in a column
       - datareader=PR: data reader object, can be any class that conforms to the
                        API of the PR class from PyPDB
+      - main=__main__: main object that Forthon objects are restored into
+                       Used when the Forthon package is not "import *" into main.
     Note that it will automatically detect whether the file is PDB or HDF.
     """
     # --- fname is the old input argument name
@@ -1092,10 +1094,10 @@ def pyrestore(filename=None,fname=None,verbose=0,skip=[],ff=None,
 
     for gname in groups.iterkeys():
         pyrestoreforthonobject(ff,gname,groups[gname],fobjdict,varsuffix,
-                               verbose,doarrays=0)
+                               verbose,doarrays=0,main=main)
     for gname in groups.iterkeys():
         pyrestoreforthonobject(ff,gname,groups[gname],fobjdict,varsuffix,
-                               verbose,doarrays=1)
+                               verbose,doarrays=1,main=main)
 
     if closefile: ff.close()
     resultlist = []
@@ -1130,18 +1132,22 @@ def sortrestorevarsbysuffix(vlist,skip):
 
 #-----------------------------------------------------------------------------
 def pyrestoreforthonobject(ff,gname,vlist,fobjdict,varsuffix,verbose,doarrays,
-                           gpdbname=None):
+                           gpdbname=None,main=None):
     """
       - ff: reference to file being written to
       - gname: name (in python format) of object to read in
       - vlist: list of variables from the file that are part of this object
-     - fobjdist: dictionary of objects already read in
+      - fobjdist: dictionary of objects already read in
       - varsuffix: suffix to apply to all variables (in python)
       - verbose: when true, lists whether each variable is successfully read in
       - doarrays: when true, reads in arrays, otherwise only scalars
       - gpdbname: actual name of object in the data file. If None, extracted
                   from gname.
     """
+
+    if main is None:
+        # --- Default is the current top level main object.
+        main = __main__
 
     # --- Convert gname in pdb-style name
     if gpdbname is None:
@@ -1153,7 +1159,7 @@ def pyrestoreforthonobject(ff,gname,vlist,fobjdict,varsuffix,verbose,doarrays,
     # --- If not, create a new variable.
     neednew = 0
     try:
-        v = eval(gname,__main__.__dict__)
+        v = eval(gname,main.__dict__)
         if v is None: neednew = 1
     except:
         neednew = 1
@@ -1167,16 +1173,16 @@ def pyrestoreforthonobject(ff,gname,vlist,fobjdict,varsuffix,verbose,doarrays,
         # --- First, check if the object has already been restored.
         if fobj in fobjdict:
             # --- If so, then point new variable to existing object
-            __main__.__dict__[gname] = __main__.__dict__[fobjdict[fobj]]
-            #exec("%s = %s"%(gname,fobjdict[fobj]),__main__.__dict__)
+            main.__dict__[gname] = main.__dict__[fobjdict[fobj]]
+            #exec("%s = %s"%(gname,fobjdict[fobj]),main.__dict__)
             # return ???
         else:
             # --- Otherwise, create a new instance of the appropriate type,
             # --- and add it to the list of objects.
             typename = ff.__getattr__("TYPENAME@"+gpdbname)
             try:
-                __main__.__dict__[gname] = __main__.__dict__[typename]()
-                #exec("%s = %s()"%(gname,typename),__main__.__dict__)
+                main.__dict__[gname] = main.__dict__[typename]()
+                #exec("%s = %s()"%(gname,typename),main.__dict__)
             except:
                 # --- If it gets here, it might mean that the name no longer exists.
                 return
@@ -1198,7 +1204,7 @@ def pyrestoreforthonobject(ff,gname,vlist,fobjdict,varsuffix,verbose,doarrays,
         # --- This loops over the attributes, finding the second to the last
         # --- level. setattr is then used to assign the value to the leaf.
         n = fullname.split('.')
-        v = __main__.__dict__[n[0]]
+        v = main.__dict__[n[0]]
         for a in n[1:-1]:
             v = getattr(v,a)
         setattr(v,n[-1],val)
@@ -1220,7 +1226,7 @@ def pyrestoreforthonobject(ff,gname,vlist,fobjdict,varsuffix,verbose,doarrays,
                 if verbose: print "reading in "+fullname
                 doassignment(fullname,val)
             elif isinstance(val,ndarray) and doarrays:
-                pkg = eval(gname,__main__.__dict__)
+                pkg = eval(gname,main.__dict__)
                 # --- forceassign is used, allowing the array read in to have a
                 # --- different size than the current size of the array.
                 if verbose: print "reading in "+fullname
@@ -1260,7 +1266,7 @@ def pyrestoreforthonobject(ff,gname,vlist,fobjdict,varsuffix,verbose,doarrays,
     # --- Read in rest of groups.
     for g,v in groups.iteritems():
         pyrestoreforthonobject(ff,gname+'.'+g,v,fobjdict,varsuffix,verbose,doarrays,
-                               g+'@'+gpdbname)
+                               g+'@'+gpdbname,main=main)
 
 
 # --- create an alias for pyrestore
