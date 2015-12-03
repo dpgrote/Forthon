@@ -16,6 +16,7 @@ Release Notes:
 0.8.19:
  - Bug fix for strings in derived types
  - Fixed restart of packages that are not "import *" into main
+ - Added optional pkgsuffix option
 
 0.8.18: September 29, 2015
  - Clean up of update

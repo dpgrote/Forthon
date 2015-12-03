@@ -37,11 +37,12 @@ class PyWrap:
       [file2, ...] Subsidiary variable description files
     """
 
-    def __init__(self,ifile,pname,initialgallot=1,writemodules=1,
+    def __init__(self,ifile,pname,psuffix,initialgallot=1,writemodules=1,
                  otherinterfacefiles=[],other_scalar_vars=[],timeroutines=0,
                  otherfortranfiles=[],fcompname=None):
         self.ifile = ifile
         self.pname = pname
+        self.psuffix = psuffix
         self.initialgallot = initialgallot
         self.writemodules = writemodules
         self.timeroutines = timeroutines
@@ -867,7 +868,7 @@ class PyWrap:
         if sys.hexversion >= 0x03000000:
             self.cw('static struct PyModuleDef moduledef = {')
             self.cw('  PyModuleDef_HEAD_INIT,')
-            self.cw('  "{0}py", /* m_name */'.format(self.pname))
+            self.cw('  "{0}py", /* m_name */'.format(self.pname+self.psuffix))
             self.cw('  "{0}", /* m_doc */'.format(self.pname))
             self.cw('  -1,                  /* m_size */')
             self.cw('  {0}_methods,    /* m_methods */'.format(self.pname))
@@ -879,9 +880,9 @@ class PyWrap:
 
         self.cw('PyMODINIT_FUNC')
         if sys.hexversion >= 0x03000000:
-            self.cw('PyInit_'+self.pname+'py(void)')
+            self.cw('PyInit_'+self.pname+self.psuffix+'py(void)')
         else:
-            self.cw('init'+self.pname+'py(void)')
+            self.cw('init'+self.pname+self.psuffix+'py(void)')
         self.cw('{')
 
         self.cw('  PyObject *m;')
@@ -900,7 +901,7 @@ class PyWrap:
         if sys.hexversion >= 0x03000000:
             self.cw('  m = PyModule_Create(&moduledef);')
         else:
-            self.cw('  m = Py_InitModule("'+self.pname+'py",'+self.pname+'_methods);')
+            self.cw('  m = Py_InitModule("'+self.pname+self.psuffix+'py",'+self.pname+'_methods);')
 
          #self.cw('  PyModule_AddObject(m,"'+self.pname+'Type",'+
          #               '(PyObject *)&ForthonType);')
@@ -918,7 +919,7 @@ class PyWrap:
                     self.pname+'setstaticdims;')
         self.cw('  '+self.pname+'Object->fmethods = '+self.pname+'_methods;')
         self.cw('  '+self.pname+'Object->__module__ = Py_BuildValue("s","'+
-                     self.pname+'py");')
+                     self.pname+self.psuffix+'py");')
         self.cw('  '+self.pname+'Object->fobj = NULL;')
         self.cw('  '+self.pname+'Object->fobjdeallocate = NULL;')
         self.cw('  '+self.pname+'Object->nullifycobj = NULL;')
@@ -926,7 +927,7 @@ class PyWrap:
         self.cw('  '+self.pname+'Object->garbagecollected = 0;')
         self.cw('  PyModule_AddObject(m,"'+self.pname+'",(PyObject *)'+
                     self.pname+'Object);')
-        self.cw('  ErrorObject = PyErr_NewException("'+self.pname+'py.error",NULL,NULL);')
+        self.cw('  ErrorObject = PyErr_NewException("'+self.pname+self.psuffix+'py.error",NULL,NULL);')
         self.cw('  PyModule_AddObject(m,"'+self.pname+'error", ErrorObject);')
         self.cw('  PyModule_AddObject(m,"fcompname",'+
                    'PyUnicode_FromString("'+self.fcompname+'"));')
@@ -995,7 +996,7 @@ class PyWrap:
         ###########################################################################
         ###########################################################################
         # --- Process any derived types
-        wrappergen_derivedtypes.ForthonDerivedType(self.typelist,self.pname,
+        wrappergen_derivedtypes.ForthonDerivedType(self.typelist,self.pname,self.psuffix,
                                    self.pname+'pymodule.c',
                                    self.pname+'_p.F90',self.isz,
                                    self.writemodules,self.fcompname)
@@ -1229,6 +1230,7 @@ def wrappergenerator_main(argv=None,writef90modulesonly=0):
         sys.exit(1)
 
     # --- get other command line options and default actions
+    psuffix = options.pkgsuffix
     initialgallot = options.initialgallot
     fcompname = options.fcomp
     writemodules = options.writemodules
@@ -1240,7 +1242,7 @@ def wrappergenerator_main(argv=None,writef90modulesonly=0):
     for d in options.dependencies:
         get_another_scalar_dict(d,other_scalar_vars)
 
-    cc = PyWrap(ifile,pname,initialgallot,writemodules,
+    cc = PyWrap(ifile,pname,psuffix,initialgallot,writemodules,
                 otherinterfacefiles,other_scalar_vars,timeroutines,
                 otherfortranfiles,fcompname)
     if writef90modulesonly:

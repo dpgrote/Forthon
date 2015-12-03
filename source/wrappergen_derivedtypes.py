@@ -11,12 +11,12 @@ else:
 from cfinterface import *
 
 class ForthonDerivedType:
-    def __init__(self,typelist,pname,c,f,isz,writemodules,fcompname):
+    def __init__(self,typelist,pname,psuffix,c,f,isz,writemodules,fcompname):
         if not typelist: return
 
         self.cfile = open(c,'a')
         self.ffile = open(f,'a')
-        self.wrapderivedtypes(typelist,pname,isz,writemodules,fcompname)
+        self.wrapderivedtypes(typelist,pname,psuffix,isz,writemodules,fcompname)
         self.cfile.close()
         self.ffile.close()
 
@@ -115,7 +115,7 @@ class ForthonDerivedType:
             self.ffile.write(text+'\n')
 
     # --- This is the routine that does all of the work for derived types
-    def wrapderivedtypes(self,typelist,pname,isz,writemodules,fcompname):
+    def wrapderivedtypes(self,typelist,pname,psuffix,isz,writemodules,fcompname):
 
         for t in typelist:
             self.cw('')
@@ -414,7 +414,7 @@ class ForthonDerivedType:
             self.cw('  obj->setdims = *'+t.name+'setdims;')
             self.cw('  obj->setstaticdims = *'+t.name+'setstaticdims;')
             self.cw('  obj->fmethods = '+t.name+'_methods;')
-            self.cw('  obj->__module__ = Py_BuildValue("s","'+pname+'py");')
+            self.cw('  obj->__module__ = Py_BuildValue("s","'+pname+psuffix+'py");')
             self.cw('  obj->fobj = fobj;')
             self.cw('  if (*deallocatable==1)')
             self.cw('    obj->fobjdeallocate=*'+fname(self.fsub(t,'deallocatef'))+';')

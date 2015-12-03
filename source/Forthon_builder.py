@@ -64,6 +64,7 @@ dobuild        = options.dobuild
 with_feenableexcept = options.with_feenableexcept
 pkgbase        = options.pkgbase
 pkgdir         = options.pkgdir
+pkgsuffix      = options.pkgsuffix
 
 # --- There options require special handling
 
@@ -91,6 +92,7 @@ if not fortranfile:
 
 # --- Set arguments to Forthon, based on defaults and any inputs.
 forthonargs = []
+if pkgsuffix: forthonargs.append('--pkgsuffix %s'%pkgsuffix)
 if underscoring: forthonargs.append('--underscoring')
 else:            forthonargs.append('--nounderscoring')
 if twounderscores: forthonargs.append('--2underscores')
@@ -422,7 +424,7 @@ os.chdir(upbuilddir)
 # --- than the shared object. The 'try' is used in case the file doesn't
 # --- exist (like when the code is built the first time).
 try:
-    os.remove(pkg+'py.so')
+    os.remove(pkg+pkgsuffix+'py.so')
 except:
     pass
 
@@ -468,7 +470,7 @@ if with_feenableexcept:
     define_macros.append(('WITH_FEENABLEEXCEPT',1))
 
 if pkgbase is None:
-    pkgbase = pkg
+    pkgbase = pkg + pkgsuffix
 
 define_macros.append(('FORTHON_PKGNAME','"%s"'%pkgbase))
 
@@ -484,7 +486,7 @@ if not dobuild:
 setup(name = pkgbase,
       packages = packages,
       package_dir = package_dir,
-      ext_modules = [Extension('.'.join([pkgbase,pkg+'py']),
+      ext_modules = [Extension('.'.join([pkgbase,pkg+pkgsuffix+'py']),
                                cfiles+extracfiles,
                                include_dirs=[forthonhome]+includedirs,
                                extra_objects=ofiles,

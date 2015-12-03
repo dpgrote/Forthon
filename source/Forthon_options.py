@@ -65,6 +65,7 @@ parser.add_option('--macros',action='append',dest='othermacros',default=[],metav
 
 parser.add_option('--pkgbase',default=None,help='Base name of code, when installed. This is use when the package is installed as part of a larger code, when the installed package name is different than the package name of the comiled module.')
 parser.add_option('--pkgdir',default=None,help='Directory where files are that are to be installed with the wrapper')
+parser.add_option('--pkgsuffix',default='',help='Suffix added to the name of the package when installed')
 
 parser.add_option('--realsize',choices=['4','8'],default='8',metavar='[4,8]',help='The size of reals to use for variables that are declared to of type real in the variable description file. It defaults to 8.')
 
