@@ -20,27 +20,6 @@ import cPickle
 try:
     from PyPDB import PW,PR
 except ImportError:
-    try:
-        # --- Old way of importing the PyPDB modules
-        import PW
-        import PR
-    except ImportError:
-        pass
-try:
-    import PWpyt
-    import PRpyt
-except ImportError:
-    pass
-try:
-    import PWpickle
-    import PRpickle
-    try:
-        PW
-        PR
-    except NameError:
-        import PWpickle as PW
-        import PRpickle as PR
-except ImportError:
     pass
 try:
     import inspect
@@ -761,8 +740,8 @@ def pydump(fname=None,attr=["dump"],vars=[],serial=0,ff=None,varsuffix=None,
       - hdf=0: (obsolete) this argument is ignored
       - returnfobjlist=0: when true, returns the list of fobjects that were
                           written to the file
-      - datawriter=PW: datawriter is the data writer class to use. This can be any
-                       class that conforms to the API of PW from the PyPDB package.
+      - datawriter=PW.PW: datawriter is the data writer class to use. This can be any
+                          class that conforms to the API of PW.PW from the PyPDB package.
     """
     assert fname is not None or ff is not None,\
            "Either a filename must be specified or a data writer instance"
@@ -778,8 +757,7 @@ def pydump(fname=None,attr=["dump"],vars=[],serial=0,ff=None,varsuffix=None,
             except NameError:
                 pass
 
-        # --- Try each of the data file formats until one is found.
-        # --- datawriter will be either the default or the user supplied one.
+        # --- Try to open the file using the datawriter.
         if datawriter is not None:
             try:
                 ff = datawriter(fname)
@@ -788,37 +766,19 @@ def pydump(fname=None,attr=["dump"],vars=[],serial=0,ff=None,varsuffix=None,
             except:
                 pass
 
-        if ff is None:
-            # --- If PDB not available, try pickle. Note that this should always work.
-            try:
-                ff = PWpickle.PW(fname)
-            except IOError:
-                raise
-            except:
-                pass
-
-        if ff is None:
-            # --- If PDB not available, try HDF.
-            try:
-                ff = PWpyt.PW(fname)
-            except IOError:
-                raise
-            except:
-                pass
-
-        assert ff is not None,"Dump file cannot be opened, no data formats available"
+        assert ff is not None,"Dump file cannot be created, the datawriter cannot open the file or is unspecified"
         closefile = 1
     else:
         closefile = 0
-
-    if verbose: print "Data will be written using %s format"%ff.file_type
 
     # --- Make sure the file has a file_type. Older versions of the pdb
     # --- wrapper did not define a file type.
     try:
         ff.file_type
-    except:
-        ff.file_type = 'oldPDB'
+    except AttributeError:
+        ff.file_type = 'unknown'
+
+    if verbose: print "Data will be written using %s format"%ff.file_type
 
     # --- Convert attr into a list if needed
     if not isinstance(attr,list): attr = [attr]
@@ -903,7 +863,7 @@ def pydump(fname=None,attr=["dump"],vars=[],serial=0,ff=None,varsuffix=None,
         # --- If that didn't work, try writing as a pickled object
         # --- This is only needed for the old pdb wrapper. The new one
         # --- automatically pickles things as needed.
-        if ff.file_type == 'oldPDB':
+        if ff.file_type == 'unknown':
             try:
                 if verbose:
                     print "writing python variable "+vname+" as "+vname+varsuffix+'@pickle'
@@ -946,8 +906,8 @@ def pyrestore(filename=None,fname=None,verbose=0,skip=[],ff=None,
       - ls=0: when true, prints a list of the variables in the file
               when 1 prints as tuple
               when 2 prints in a column
-      - datareader=PR: data reader object, can be any class that conforms to the
-                       API of the PR class from PyPDB
+      - datareader=PR.PR: data reader object, can be any class that conforms to the
+                          API of the PR.PR class from PyPDB
       - main=__main__: main object that Forthon objects are restored into
                        Used when the Forthon package is not "import *" into main.
     Note that it will automatically detect whether the file is PDB or HDF.
@@ -959,6 +919,7 @@ def pyrestore(filename=None,fname=None,verbose=0,skip=[],ff=None,
     if ff is None:
         if datareader==None:
             try:
+                # --- PyPDB is the default data format.
                 datareader = PR.PR
             except NameError:
                 pass
@@ -966,25 +927,11 @@ def pyrestore(filename=None,fname=None,verbose=0,skip=[],ff=None,
         # --- Check if file exists
         assert os.access(filename,os.F_OK),"File %s does not exist"%filename
 
-        # --- try opening file with either the default PR or user supplied reader
+        # --- Try opening file with either the default PR or user supplied reader
         try:
             ff = datareader(filename)
         except:
             pass
-
-        if ff is None:
-            # --- If that didn't work, try PRpickle
-            try:
-                ff = PRpickle.PR(filename)
-            except:
-                pass
-
-        if ff is None:
-            # --- If PDB didn't work, try pytables
-            try:
-                ff = PRpyt.PR(filename)
-            except:
-                pass
 
         assert ff is not None,"File %s could not be opened"%filename
         closefile = 1
@@ -993,14 +940,14 @@ def pyrestore(filename=None,fname=None,verbose=0,skip=[],ff=None,
 
     if lreturnff: closefile = 0
 
-    if verbose: print "Data will be read using %s format"%ff.file_type
-
     # --- Make sure the file has a file_type. Older versions of the pdb
     # --- wrapper did not define a file type.
     try:
         ff.file_type
-    except:
-        ff.file_type = 'oldPDB'
+    except AttributeError:
+        ff.file_type = 'unknown'
+
+    if verbose: print "Data will be read using %s format"%ff.file_type
 
     # --- Get a list of all of the variables in the file, loop over that list
     vlist = ff.inquire_names()
@@ -1037,7 +984,7 @@ def pyrestore(filename=None,fname=None,verbose=0,skip=[],ff=None,
     # --- as pickled objects. The data is unpickled and the variable
     # --- in put in the main dictionary.
     # --- This is only needed with the old pdb wrapper.
-    if ff.file_type == 'oldPDB':
+    if ff.file_type == 'unknown':
         if 'pickle' in groups:
             picklelist = groups['pickle']
             del groups['pickle']
