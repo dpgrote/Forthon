@@ -92,6 +92,7 @@ if not fortranfile:
 
 # --- Set arguments to Forthon, based on defaults and any inputs.
 forthonargs = []
+if pkgbase is not None: forthonargs.append('--pkgbase %s'%pkgbase)
 if pkgsuffix: forthonargs.append('--pkgsuffix %s'%pkgsuffix)
 if underscoring: forthonargs.append('--underscoring')
 else:            forthonargs.append('--nounderscoring')

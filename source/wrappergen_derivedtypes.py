@@ -11,8 +11,12 @@ else:
 from cfinterface import *
 
 class ForthonDerivedType:
-    def __init__(self,typelist,pname,psuffix,c,f,isz,writemodules,fcompname):
+    def __init__(self,typelist,pname,psuffix,pkgbase,c,f,isz,writemodules,fcompname):
         if not typelist: return
+
+        self.pname = pname
+        self.psuffix = psuffix
+        self.pkgbase = pkgbase
 
         self.cfile = open(c,'a')
         self.ffile = open(f,'a')
@@ -90,6 +94,12 @@ class ForthonDerivedType:
             if sl[i] == ':': sl[i] = 'dims__(%d)'%(i+1)
         dim = '(' + ','.join(sl) + ')'
         return dim.lower()
+
+    def getmodulename(self):
+        if self.pkgbase is not None:
+            return self.pkgbase
+        else:
+            return self.pname + self.psuffix + 'py'
 
     # --------------------------------------------
     def cw(self,text,noreturn=0):
@@ -414,7 +424,7 @@ class ForthonDerivedType:
             self.cw('  obj->setdims = *'+t.name+'setdims;')
             self.cw('  obj->setstaticdims = *'+t.name+'setstaticdims;')
             self.cw('  obj->fmethods = '+t.name+'_methods;')
-            self.cw('  obj->__module__ = Py_BuildValue("s","'+pname+psuffix+'py");')
+            self.cw('  obj->__module__ = Py_BuildValue("s","%s");'%self.getmodulename())
             self.cw('  obj->fobj = fobj;')
             self.cw('  if (*deallocatable==1)')
             self.cw('    obj->fobjdeallocate=*'+fname(self.fsub(t,'deallocatef'))+';')

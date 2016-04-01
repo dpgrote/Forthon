@@ -37,12 +37,13 @@ class PyWrap:
       [file2, ...] Subsidiary variable description files
     """
 
-    def __init__(self,ifile,pname,psuffix,initialgallot=1,writemodules=1,
+    def __init__(self,ifile,pname,psuffix,pkgbase,initialgallot=1,writemodules=1,
                  otherinterfacefiles=[],other_scalar_vars=[],timeroutines=0,
                  otherfortranfiles=[],fcompname=None):
         self.ifile = ifile
         self.pname = pname
         self.psuffix = psuffix
+        self.pkgbase = pkgbase
         self.initialgallot = initialgallot
         self.writemodules = writemodules
         self.timeroutines = timeroutines
@@ -141,6 +142,12 @@ class PyWrap:
                     else:
                         raise SyntaxError(ss + ' is not declared in the interface file')
         return groups
+
+    def getmodulename(self):
+        if self.pkgbase is not None:
+            return self.pkgbase
+        else:
+            return self.pname+self.psuffix + 'py'
 
     def cw(self,text,noreturn=0):
         if noreturn:
@@ -918,8 +925,7 @@ class PyWrap:
         self.cw('  '+self.pname+'Object->setstaticdims = *'+
                     self.pname+'setstaticdims;')
         self.cw('  '+self.pname+'Object->fmethods = '+self.pname+'_methods;')
-        self.cw('  '+self.pname+'Object->__module__ = Py_BuildValue("s","'+
-                     self.pname+self.psuffix+'py");')
+        self.cw('  '+self.pname+'Object->__module__ = Py_BuildValue("s","%s");'%self.getmodulename())
         self.cw('  '+self.pname+'Object->fobj = NULL;')
         self.cw('  '+self.pname+'Object->fobjdeallocate = NULL;')
         self.cw('  '+self.pname+'Object->nullifycobj = NULL;')
@@ -996,7 +1002,7 @@ class PyWrap:
         ###########################################################################
         ###########################################################################
         # --- Process any derived types
-        wrappergen_derivedtypes.ForthonDerivedType(self.typelist,self.pname,self.psuffix,
+        wrappergen_derivedtypes.ForthonDerivedType(self.typelist,self.pname,self.psuffix,self.pkgbase,
                                    self.pname+'pymodule.c',
                                    self.pname+'_p.F90',self.isz,
                                    self.writemodules,self.fcompname)
@@ -1231,6 +1237,7 @@ def wrappergenerator_main(argv=None,writef90modulesonly=0):
 
     # --- get other command line options and default actions
     psuffix = options.pkgsuffix
+    pkgbase = options.pkgbase
     initialgallot = options.initialgallot
     fcompname = options.fcomp
     writemodules = options.writemodules
@@ -1242,7 +1249,7 @@ def wrappergenerator_main(argv=None,writef90modulesonly=0):
     for d in options.dependencies:
         get_another_scalar_dict(d,other_scalar_vars)
 
-    cc = PyWrap(ifile,pname,psuffix,initialgallot,writemodules,
+    cc = PyWrap(ifile,pname,psuffix,pkgbase,initialgallot,writemodules,
                 otherinterfacefiles,other_scalar_vars,timeroutines,
                 otherfortranfiles,fcompname)
     if writef90modulesonly:
