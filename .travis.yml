@@ -17,6 +17,12 @@ matrix:
 
 sudo: false
 
+addons:
+  apt:
+    packages:
+      # gfortran is needed to build the examples
+      - gfortran
+
 env:
   matrix:
     - USE_PIP=ON
@@ -33,3 +39,21 @@ script:
     else
       python setup.py install;
     fi
+  # Python3 test
+  - FORTHON_FOUND=$(which Forthon >/dev/null && { echo 0; } || { echo 1; })
+  - if [ $FORTHON_FOUND -eq 0 ]; then
+      export FORTHON_CMD=Forthon;
+    else
+      echo "Python 3 - overwriting Forthon executable with Forthon3";
+      export FORTHON_CMD=Forthon3;
+    fi
+  - which $FORTHON_CMD
+  # now build some examples
+  - cd example
+  - make FORTHON=$FORTHON_CMD
+  # broken legacy example:
+  # - cd ../example2
+  # - make FORTHON=$FORTHON_CMD
+  - cd ../simpleexample
+  - make FORTHON=$FORTHON_CMD
+  - cd ..
