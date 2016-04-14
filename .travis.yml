@@ -1,7 +1,6 @@
 language: python
 
 python:
- - "2.6"
  - "2.7"
  - "3.4"
  - "3.5"
@@ -11,9 +10,15 @@ python:
 
 matrix:
   allow_failures:
+    # those "upcoming" python versions are informational
     - python: nightly
     - python: "pypy"
     - python: "pypy3"
+    # Python 3.X & PIP is currently broken and needs a fix
+    - env: USE_PIP=ON
+      python: "3.4"
+    - env: USE_PIP=ON
+      python: "3.5"
 
 sudo: false
 
