@@ -2,6 +2,8 @@
 See License.txt for license information.
 ============================================================================
 
+[![Build Status](https://travis-ci.org/dpgrote/Forthon.svg?branch=master)](https://travis-ci.org/dpgrote/Forthon)
+
 Forthon generates links between Fortran95 and Python. Python is a high level,
 object oriented, interactive and scripting language that allows a flexible
 and versatile interface to computational tools. The Forthon package generates
