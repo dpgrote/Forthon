@@ -1,6 +1,7 @@
+FORTHON=Forthon
 
 example: example.F example.v
-	Forthon example
+	$(FORTHON) example
 	mv build/*/*/*.so .
 	python example.py
 
