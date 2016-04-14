@@ -1,9 +1,10 @@
 FORTHON=Forthon
+PYTHON=python
 
 example: example.F example.v
 	$(FORTHON) example
 	mv build/*/*/*.so .
-	python example.py
+	$(PYTHON) example.py
 
 clean:
 	rm -rf build *.so
