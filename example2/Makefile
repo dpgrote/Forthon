@@ -1,7 +1,7 @@
 
 example2: example2.F example2.v
 	Forthon --nowritemodules example2
-	mv build/*/*/example2py.so .
+	mv build/*/*/*.so .
 	python example2.py
 
 clean:
