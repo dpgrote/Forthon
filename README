@@ -13,6 +13,9 @@ much more versatile Python language.
 
 Release Notes:
 
+0.8.20:
+ - Added Forthon3 to MANIFEST
+
 0.8.19: April 1, 2016
  - Bug fix for strings in derived types
  - Fixed restart of packages that are not "import *" into main
