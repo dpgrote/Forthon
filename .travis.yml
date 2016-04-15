@@ -29,7 +29,7 @@ env:
     - USE_PIP=OFF
 
 script:
-  # install latest release from pip
+  # install latest release from pip ###########################################
   # .. or install from source
   #
   # note: since this is executed in a virtualenv
@@ -39,16 +39,19 @@ script:
     else
       python setup.py install;
     fi
-  # Python3 test
-  - FORTHON_FOUND=$(which Forthon >/dev/null && { echo 0; } || { echo 1; })
-  - if [ $FORTHON_FOUND -eq 0 ]; then
-      export FORTHON_CMD=Forthon;
-    else
+  # Python3 ###################################################################
+  #
+  - if [[ $TRAVIS_PYTHON_VERSION == 3* ]] ||
+       [[ $TRAVIS_PYTHON_VERSION == nightly ]] ||
+       [[ $TRAVIS_PYTHON_VERSION == pypy3 ]]; then
       echo "Python 3 - overwriting Forthon executable with Forthon3";
       export FORTHON_CMD=Forthon3;
+    else
+      export FORTHON_CMD=Forthon;
     fi
   - which $FORTHON_CMD
-  # now build some examples
+  # now build some examples ###################################################
+  #
   - cd example
   - make FORTHON=$FORTHON_CMD
   # broken legacy example:
