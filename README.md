@@ -15,7 +15,7 @@ much more versatile Python language.
 
 Release Notes:
 
-0.8.20:
+0.8.20: April 15, 2016
  - Added Forthon3 to MANIFEST
 
 0.8.19: April 1, 2016
