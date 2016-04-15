@@ -86,7 +86,6 @@ setup (name = "Forthon",
        author = 'David P. Grote',
        author_email = "DPGrote@lbl.gov",
        url = "http://hifweb.lbl.gov/Forthon",
-       download_url = "http://hifweb.lbl.gov/Forthon/Forthon.tgz",
        description = "Fortran95 wrapper/code development package",
        long_description = """
 Forthon provides an extensive wrapping of Fortran95 code, giving access to
