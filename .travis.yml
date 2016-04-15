@@ -14,11 +14,6 @@ matrix:
     - python: nightly
     - python: "pypy"
     - python: "pypy3"
-    # Python 3.X & PIP is currently broken and needs a fix
-    - env: USE_PIP=ON
-      python: "3.4"
-    - env: USE_PIP=ON
-      python: "3.5"
 
 sudo: false
 
