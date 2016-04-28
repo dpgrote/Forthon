@@ -284,18 +284,18 @@ def fones(shape,*args):
     creates arrays which have the proper ordering for fortran. When arrays
     created with this are passed to a fortran subroutine, no copies are needed to
     get the data into the proper order for fortran. It takes the same arguments
-    as ones, except for 'order' which is set to FORTRAN.
+    as ones, except for 'order' which is set to F.
     """
-    return ones(shape,order='FORTRAN',*args)
+    return ones(shape,order='F',*args)
 def fzeros(shape,*args):
     """
     This is a replacement for the array creation routine, zeros, which
     creates arrays which have the proper ordering for fortran. When arrays
     created with this are passed to a fortran subroutine, no copies are needed to
     get the data into the proper order for fortran. It takes the same arguments
-    as zeros, except for 'order' which is set to FORTRAN.
+    as zeros, except for 'order' which is set to F.
     """
-    return zeros(shape,order='FORTRAN',*args)
+    return zeros(shape,order='F',*args)
 
 def doc(f,printit=1):
     """
