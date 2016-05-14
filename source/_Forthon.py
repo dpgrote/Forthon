@@ -830,7 +830,7 @@ def pydump(fname=None,attr=["dump"],vars=[],serial=0,ff=None,varsuffix=None,
             if source is None:
                 try:
                     source = inspect.getsource(vval)
-                except (IOError,NameError):
+                except (IOError,NameError,TypeError):
                     pass
             if source is not None:
                 if verbose: print "writing python function "+vname+" as "+vname+varsuffix+'@function'
