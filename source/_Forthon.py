@@ -644,33 +644,26 @@ def printgroup(pkg,group='',maxelements=10,sumarrays=0):
 
 ##############################################################################
 ##############################################################################
-def pydumpforthonobject(ff,attr,objname,obj,varsuffix,writtenvars,fobjlist,
-                        serial,verbose,lonlymakespace=0):
-    # --- General work of this object
+def pydumpforthonobject(ff,attr,objname,obj,varsuffix,writtenvars,serial,verbose):
+    """Loops over the variables in the Forthon object and writes each out if requested
+    All variables are written directly to the datawriter (assuming that it can handle
+    arbitrary objects, such as Forthon derived types).
+    """
     if verbose: print "object "+objname+" being written"
-    # --- Write out the value of fobj so that in restore, any links to this
-    # --- object can be restored. Only do this if fobj != 0, which means that
-    # --- it is not a top level package, but a variable of fortran derived type.
-    fobj = obj.getfobject()
-    if fobj != 0:
-        ff.write('FOBJ'+varsuffix,fobj)
-        ff.write('TYPENAME'+varsuffix,obj.gettypename())
-        # --- If this object has already be written out, then return.
-        if fobj in fobjlist: return
-        # --- Add this object to the list of object already written out.
-        fobjlist.append(fobj)
     # --- Get variables in this package which have attribute attr.
     vlist = []
     for a in attr:
-        if isinstance(a,str): vlist = vlist + obj.varlist(a)
+        if isinstance(a,str):
+            vlist = vlist + obj.varlist(a)
     # --- Loop over list of variables
     for vname in vlist:
-        # --- Check if object is available (i.e. check if dynamic array is
-        # --- allocated).
+        # --- Get the object if it is available
         v = obj.getpyobject(vname)
-        if v is None: continue
-        # --- If serial flag is set, get attributes and if has the parallel
-        # --- attribute, don't write it.
+        if v is None:
+            # --- If not available, skip it (dynamic arrays may be unallocated for example)
+            if verbose: print "variable "+vname+varsuffix+" skipped since it is not available"
+            continue
+        # --- If serial flag is set, check if it has the parallel attribute
         if serial:
             a = obj.getvarattr(vname)
             if re.search('parallel',a):
@@ -684,23 +677,10 @@ def pydumpforthonobject(ff,attr,objname,obj,varsuffix,writtenvars,fobjlist,
                 if verbose: print "variable "+objname+"."+vname+" skipped since other variable would have same name in the file"
                 continue
             writtenvars.append(vname)
-        # --- Check if variable is a Forthon object, if so, recursively call this
-        # --- function.
-        if IsForthonType(v):
-            # --- Note that the attribute passed in is blank, since all components
-            # --- are to be written out to the file.
-            pydumpforthonobject(ff,[''],vname,v,'@'+vname+varsuffix,writtenvars,
-                                fobjlist,serial,verbose,lonlymakespace)
-            continue
         # --- If this point is reached, then variable is written out to file
         if verbose: print "writing "+objname+"."+vname+" as "+vname+varsuffix
-        # --- If lonlymakespace is true, then use defent to create space in the
-        # --- file for arrays but don't write out any data. Scalars are still
-        # --- written out.
-        if lonlymakespace and not isinstance(v,(int,float)):
-            ff.defent(vname+varsuffix,v,shape(v))
-        else:
-            ff.write(vname+varsuffix,v)
+        # --- Write it out to the file
+        ff.write(vname+varsuffix,v)
 
 ##############################################################################
 # Python version of the dump routine. This uses the varlist command to
@@ -715,10 +695,9 @@ def pydumpforthonobject(ff,attr,objname,obj,varsuffix,writtenvars,fobjlist,
 # is not a valid character in python names). The 'ff.write' command is
 # used, allowing names with an '@' in them. The writing of python variables
 # is put into a 'try' command since some variables cannot be written to
-# a pdb file.
+# a dump file.
 def pydump(fname=None,attr=["dump"],vars=[],serial=0,ff=None,varsuffix=None,
-           verbose=false,hdf=0,returnfobjlist=0,lonlymakespace=0,
-           datawriter=None):
+           verbose=false,hdf=0,datawriter=None):
     """
     Dump data into a pdb file
       - fname: dump file name
@@ -738,8 +717,6 @@ def pydump(fname=None,attr=["dump"],vars=[],serial=0,ff=None,varsuffix=None,
       - verbose=false: When true, prints out the names of the variables as they are
            written to the dump file
       - hdf=0: (obsolete) this argument is ignored
-      - returnfobjlist=0: when true, returns the list of fobjects that were
-                          written to the file
       - datawriter=PW.PW: datawriter is the data writer class to use. This can be any
                           class that conforms to the API of PW.PW from the PyPDB package.
     """
@@ -793,19 +770,18 @@ def pydump(fname=None,attr=["dump"],vars=[],serial=0,ff=None,varsuffix=None,
     pkgsuffix = varsuffix
     packagelist = package()
     writtenvars = []
-    fobjlist = []
     for pname in packagelist:
         pkg = packageobject(pname)
         if isinstance(pkg,PackageBase): continue
         if varsuffix is None: pkgsuffix = '@' + pname
-        pydumpforthonobject(ff,attr,pname,pkg,pkgsuffix,writtenvars,fobjlist,
-                            serial,verbose,lonlymakespace)
+        pydumpforthonobject(ff,attr,pname,pkg,pkgsuffix,writtenvars,serial,verbose)
         # --- Make sure that pname does not appear in vars
         try: vars.remove(pname)
         except ValueError: pass
 
     # --- Now, write out the python variables (that can be written out).
     # --- If supplied, the varsuffix is append to the names here too.
+    import types
     if varsuffix is None: varsuffix = ''
     for vname in vars:
         # --- Skip python variables that would overwrite fortran variables.
@@ -818,7 +794,8 @@ def pydump(fname=None,attr=["dump"],vars=[],serial=0,ff=None,varsuffix=None,
         # --- Write out the source of functions. Note that the source of functions
         # --- typed in interactively is not retrieveable - inspect.getsource
         # --- returns an IOError.
-        if callable(vval):
+        # --- Callable class instances do not need to be treated specially here.
+        if isinstance(vval, types.FunctionType):
             source = None
             try:
                 # --- Check if the source had been saved as an attribute of itself.
@@ -848,11 +825,6 @@ def pydump(fname=None,attr=["dump"],vars=[],serial=0,ff=None,varsuffix=None,
         # --- Zero length arrays cannot by written out.
         if isinstance(vval,ndarray) and product(array(shape(vval))) == 0:
             continue
-        # --- Check if variable is a Forthon object.
-         #if IsForthonType(vval):
-         #  pydumpforthonobject(ff,attr,vname,vval,'@'+vname+varsuffix,writtenvars,
-         #                      fobjlist,serial,verbose,lonlymakespace)
-         #  continue
         # --- Try writing as normal variable.
         try:
             if verbose: print "writing python variable "+vname+" as "+vname+varsuffix
@@ -875,11 +847,6 @@ def pydump(fname=None,attr=["dump"],vars=[],serial=0,ff=None,varsuffix=None,
         # --- All attempts failed so write warning message
         if verbose: print "cannot write python variable "+vname
     if closefile: ff.close()
-
-    # --- Return the fobjlist for cases when pydump is called multiple times
-    # --- for a single file.
-    if returnfobjlist: return fobjlist
-
 
 #############################################################################
 # Python version of the restore routine. It restores all of the variables
@@ -1013,13 +980,15 @@ def pyrestore(filename=None,fname=None,verbose=0,skip=[],ff=None,
                 if verbose: print "error with variable "+vname
 
     # --- User defined Python functions
+    import types
     if 'function' in groups:
         functionlist = groups['function']
         del groups['function']
         for vname in functionlist:
             # --- Skip functions which have already been defined in case the user
-            # --- has made source updates since the dump was made.
-            if vname in __main__.__dict__:
+            # --- has made source updates since the dump was made. But only skip
+            # --- if the existing thing is actually a function.
+            if vname in __main__.__dict__ and isinstance(__main__.__dict__[vname], types.FunctionType):
                 if verbose:
                     print "skipping python function %s since it already is defined"%vname
             else:
@@ -1040,10 +1009,10 @@ def pyrestore(filename=None,fname=None,verbose=0,skip=[],ff=None,
         del groups['parallel']
 
     for gname in groups.iterkeys():
-        pyrestoreforthonobject(ff,gname,groups[gname],fobjdict,varsuffix,
+        pyrestoreforthonobject(main,ff,gname,groups[gname],fobjdict,varsuffix,
                                verbose,doarrays=0,main=main)
     for gname in groups.iterkeys():
-        pyrestoreforthonobject(ff,gname,groups[gname],fobjdict,varsuffix,
+        pyrestoreforthonobject(main,ff,gname,groups[gname],fobjdict,varsuffix,
                                verbose,doarrays=1,main=main)
 
     if closefile: ff.close()
@@ -1069,7 +1038,6 @@ def sortrestorevarsbysuffix(vlist,skip):
         # --- If variable is in the skip list, then skip
         if (vname in skip or
             (len(v) > 4 and v[-4]=='@' and v[-3:]+'.'+v[:-4] in skip)):
-#     if verbose: print "skipping "+v
             continue
 
         # --- Now add the variable to the appropriate group list.
@@ -1078,9 +1046,10 @@ def sortrestorevarsbysuffix(vlist,skip):
     return groups
 
 #-----------------------------------------------------------------------------
-def pyrestoreforthonobject(ff,gname,vlist,fobjdict,varsuffix,verbose,doarrays,
+def pyrestoreforthonobject(obj,ff,gname,vlist,fobjdict,varsuffix,verbose,doarrays,
                            gpdbname=None,main=None):
     """
+      - obj: Forthon object data is being restored into
       - ff: reference to file being written to
       - gname: name (in python format) of object to read in
       - vlist: list of variables from the file that are part of this object
@@ -1096,20 +1065,22 @@ def pyrestoreforthonobject(ff,gname,vlist,fobjdict,varsuffix,verbose,doarrays,
         # --- Default is the current top level main object.
         main = __main__
 
+    if obj is None:
+        obj = main
+
     # --- Convert gname in pdb-style name
+    gsplit = gname.split('.')
+    attrname = gsplit[-1]
     if gpdbname is None:
-        gsplit = gname.split('.')
         gsplit.reverse()
         gpdbname = '@'.join(gsplit)
 
-    # --- Check if the variable gname exists or is allocated.
-    # --- If not, create a new variable.
-    neednew = 0
+    # --- Always create a new object except for the top level packages.
     try:
-        v = eval(gname,main.__dict__)
-        if v is None: neednew = 1
-    except:
-        neednew = 1
+        attrobj = getattr(obj,attrname)
+    except AttributeError:
+        attrobj = None
+    neednew = (attrobj is None)
 
     if neednew:
         # --- A new variable needs to be created.
@@ -1120,7 +1091,9 @@ def pyrestoreforthonobject(ff,gname,vlist,fobjdict,varsuffix,verbose,doarrays,
         # --- First, check if the object has already been restored.
         if fobj in fobjdict:
             # --- If so, then point new variable to existing object
-            main.__dict__[gname] = main.__dict__[fobjdict[fobj]]
+            attrobj = fobjdict[fobj]
+            setattr(obj, attrname, attrobj)
+            #main.__dict__[gname] = main.__dict__[fobjdict[fobj]]
             #exec("%s = %s"%(gname,fobjdict[fobj]),main.__dict__)
             # return ???
         else:
@@ -1128,12 +1101,14 @@ def pyrestoreforthonobject(ff,gname,vlist,fobjdict,varsuffix,verbose,doarrays,
             # --- and add it to the list of objects.
             typename = ff.__getattr__("TYPENAME@"+gpdbname)
             try:
-                main.__dict__[gname] = main.__dict__[typename]()
+                attrobj = main.__dict__[typename]()
+                setattr(obj, attrname, attrobj)
+                #main.__dict__[gname] = main.__dict__[typename]()
                 #exec("%s = %s()"%(gname,typename),main.__dict__)
             except:
                 # --- If it gets here, it might mean that the name no longer exists.
                 return
-            fobjdict[fobj] = gname
+            fobjdict[fobj] = attrobj
 
     # --- Sort out the list of variables
     groups = sortrestorevarsbysuffix(vlist,[])
@@ -1160,48 +1135,37 @@ def pyrestoreforthonobject(ff,gname,vlist,fobjdict,varsuffix,verbose,doarrays,
     for vname in leafvars:
         if vname == 'FOBJ' or vname == 'TYPENAME': continue
         fullname = gname + '.' + vname
-        vpdbname = vname + '@' + gpdbname
 
         # --- Add suffix to name if given.
         # --- varsuffix is wrapped in str in case a nonstring was passed in.
         if varsuffix is not None: fullname = vname + str(varsuffix)
 
         try:
-            val = ff.__getattr__(vpdbname)
+            val = ff.__getattr__(vname + '@' + gpdbname)
             if not isinstance(val,ndarray) and not doarrays:
                 # --- Simple assignment is done for scalars, using the exec command
                 if verbose: print "reading in "+fullname
-                doassignment(fullname,val)
+                #doassignment(fullname,val)
+                setattr(attrobj, vname, val)
             elif isinstance(val,ndarray) and doarrays:
-                pkg = eval(gname,main.__dict__)
-                # --- forceassign is used, allowing the array read in to have a
-                # --- different size than the current size of the array.
                 if verbose: print "reading in "+fullname
-                # --- Original version
-                #pkg.forceassign(vname,val)
-                # --- Newer version using convenient setattr routine. This can be
-                # --- done this way since now all scalars are read in first so
-                # --- the arrays will be of the correct size.
                 if varsuffix is None:
                     if (len(str(val.dtype)) > 1 and
                         str(val.dtype)[1] == 'S' and
-                        getattr(pkg,vname).shape != val.shape):
+                        getattr(attrobj,vname).shape != val.shape):
                         # --- This is a crude fix for backwards compatibility. The way
                         # --- strings are handled changed, so that they now have an
                         # --- element size > 1. This coding converts old style strings
                         # --- into a single string before doing the setattr. The change
                         # --- affects restart dumps make before July 2008.
-                        setattr(pkg,vname,''.join(val))
+                        setattr(attrobj,vname,''.join(val))
                     else:
-                        setattr(pkg,vname,val)
+                        setattr(attrobj,vname,val)
                 else:
                     # --- If varsuffix is specified, then put the variable directly into
                     # --- the main dictionary.
-                    doassignment(fullname,val)
-                # --- This does the same thing but is more sensitive to some types
-                # --- of array sizing errors.
-                #setattr(pkg,vname,fzeros(shape(val),gettypecode(val)))
-                #getattr(pkg,vname)[...] = val
+                    #doassignment(fullname,val)
+                    setattr(attrobj,vname+str(varsuffix),val)
         except:
             # --- The catches errors in cases where the variable is not an
             # --- actual variable in the package, for example if it had been deleted
@@ -1212,7 +1176,7 @@ def pyrestoreforthonobject(ff,gname,vlist,fobjdict,varsuffix,verbose,doarrays,
 
     # --- Read in rest of groups.
     for g,v in groups.iteritems():
-        pyrestoreforthonobject(ff,gname+'.'+g,v,fobjdict,varsuffix,verbose,doarrays,
+        pyrestoreforthonobject(getattr(obj, attrname), ff,gname+'.'+g,v,fobjdict,varsuffix,verbose,doarrays,
                                g+'@'+gpdbname,main=main)
 
 
