@@ -23,10 +23,12 @@ See [License.txt](License.txt) for license information.
 
 ## Release Notes
 
-0.8.21:
+0.8.22: May 25, 2016
+ - Revamped dumping of derived type objects - now they pickled with everything else
+
+0.8.21: April 15, 2016
  - Updates to PyPI interface
  - Minor fixes
- - Revamped dumping of derived type objects - now they pickled with everything else
 
 0.8.20: April 15, 2016
  - Added Forthon3 to MANIFEST
