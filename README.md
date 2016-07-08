@@ -23,6 +23,9 @@ See [License.txt](License.txt) for license information.
 
 ## Release Notes
 
+0.8.23:
+ - Cleaned makefile dependencies (allowing make -j)
+
 0.8.22: May 25, 2016
  - Revamped dumping of derived type objects - now they pickled with everything else
 

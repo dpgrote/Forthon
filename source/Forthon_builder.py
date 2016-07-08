@@ -396,7 +396,8 @@ Forthon.c:%(forthonhome)s%(pathsep)sForthon.c
 
 %(pkg)s_p%(osuffix)s:%(pkg)s_p.%(free_suffix)s %(wrapperdependency)s
 	%(f90free)s %(popt)s %(fargs)s -c %(pkg)s_p.%(free_suffix)s
-%(pkg)spymodule.c %(pkg)s_p.%(free_suffix)s::%(interfacefile)s
+%(pkg)s_p.%(free_suffix)s: %(pkg)spymodule.c
+%(pkg)spymodule.c::%(interfacefile)s
 	%(forthon)s --realsize %(realsize)s %(f90)s -t %(machine)s %(forthonargs)s %(initialgallot)s %(othermacstr)s %(dep)s %(pkg)s %(interfacefile)s
 %(pkg)spymodule.c:: %(upfortranfile)s %(extrafilesstr)s
 	@touch %(pkg)spymodule.c
