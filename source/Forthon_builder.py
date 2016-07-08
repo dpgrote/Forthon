@@ -322,11 +322,13 @@ if not verbose:
 # --- Create a separate rule to compile the compiler_first file, setting it up
 # --- so that it doesn't have any dependencies beyond itself.
 compile_firstrule = ''
-if compile_first != '' and compile_firstsuffix != '':
-    suffixpath = os.path.join(upbuilddir,'%(compile_first)s'%locals())
-    if compile_firstsuffix[-2:] == '90': ff = f90free
-    else:                                ff = f90fixed
-    compile_firstrule = """
+if compile_first != '':
+    compile_firstrule = '%(pkg)s_p%(osuffix)s %(fortranroot)s%(osuffix)s %(extraobjectsstr)s: %(compile_firstobject)s\n'%locals()
+    if compile_firstsuffix != '':
+        suffixpath = os.path.join(upbuilddir,'%(compile_first)s'%locals())
+        if compile_firstsuffix[-2:] == '90': ff = f90free
+        else:                                ff = f90fixed
+        compile_firstrule = """
 %(compile_firstobject)s: %(suffixpath)s
 	%(ff)s %(fopt)s %(fargs)s -c $<
   """%locals()
