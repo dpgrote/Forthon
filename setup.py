@@ -85,6 +85,7 @@ setup (name = "Forthon",
        version = version,
        author = 'David P. Grote',
        author_email = "DPGrote@lbl.gov",
+       license = "BSD-3-Clause-LLNL",
        url = "http://hifweb.lbl.gov/Forthon",
        description = "Fortran95 wrapper/code development package",
        long_description = """
