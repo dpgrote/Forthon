@@ -30,8 +30,13 @@ version = '0.8.23'
 try:
     # --- In python3, check_output returns a byte string that needs to be decoded to get the string.
     # --- The decode method is mostly harmless in python2.
-    bcommithash = subprocess.check_output('git log -n 1 --pretty=%h',stderr=subprocess.STDOUT,shell=True).strip()
-    commithash = bcommithash.decode()
+    bcommithash =subprocess.Popen(['git log -n 1 --pretty=%h'],shell=True,stderr=subprocess.PIPE,stdout=subprocess.PIPE).communicate()[0].strip()
+    commithash=bcommithash.decode()
+except subprocess.CalledProcessError:
+    # --- This version was obtained from a non-git distrobution. Use the
+    # --- saved commit hash from the release.
+    # --- This is automatically updated by version.py.
+    commithash = 'f3ecb8e'
 except subprocess.CalledProcessError:
     # --- This version was obtained from a non-git distrobution. Use the
     # --- saved commit hash from the release.
