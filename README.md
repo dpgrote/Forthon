@@ -23,6 +23,9 @@ See [License.txt](License.txt) for license information.
 
 ## Release Notes
 
+0.8.24:
+ - Fixed fetching the git hash for Py2.6
+
 0.8.23:
  - Cleaned makefile dependencies (allowing make -j)
 
