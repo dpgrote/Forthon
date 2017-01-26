@@ -668,7 +668,7 @@ static int Forthon_setscalarinteger(ForthonObject *self,PyObject *value,
     PyErr_SetString(PyExc_TypeError, "Cannot delete the attribute");
     return -1;}
   /* This will convert floats to ints if needed */
-  lv = PyLong_AsLong(value);
+  lv = PyInt_AsLong(value);
   if (!PyErr_Occurred()) {
     if (fscalar->setaction != NULL) {
       if (self->fobj == NULL) fscalar->setaction(&lv);
@@ -1969,7 +1969,7 @@ static void stringconcatanddellong(PyObject **left,long right)
   PyObject *pylong;
   PyObject *pyright;
   PyObject *result;
-  pylong = PyLong_FromLong(right);
+  pylong = PyInt_FromLong(right);
   pyright = PyObject_Str(pylong);
   result = PyUnicode_Concat(*left,pyright);
   Py_DECREF(pylong);

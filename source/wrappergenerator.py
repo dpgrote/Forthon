@@ -938,7 +938,7 @@ class PyWrap:
         self.cw('  PyModule_AddObject(m,"fcompname",'+
                    'PyUnicode_FromString("'+self.fcompname+'"));')
         self.cw('  PyModule_AddObject(m,"realsize",'+
-                   'PyLong_FromLong((long)%s'%realsize+'));')
+                   'PyInt_FromLong((long)%s'%realsize+'));')
         self.cw('  if (PyErr_Occurred()) {')
         self.cw('    PyErr_Print();')
         self.cw('    Py_FatalError("can not initialize module '+self.pname+'");')
