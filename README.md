@@ -25,6 +25,7 @@ See [License.txt](License.txt) for license information.
 
 0.8.24:
  - Fixed fetching the git hash for Py2.6
+ - Fixed PyInt for Python version 2 and 3
 
 0.8.23:
  - Cleaned makefile dependencies (allowing make -j)
