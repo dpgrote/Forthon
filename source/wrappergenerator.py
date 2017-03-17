@@ -937,8 +937,10 @@ class PyWrap:
         self.cw('  PyModule_AddObject(m,"'+self.pname+'error", ErrorObject);')
         self.cw('  PyModule_AddObject(m,"fcompname",'+
                    'PyUnicode_FromString("'+self.fcompname+'"));')
-        self.cw('  PyModule_AddObject(m,"realsize",'+
-                   'PyInt_FromLong((long)%s'%realsize+'));')
+        if sys.hexversion >= 0x03000000:
+            self.cw('  PyModule_AddObject(m,"realsize",'+ 'PyLong_FromLong((long)%s'%realsize+'));')
+        else:
+            self.cw('  PyModule_AddObject(m,"realsize",'+ 'PyInt_FromLong((long)%s'%realsize+'));')
         self.cw('  if (PyErr_Occurred()) {')
         self.cw('    PyErr_Print();')
         self.cw('    Py_FatalError("can not initialize module '+self.pname+'");')
