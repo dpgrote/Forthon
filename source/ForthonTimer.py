@@ -10,9 +10,11 @@ import sys
 import time
 import linecache
 
+
 def ForthonTimerdoc():
     import ForthonTimer
     print ForthonTimer.__doc__
+
 
 #############################################################################
 # --- These two classes create a profiler which keeps
@@ -28,6 +30,7 @@ class ForthonTimings:
      - name: name of the routine
      - parent: class instance of the caller of this routine
     """
+
     def __init__(self, level, name, parent=None):
         self.level = level
         self.name = name
@@ -36,6 +39,7 @@ class ForthonTimings:
         self.ncalls = 0
         self.subtimers = {}
         self.renew()
+
     def renew(self):
         """
         This restarts the timing clock and increments the number of calls made to
@@ -43,6 +47,7 @@ class ForthonTimings:
         """
         self.starttime = time.clock()
         self.ncalls += 1
+
     def newtimer(self, name):
         """
         This returns a timer to be used for a callee. If the callee has already be
@@ -54,6 +59,7 @@ class ForthonTimings:
         else:
             self.subtimers[name] = ForthonTimings(self.level+1, name, self)
         return self.subtimers[name]
+
     def stoptimer(self):
         """
         Stop the timing clock and accumulate the time. This assumes that this is
@@ -63,16 +69,18 @@ class ForthonTimings:
         self.endtime = time.clock()
         self.time = self.time + self.endtime - self.starttime
         return self.parent
+
     def out(self, maxlevel, mintime=0.):
         """
         Prints info about the function and all of its callees, up to the input level.
         """
-        if self.level > maxlevel: return
+        if self.level > maxlevel:
+            return
         if self.time > mintime:
-            print "%2d%s%s %d %f"%(self.level, self.level*'  ', self.name,
-                                   self.ncalls, self.time)
+            print "%2d%s%s %d %f"%(self.level, self.level*'  ', self.name, self.ncalls, self.time)
         for v in self.subtimers.itervalues():
             v.out(maxlevel, mintime)
+
 
 class ForthonProfiler:
     """
@@ -88,28 +96,35 @@ class ForthonProfiler:
                          the given value. The trace option is automatically
                          switched on.
     """
+
     _ninstances = 0
+
     def __init__(self, trace=0, tracelevel=None):
         if ForthonProfiler._ninstances > 0:
             raise RuntimeError("Only one instance allowed.")
         ForthonProfiler._ninstances = 1
         self.trace = trace
         self.tracelevel = tracelevel
-        if self.tracelevel is not None: self.trace = 1
+        if self.tracelevel is not None:
+            self.trace = 1
         self.restart()
+
     def restart(self):
         self.root = None
         self.level = 0
         self.finished = 0
         sys.setprofile(self.profiler)
+
     def finish(self):
         """
         Turn off the profiling. This also stops the clock of the top level routine.
         """
-        if self.finished: return
+        if self.finished:
+            return
         sys.setprofile(None)
         self.root.stoptimer()
         self.finished = 1
+
     def profiler(self, frame, event, arg):
         """
         This is the profile routine. It creates the instances of ForthonTimings for each
@@ -120,7 +135,8 @@ class ForthonProfiler:
         # --- If name is not known, this could mean that this was called from
         # --- inside the sys.setprofile routine, or from some other odd place,
         # --- like from fortran. Skip those cases.
-        if name == '?': return
+        if name == '?':
+            return
         # --- Turn the profiler off during these operations (though this is
         # --- probably unecessary since the sys package should already do this).
         sys.setprofile(None)
@@ -145,6 +161,7 @@ class ForthonProfiler:
             self.timer = self.timer.newtimer(name)
         # --- Turn the profiler back on
         sys.setprofile(self.profiler)
+
     def out(self, maxlevel=2, mintime=0.):
         """
         Print out timing info.
@@ -153,6 +170,7 @@ class ForthonProfiler:
         """
         self.finish()
         self.root.out(maxlevel, mintime)
+
 
 ###############################################################################
 # --- Thanks to Andrew Dalke
@@ -164,22 +182,23 @@ def traceit(frame, event, arg):
             filename = frame.f_globals["__file__"]
         except KeyError:
             filename = ''
-        if (filename.endswith(".pyc") or
-            filename.endswith(".pyo")):
+        if (filename.endswith(".pyc") or filename.endswith(".pyo")):
             filename = filename[:-1]
         name = frame.f_globals["__name__"]
         line = linecache.getline(filename, lineno)
         print "%s:%s: %s" % (name, lineno, line.rstrip())
     return traceit
 
+
 def enablelinetracing():
     """
     Enables line by line tracing.
     """
     sys.settrace(traceit)
+
+
 def disablelinetracing():
     """
     Disables line by line tracing.
     """
     sys.settrace(None)
-

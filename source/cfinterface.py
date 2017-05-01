@@ -13,17 +13,17 @@ realsize = args.realsize
 underscoring = args.underscoring
 twounderscores = args.twounderscores
 
-#----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # Set size of fortran integers and logicals, which is the same size as a
 # C long integer. This is always either 4 or 8.
 intsize = '%d'%struct.calcsize('l')
 isz = 'kind=%s'%intsize
 
-#----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # Set the size of floating point numbers
 fpsize = 'kind=%s'%realsize
 
-#----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # Creates a function which converts a C name into a Fortran name
 
 if machine in ['aix4', 'aix5', 'win32', 'MAC']:
@@ -34,18 +34,20 @@ elif machine in ['linux', 'linux2', 'linux3', 'darwin', 'SOL', 'AXP', 'DOS', 'cy
         if twounderscores:
             def fname(n):
                 m = re.search('_', n)
-                if m == None: return n.lower()+'_'
-                else:         return n.lower()+'__'
+                if m is None:
+                    return n.lower() + '_'
+                else:
+                    return n.lower() + '__'
         else:
             def fname(n):
-                return n.lower()+'_'
+                return n.lower() + '_'
     else:
         def fname(n):
             return n.lower()
 else:
     raise ValueError('Machine %s not supported'%machine)
 
-#----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # Sets up C macros which are used to take the place of the length
 # of a string passed from Fortran to C.
 
@@ -98,9 +100,9 @@ elif machine in ['MAC']:
 else:
     raise ValueError('Machine %s not supported'%machine)
 
+
 def writeforthonf2c():
     # --- Create the forthonf2c.h file
     ff = open('forthonf2c.h', 'w')
     ff.write(forthonf2c)
     ff.close()
-

@@ -49,7 +49,8 @@ def forthonobject_constructor(typename, arg=None):
         obj = typecreator()
         # --- For old pickle files, a dict will still be passed in, relying on
         # --- this rather than setstate.
-        if isinstance(arg, dict): obj.setdict(arg)
+        if isinstance(arg, dict):
+            obj.setdict(arg)
         return obj
     else:
         # --- When typecreator is not callable, this means that it is a top
@@ -101,7 +102,7 @@ def registerpackage(pkg, name):
         copy_reg.pickle(type(pkg), pickle_forthonobject, forthonobject_constructor)
     else:
         assert isinstance(pkg, PackageBase),\
-               "Only instances of classes inheritting from PackageBase can be registered as a package"
+            "Only instances of classes inheritting from PackageBase can be registered as a package"
 
     _pkg_dict[name] = pkg
     _pkg_list.append(name)
@@ -112,7 +113,8 @@ def package(name=None):
     If name is not given, then returns a copy of the list of all registered
     packages.
     """
-    if name is None: return copy.deepcopy(_pkg_list)
+    if name is None:
+        return copy.deepcopy(_pkg_list)
     setcurrpkg(name)
     _pkg_list.remove(name)
     _pkg_list.insert(0, name)
@@ -131,8 +133,10 @@ def gallot(group='*', iverbose=0):
     """
     for pkg in _pkg_dict.itervalues():
         r = pkg.gallot(group, iverbose)
-        if r and (group != '*'): return
-    if group != '*': raise NameError("No such group")
+        if r and (group != '*'):
+            return
+    if group != '*':
+        raise NameError("No such group")
 
 def gchange(group='*', iverbose=0):
     """
@@ -142,8 +146,10 @@ def gchange(group='*', iverbose=0):
     """
     for pkg in _pkg_dict.itervalues():
         r = pkg.gchange(group, iverbose)
-        if r and (group != '*'): return
-    if group != '*': raise NameError("No such group")
+        if r and (group != '*'):
+            return
+    if group != '*':
+        raise NameError("No such group")
 
 def gfree(group='*'):
     """
@@ -152,8 +158,10 @@ def gfree(group='*'):
     """
     for pkg in _pkg_dict.itervalues():
         r = pkg.gfree(group)
-        if r and (group != '*'): return
-    if group != '*': raise NameError("No such group")
+        if r and (group != '*'):
+            return
+    if group != '*':
+        raise NameError("No such group")
 
 def gsetdims(group='*'):
     """
@@ -162,9 +170,11 @@ def gsetdims(group='*'):
     """
     for pkg in _pkg_dict.itervalues():
         r = pkg.gsetdims(group)
-        if r and (group != '*'): return
-    if group != '*': raise NameError("No such group")
- 
+        if r and (group != '*'):
+            return
+    if group != '*':
+        raise NameError("No such group")
+
 def forceassign(name, v):
     """
     Forces the assignment to an array, resizing the array is necessary.
@@ -178,7 +188,8 @@ def listvar(name):
     """
     for pkg in _pkg_dict.itervalues():
         r = pkg.listvar(name)
-        if r is not None: return r
+        if r is not None:
+            return r
     raise NameError
 
 def deprefix():
@@ -210,25 +221,53 @@ def totmembytes():
 
 def IsForthonType(v):
     t = repr(type(v))
-    if re.search("Forthon", t): return 1
-    else: return 0
+    if re.search("Forthon", t):
+        return 1
+    else:
+        return 0
+
 
 # --- Create a base class that can be used as a package object.
 # --- This includes all of the necessary methods, any of which
 # --- can be overwritten in the inheritting class.
 class PackageBase(object):
-    def generate(self): raise NotImplementedError
-    def step(self): raise NotImplementedError
-    def finish(self): raise NotImplementedError
-    def gallot(self, group='*', iverbose=0): return 0
-    def gchange(self, group='*', iverbose=0): return 0
-    def gfree(self, group='*'): return 0
-    def gsetdims(self, group='*'): return 0
-    def forceassign(self, name, v): pass
-    def listvar(self, name): return name
-    def deprefix(self): pass
-    def reprefix(self): pass
-    def totmembytes(self): return getobjectsize(self)
+
+    def generate(self):
+        raise NotImplementedError
+
+    def step(self):
+        raise NotImplementedError
+
+    def finish(self):
+        raise NotImplementedError
+
+    def gallot(self, group='*', iverbose=0):
+        return 0
+
+    def gchange(self, group='*', iverbose=0):
+        return 0
+
+    def gfree(self, group='*'):
+        return 0
+
+    def gsetdims(self, group='*'):
+        return 0
+
+    def forceassign(self, name, v):
+        pass
+
+    def listvar(self, name):
+        return name
+
+    def deprefix(self):
+        pass
+
+    def reprefix(self):
+        pass
+
+    def totmembytes(self):
+        return getobjectsize(self)
+
 
 # --- Some platforms have a different value of .true. in fortran.
 # --- Note that this is not necessarily correct. The most robust
@@ -250,8 +289,10 @@ def arraytostr(a, strip=true):
         if sys.hexversion >= 0x03000000:
             # --- This is needed for Python3, where string arrays give
             # --- numpy.bytes_ objects. It needs to be converted to unicode.
-            if isinstance(result, bytes_): result = result.decode()
-        if strip: result = result.strip()
+            if isinstance(result, bytes_):
+                result = result.decode()
+        if strip:
+            result = result.strip()
     elif len(shape(a)) == 2:
         result = []
         for i in xrange(shape(a)[1]):
@@ -259,7 +300,9 @@ def arraytostr(a, strip=true):
     return result
 
 # --- Allows int operation on arrrays
+
 builtinint = int
+
 def aint(x):
     if isinstance(x, ndarray):
         return x.astype('l')
@@ -273,10 +316,12 @@ if sys.hexversion < 0x03000000:
 # --- Return the nearest integer
 def nint(x):
     if isinstance(x, ndarray):
-        return where(greater(x, 0), aint(x+0.5), -aint(abs(x)+0.5))
+        return where(greater(x, 0), aint(x + 0.5), -aint(abs(x) + 0.5))
     else:
-        if x >= 0: return int(x+0.5)
-        else: return -int(abs(x)+0.5)
+        if x >= 0:
+            return int(x + 0.5)
+        else:
+            return -int(abs(x) + 0.5)
 
 def fones(shape, *args):
     """T
@@ -287,6 +332,7 @@ def fones(shape, *args):
     as ones, except for 'order' which is set to F.
     """
     return ones(shape, order='F', *args)
+
 def fzeros(shape, *args):
     """
     This is a replacement for the array creation routine, zeros, which
@@ -320,10 +366,11 @@ def doc(f, printit=1):
                 d = m.__doc__
                 if d is None:
                     try:
-                        d = m.__dict__[f+'doc']()
+                        d = m.__dict__[f + 'doc']()
                     except KeyError:
                         pass
-                if d is None: d = ''
+                if d is None:
+                    d = ''
                 fname = determineoriginatingfile(m)
                 break
             except ImportError:
@@ -345,12 +392,17 @@ def doc(f, printit=1):
                 d = f.__doc__
             except AttributeError:
                 d = None
-    if d is None: d = "No documentation found"
-    if fname is not None: result = 'From file ' + fname + '\n'
-    else:                 result = ''
+    if d is None:
+        d = "No documentation found"
+    if fname is not None:
+        result = 'From file ' + fname + '\n'
+    else:
+        result = ''
     result += d
-    if printit: print result
-    else:       return result
+    if printit:
+        print result
+    else:
+        return result
 
 def determineoriginatingfile(o):
     """
@@ -392,10 +444,14 @@ def determineoriginatingfile(o):
     if isinstance(o, (types.FunctionType, types.LambdaType)):
         return determineoriginatingfile(o.func_code)
     if isinstance(o, (types.BuiltinFunctionType, types.BuiltinMethodType)):
-        try: m = __import__(o.__module__)
-        except AttributeError: return None
-        if m is not None: return determineoriginatingfile(m)
-        else:             return None
+        try:
+            m = __import__(o.__module__)
+        except AttributeError:
+            return None
+        if m is not None:
+            return determineoriginatingfile(m)
+        else:
+            return None
     if isinstance(o, types.CodeType):
         return o.co_filename
     if isinstance(o, types.InstanceType):
@@ -424,7 +480,6 @@ def oldgetobjectsize(pkg, grp='', recursive=1):
     except AttributeError:
         getobjectsize.grouplist = []
         getobjectsize.calllevel = 0
-
 
     # --- Return sizes of shallow objects
     if isinstance(pkg, (int, float)):
@@ -485,7 +540,8 @@ def getobjectsize(pkg, grp='', recursive=1, grouplist=None):
       - recursive=1: When true, include the size of sub objects.
     """
 
-    if grouplist is None: grouplist = []
+    if grouplist is None:
+        grouplist = []
 
     # --- Keep track of objects already accounted for.
     if id(pkg) in grouplist:
@@ -527,7 +583,7 @@ def getobjectsize(pkg, grp='', recursive=1, grouplist=None):
             # --- This is needed so unallocated arrays will only return None
             vv = pkg.getpyobject(v)
         elif isinstance(pkg, dict):
-            result += 1 # --- Add one for the key
+            result += 1  # --- Add one for the key
             vv = pkg[v]
         elif isinstance(pkg, (ndarray, collections.Sequence)):
             vv = v
@@ -590,13 +646,14 @@ def printgroup(pkg, group='', maxelements=10, sumarrays=0):
       - sumarrays=0: when true, prints the total sum of arrays rather than the
                      first several elements
     """
-    if isinstance(pkg, str): pkg = __main__.__dict__[pkg]
+    if isinstance(pkg, str):
+        pkg = __main__.__dict__[pkg]
     try:
         vlist = pkg.varlist(group)
     except AttributeError:
         vlist = pkg.__dict__.iterkeys()
     if not vlist:
-        print "Unknown group name "+group
+        print "Unknown group name " + group
         return
     for vname in vlist:
         try:
@@ -604,43 +661,43 @@ def printgroup(pkg, group='', maxelements=10, sumarrays=0):
         except AttributeError:
             v = pkg.__dict__[vname]
         if v is None:
-            print vname+' is not allocated'
+            print vname + ' is not allocated'
         elif not isinstance(v, ndarray):
-            print vname+' = '+str(v)
+            print vname + ' = ' + str(v)
         else:
             if gettypecode(v) == 'c':
-                print vname+' = "'+str(arraytostr(v))+'"'
+                print vname + ' = "' + str(arraytostr(v)) + '"'
             elif sumarrays:
                 sumv = sum(reshape(v, tuple([product(array(v.shape))])))
-                print 'sum('+vname+') = '+str(sumv)
+                print 'sum(' + vname + ') = ' + str(sumv)
             elif size(v) <= maxelements:
-                print vname+' = '+str(v)
+                print vname + ' = ' + str(v)
             else:
                 if rank(v) == 1:
-                    print vname+' = '+str(v[:maxelements])[:-1]+" ..."
+                    print vname + ' = ' + str(v[:maxelements])[:-1] + " ..."
                 else:
                     if shape(v)[0] <= maxelements:
                         if rank(v) == 2:
-                            print vname+' = ['+str(v[:,0])+"] ..."
+                            print vname + ' = [' + str(v[:,0]) + "] ..."
                         elif rank(v) == 3:
-                            print vname+' = [['+str(v[:,0,0])+"]] ..."
+                            print vname + ' = [[' + str(v[:,0,0]) + "]] ..."
                         elif rank(v) == 4:
-                            print vname+' = [[['+str(v[:,0,0,0])+"]]] ..."
+                            print vname + ' = [[[' + str(v[:,0,0,0]) + "]]] ..."
                         elif rank(v) == 5:
-                            print vname+' = [[[['+str(v[:,0,0,0,0])+"]]]] ..."
+                            print vname + ' = [[[[' + str(v[:,0,0,0,0]) + "]]]] ..."
                         elif rank(v) == 6:
-                            print vname+' = [[[[['+str(v[:,0,0,0,0,0])+"]]]]] ..."
+                            print vname + ' = [[[[[' + str(v[:,0,0,0,0,0]) + "]]]]] ..."
                     else:
                         if rank(v) == 2:
-                            print vname+' = ['+str(v[:maxelements,0])[:-1]+" ..."
+                            print vname + ' = [' + str(v[:maxelements,0])[:-1] + " ..."
                         elif rank(v) == 3:
-                            print vname+' = [['+str(v[:maxelements,0,0])[:-1]+" ..."
+                            print vname + ' = [[' + str(v[:maxelements,0,0])[:-1] + " ..."
                         elif rank(v) == 4:
-                            print vname+' = [[['+str(v[:maxelements,0,0,0])[:-1]+" ..."
+                            print vname + ' = [[[' + str(v[:maxelements,0,0,0])[:-1] + " ..."
                         elif rank(v) == 5:
-                            print vname+' = [[[['+str(v[:maxelements,0,0,0,0])[:-1]+" ..."
+                            print vname + ' = [[[[' + str(v[:maxelements,0,0,0,0])[:-1] + " ..."
                         elif rank(v) == 6:
-                            print vname+' = [[[[['+str(v[:maxelements,0,0,0,0,0])[:-1]+" ..."
+                            print vname + ' = [[[[[' + str(v[:maxelements,0,0,0,0,0])[:-1] + " ..."
 
 ##############################################################################
 ##############################################################################
@@ -649,7 +706,8 @@ def pydumpforthonobject(ff, attr, objname, obj, varsuffix, writtenvars, serial, 
     All variables are written directly to the datawriter (assuming that it can handle
     arbitrary objects, such as Forthon derived types).
     """
-    if verbose: print "object "+objname+" being written"
+    if verbose:
+        print "object " + objname + " being written"
     # --- Get variables in this package which have attribute attr.
     vlist = []
     for a in attr:
@@ -661,26 +719,30 @@ def pydumpforthonobject(ff, attr, objname, obj, varsuffix, writtenvars, serial, 
         v = obj.getpyobject(vname)
         if v is None:
             # --- If not available, skip it (dynamic arrays may be unallocated for example)
-            if verbose: print "variable "+vname+varsuffix+" skipped since it is not available"
+            if verbose:
+                print "variable " + vname + varsuffix + " skipped since it is not available"
             continue
         # --- If serial flag is set, check if it has the parallel attribute
         if serial:
             a = obj.getvarattr(vname)
             if re.search('parallel', a):
-                if verbose: print "variable "+vname+varsuffix+" skipped since it is a parallel variable"
+                if verbose:
+                    print "variable " + vname + varsuffix + " skipped since it is a parallel variable"
                 continue
         # --- Check if variable with same name has already been written out.
         # --- This only matters when the variable is being written out as
         # --- a plane python variable.
         if '@' not in varsuffix:
             if vname in writtenvars:
-                if verbose: print "variable "+objname+"."+vname+" skipped since other variable would have same name in the file"
+                if verbose:
+                    print "variable " + objname + "." + vname + " skipped since other variable would have same name in the file"
                 continue
             writtenvars.append(vname)
         # --- If this point is reached, then variable is written out to file
-        if verbose: print "writing "+objname+"."+vname+" as "+vname+varsuffix
+        if verbose:
+            print "writing " + objname + "." + vname + " as " + vname + varsuffix
         # --- Write it out to the file
-        ff.write(vname+varsuffix, v)
+        ff.write(vname + varsuffix, v)
 
 ##############################################################################
 # Python version of the dump routine. This uses the varlist command to
@@ -721,7 +783,7 @@ def pydump(fname=None, attr=["dump"], vars=[], serial=0, ff=None, varsuffix=None
                           class that conforms to the API of PW.PW from the PyPDB package.
     """
     assert fname is not None or ff is not None,\
-           "Either a filename must be specified or a data writer instance"
+        "Either a filename must be specified or a data writer instance"
     if hdf:
         warnings.warn("the hdf argument is no longer used and is ignored")
     # --- Open the file if the file object was not passed in.
@@ -755,10 +817,12 @@ def pydump(fname=None, attr=["dump"], vars=[], serial=0, ff=None, varsuffix=None
     except AttributeError:
         ff.file_type = 'unknown'
 
-    if verbose: print "Data will be written using %s format"%ff.file_type
+    if verbose:
+        print "Data will be written using %s format"%ff.file_type
 
     # --- Convert attr into a list if needed
-    if not isinstance(attr, list): attr = [attr]
+    if not isinstance(attr, list):
+        attr = [attr]
 
     # --- Loop through all of the packages (getting pkg object).
     # --- When varsuffix is specified, the list of variables already written
@@ -772,22 +836,28 @@ def pydump(fname=None, attr=["dump"], vars=[], serial=0, ff=None, varsuffix=None
     writtenvars = []
     for pname in packagelist:
         pkg = packageobject(pname)
-        if isinstance(pkg, PackageBase): continue
-        if varsuffix is None: pkgsuffix = '@' + pname
+        if isinstance(pkg, PackageBase):
+            continue
+        if varsuffix is None:
+            pkgsuffix = '@' + pname
         pydumpforthonobject(ff, attr, pname, pkg, pkgsuffix, writtenvars, serial, verbose)
         # --- Make sure that pname does not appear in vars
-        try: vars.remove(pname)
-        except ValueError: pass
+        try:
+            vars.remove(pname)
+        except ValueError:
+            pass
 
     # --- Now, write out the python variables (that can be written out).
     # --- If supplied, the varsuffix is append to the names here too.
     import types
-    if varsuffix is None: varsuffix = ''
+    if varsuffix is None:
+        varsuffix = ''
     for vname in vars:
         # --- Skip python variables that would overwrite fortran variables.
         if len(writtenvars) > 0:
             if vname in writtenvars:
-                if verbose: print "variable "+vname+" skipped since other variable would have same name in the file"
+                if verbose:
+                    print "variable " + vname + " skipped since other variable would have same name in the file"
                 continue
         # --- Get the value of the variable.
         vval = __main__.__dict__[vname]
@@ -810,25 +880,29 @@ def pydump(fname=None, attr=["dump"], vars=[], serial=0, ff=None, varsuffix=None
                 except (IOError, NameError, TypeError):
                     pass
             if source is not None:
-                if verbose: print "writing python function "+vname+" as "+vname+varsuffix+'@function'
+                if verbose:
+                    print "writing python function " + vname + " as " + vname + varsuffix + '@function'
                 # --- Clean up any indentation in case the function was defined in
                 # --- an indented block of code
-                while source[0] == ' ': source = source[1:]
+                while source[0] == ' ':
+                    source = source[1:]
                 # --- Now write it out
-                ff.write(vname+varsuffix+'@function', source)
+                ff.write(vname + varsuffix + '@function', source)
                 # --- Save the source of a function as an attribute of itself to make
                 # --- retreival easier the next time.
                 setattr(vval, '__source__', source)
             else:
-                if verbose: print "could not write python function "+vname
+                if verbose:
+                    print "could not write python function " + vname
             continue
         # --- Zero length arrays cannot by written out.
         if isinstance(vval, ndarray) and product(array(shape(vval))) == 0:
             continue
         # --- Try writing as normal variable.
         try:
-            if verbose: print "writing python variable "+vname+" as "+vname+varsuffix
-            ff.write(vname+varsuffix, vval)
+            if verbose:
+                print "writing python variable " + vname + " as " + vname + varsuffix
+            ff.write(vname + varsuffix, vval)
             continue
         except:
             pass
@@ -838,15 +912,18 @@ def pydump(fname=None, attr=["dump"], vars=[], serial=0, ff=None, varsuffix=None
         if ff.file_type == 'unknown':
             try:
                 if verbose:
-                    print "writing python variable "+vname+" as "+vname+varsuffix+'@pickle'
-                ff.write(vname+varsuffix+'@pickle', cPickle.dumps(vval, -1))
+                    print "writing python variable " + vname + " as " + vname + varsuffix + '@pickle'
+                ff.write(vname + varsuffix + '@pickle', cPickle.dumps(vval, -1))
                 docontinue = 1
             except (cPickle.PicklingError, TypeError):
                 pass
-            if docontinue: continue
+            if docontinue:
+                continue
         # --- All attempts failed so write warning message
-        if verbose: print "cannot write python variable "+vname
-    if closefile: ff.close()
+        if verbose:
+            print "cannot write python variable " + vname
+    if closefile:
+        ff.close()
 
 #############################################################################
 # Python version of the restore routine. It restores all of the variables
@@ -880,11 +957,12 @@ def pyrestore(filename=None, fname=None, verbose=0, skip=[], ff=None,
     Note that it will automatically detect whether the file is PDB or HDF.
     """
     # --- fname is the old input argument name
-    if filename is None: filename = fname
+    if filename is None:
+        filename = fname
     assert filename is not None or ff is not None,\
-           "Either a filename must be specified or a data reader instance"
+        "Either a filename must be specified or a data reader instance"
     if ff is None:
-        if datareader==None:
+        if datareader is None:
             try:
                 # --- PyPDB is the default data format.
                 datareader = PR.PR
@@ -905,7 +983,8 @@ def pyrestore(filename=None, fname=None, verbose=0, skip=[], ff=None,
     else:
         closefile = 0
 
-    if lreturnff: closefile = 0
+    if lreturnff:
+        closefile = 0
 
     # --- Make sure the file has a file_type. Older versions of the pdb
     # --- wrapper did not define a file type.
@@ -914,7 +993,8 @@ def pyrestore(filename=None, fname=None, verbose=0, skip=[], ff=None,
     except AttributeError:
         ff.file_type = 'unknown'
 
-    if verbose: print "Data will be read using %s format"%ff.file_type
+    if verbose:
+        print "Data will be read using %s format"%ff.file_type
 
     # --- Get a list of all of the variables in the file, loop over that list
     vlist = ff.inquire_names()
@@ -924,7 +1004,8 @@ def pyrestore(filename=None, fname=None, verbose=0, skip=[], ff=None,
         if ls == 1:
             print vlist
         else:
-            for l in vlist: print l
+            for l in vlist:
+                print l
 
     # --- First, sort out the list of variables
     groups = sortrestorevarsbysuffix(vlist, skip)
@@ -940,12 +1021,15 @@ def pyrestore(filename=None, fname=None, verbose=0, skip=[], ff=None,
         del groups['']
         for vname in plist:
             pyname = vname
-            if varsuffix is not None: pyname = pyname + str(varsuffix)
+            if varsuffix is not None:
+                pyname = pyname + str(varsuffix)
             try:
-                if verbose: print "reading in python variable "+vname
+                if verbose:
+                    print "reading in python variable " + vname
                 __main__.__dict__[pyname] = ff.__getattr__(vname)
             except:
-                if verbose: print "error with variable "+vname
+                if verbose:
+                    print "error with variable " + vname
 
     # --- These would be interpreter variables written to the file
     # --- as pickled objects. The data is unpickled and the variable
@@ -957,12 +1041,15 @@ def pyrestore(filename=None, fname=None, verbose=0, skip=[], ff=None,
             del groups['pickle']
             for vname in picklelist:
                 pyname = vname
-                if varsuffix is not None: pyname = pyname + str(varsuffix)
+                if varsuffix is not None:
+                    pyname = pyname + str(varsuffix)
                 try:
-                    if verbose: print "reading in pickled variable "+vname
-                    __main__.__dict__[pyname]=cPickle.loads(ff.__getattr__(vname+'@pickle'))
+                    if verbose:
+                        print "reading in pickled variable " + vname
+                    __main__.__dict__[pyname] = cPickle.loads(ff.__getattr__(vname + '@pickle'))
                 except:
-                    if verbose: print "error with variable "+vname
+                    if verbose:
+                        print "error with variable " + vname
 
     # --- These would be interpreter variables written to the file
     # --- from Basis. A simple assignment is done and the variable
@@ -972,12 +1059,15 @@ def pyrestore(filename=None, fname=None, verbose=0, skip=[], ff=None,
         del groups['global']
         for vname in globallist:
             pyname = vname
-            if varsuffix is not None: pyname = pyname + str(varsuffix)
+            if varsuffix is not None:
+                pyname = pyname + str(varsuffix)
             try:
-                if verbose: print "reading in Basis variable "+vname
-                __main__.__dict__[pyname] = ff.__getattr__(vname+'@global')
+                if verbose:
+                    print "reading in Basis variable " + vname
+                __main__.__dict__[pyname] = ff.__getattr__(vname + '@global')
             except:
-                if verbose: print "error with variable "+vname
+                if verbose:
+                    print "error with variable " + vname
 
     # --- User defined Python functions
     import types
@@ -993,8 +1083,9 @@ def pyrestore(filename=None, fname=None, verbose=0, skip=[], ff=None,
                     print "skipping python function %s since it already is defined"%vname
             else:
                 try:
-                    if verbose: print "reading in python function"+vname
-                    source = ff.__getattr__(vname+'@function')
+                    if verbose:
+                        print "reading in python function" + vname
+                    source = ff.__getattr__(vname + '@function')
                     exec(source, __main__.__dict__)
                     # --- Save the source of the function as an attribute of itself
                     # --- so that it can be latter saved in a dump file again.
@@ -1002,7 +1093,8 @@ def pyrestore(filename=None, fname=None, verbose=0, skip=[], ff=None,
                     # --- inspect.getsource cannot get the source.
                     setattr(__main__.__dict__[vname], '__source__', source)
                 except:
-                    if verbose: print "error with function "+vname
+                    if verbose:
+                        print "error with function " + vname
 
     # --- Ignore variables with suffix @parallel
     if 'parallel' in groups:
@@ -1015,12 +1107,17 @@ def pyrestore(filename=None, fname=None, verbose=0, skip=[], ff=None,
         pyrestoreforthonobject(main, ff, gname, groups[gname], fobjdict, varsuffix,
                                verbose, doarrays=1, main=main)
 
-    if closefile: ff.close()
+    if closefile:
+        ff.close()
     resultlist = []
-    if lreturnfobjdict: resultlist.append(fobjdict)
-    if lreturnff:       resultlist.append(ff)
-    if len(resultlist) == 1: return resultlist[0]
-    elif len(resultlist) > 1: return resultlist
+    if lreturnfobjdict:
+        resultlist.append(fobjdict)
+    if lreturnff:
+        resultlist.append(ff)
+    if len(resultlist) == 1:
+        return resultlist[0]
+    elif len(resultlist) > 1:
+        return resultlist
 
 def sortrestorevarsbysuffix(vlist, skip):
     # --- Sort the variables, collecting them in groups based on their suffix.
@@ -1036,8 +1133,7 @@ def sortrestorevarsbysuffix(vlist, skip):
             gname = ''
 
         # --- If variable is in the skip list, then skip
-        if (vname in skip or
-            (len(v) > 4 and v[-4]=='@' and v[-3:]+'.'+v[:-4] in skip)):
+        if (vname in skip or (len(v) > 4 and v[-4]=='@' and v[-3:] + '.' + v[:-4] in skip)):
             continue
 
         # --- Now add the variable to the appropriate group list.
@@ -1045,7 +1141,7 @@ def sortrestorevarsbysuffix(vlist, skip):
 
     return groups
 
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 def pyrestoreforthonobject(obj, ff, gname, vlist, fobjdict, varsuffix, verbose, doarrays,
                            gpdbname=None, main=None):
     """
@@ -1085,7 +1181,7 @@ def pyrestoreforthonobject(obj, ff, gname, vlist, fobjdict, varsuffix, verbose, 
     if neednew:
         # --- A new variable needs to be created.
         try:
-            fobj = ff.__getattr__("FOBJ@"+gpdbname)
+            fobj = ff.__getattr__("FOBJ@" + gpdbname)
         except:
             return
         # --- First, check if the object has already been restored.
@@ -1093,18 +1189,18 @@ def pyrestoreforthonobject(obj, ff, gname, vlist, fobjdict, varsuffix, verbose, 
             # --- If so, then point new variable to existing object
             attrobj = fobjdict[fobj]
             setattr(obj, attrname, attrobj)
-            #main.__dict__[gname] = main.__dict__[fobjdict[fobj]]
-            #exec("%s = %s"%(gname, fobjdict[fobj]), main.__dict__)
+            # main.__dict__[gname] = main.__dict__[fobjdict[fobj]]
+            # exec("%s = %s"%(gname, fobjdict[fobj]), main.__dict__)
             # return ???
         else:
             # --- Otherwise, create a new instance of the appropriate type,
             # --- and add it to the list of objects.
-            typename = ff.__getattr__("TYPENAME@"+gpdbname)
+            typename = ff.__getattr__("TYPENAME@" + gpdbname)
             try:
                 attrobj = main.__dict__[typename]()
                 setattr(obj, attrname, attrobj)
-                #main.__dict__[gname] = main.__dict__[typename]()
-                #exec("%s = %s()"%(gname, typename), main.__dict__)
+                # main.__dict__[gname] = main.__dict__[typename]()
+                # exec("%s = %s()"%(gname, typename), main.__dict__)
             except:
                 # --- If it gets here, it might mean that the name no longer exists.
                 return
@@ -1133,26 +1229,29 @@ def pyrestoreforthonobject(obj, ff, gname, vlist, fobjdict, varsuffix, verbose, 
 
     # --- Read in leafs.
     for vname in leafvars:
-        if vname == 'FOBJ' or vname == 'TYPENAME': continue
+        if vname == 'FOBJ' or vname == 'TYPENAME':
+            continue
         fullname = gname + '.' + vname
 
         # --- Add suffix to name if given.
         # --- varsuffix is wrapped in str in case a nonstring was passed in.
-        if varsuffix is not None: fullname = vname + str(varsuffix)
+        if varsuffix is not None:
+            fullname = vname + str(varsuffix)
 
         try:
             val = ff.__getattr__(vname + '@' + gpdbname)
             if not isinstance(val, ndarray) and not doarrays:
                 # --- Simple assignment is done for scalars, using the exec command
-                if verbose: print "reading in "+fullname
-                #doassignment(fullname, val)
+                if verbose:
+                    print "reading in " + fullname
+                # doassignment(fullname, val)
                 setattr(attrobj, vname, val)
             elif isinstance(val, ndarray) and doarrays:
-                if verbose: print "reading in "+fullname
+                if verbose:
+                    print "reading in " + fullname
                 if varsuffix is None:
-                    if (len(str(val.dtype)) > 1 and
-                        str(val.dtype)[1] == 'S' and
-                        getattr(attrobj, vname).shape != val.shape):
+                    if (len(str(val.dtype)) > 1 and str(val.dtype)[1] == 'S' and
+                       getattr(attrobj, vname).shape != val.shape):
                         # --- This is a crude fix for backwards compatibility. The way
                         # --- strings are handled changed, so that they now have an
                         # --- element size > 1. This coding converts old style strings
@@ -1164,20 +1263,21 @@ def pyrestoreforthonobject(obj, ff, gname, vlist, fobjdict, varsuffix, verbose, 
                 else:
                     # --- If varsuffix is specified, then put the variable directly into
                     # --- the main dictionary.
-                    #doassignment(fullname, val)
-                    setattr(attrobj, vname+str(varsuffix), val)
+                    # doassignment(fullname, val)
+                    setattr(attrobj, vname + str(varsuffix), val)
         except:
             # --- The catches errors in cases where the variable is not an
             # --- actual variable in the package, for example if it had been deleted
             # --- after the dump was originally made.
-            print "Warning: There was a problem restoring %s"% (fullname)
+            print "Warning: There was a problem restoring %s"%(fullname)
             # --- Print out information about exactly what went wrong.
-            if verbose: sys.excepthook(*sys.exc_info())
+            if verbose:
+                sys.excepthook(*sys.exc_info())
 
     # --- Read in rest of groups.
     for g, v in groups.iteritems():
-        pyrestoreforthonobject(getattr(obj, attrname), ff, gname+'.'+g, v, fobjdict, varsuffix, verbose, doarrays,
-                               g+'@'+gpdbname, main=main)
+        pyrestoreforthonobject(getattr(obj, attrname), ff, gname + '.' + g, v, fobjdict, varsuffix, verbose, doarrays,
+                               g + '@' + gpdbname, main=main)
 
 
 # --- create an alias for pyrestore
@@ -1214,4 +1314,3 @@ pydump(): dumps data into pdb format file
 pyrestore(): reads data from pdb format file
 restore(): equivalent to pyrestore
 """
-

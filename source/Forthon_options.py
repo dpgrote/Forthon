@@ -6,8 +6,8 @@ import argparse
 from version import version
 
 parser = argparse.ArgumentParser(
-                   usage = "Forthon [options] pkgname [extra Fortran or C files to be compiled or objects to link] [options for distutils]",
-                   description = """
+                   usage="Forthon [options] pkgname [extra Fortran or C files to be compiled or objects to link] [options for distutils]",
+                   description="""
 pkgname is the name of the package.
 A complete package will have at least two files, the interface description
 file and the fortran file. The default name for the interface file is
@@ -84,7 +84,6 @@ parser.add_argument('--no2underscores', action='store_false', default=False, des
 parser.add_argument('-v', '--verbose', action='store_true', default=False, help='Turn on verbose output during the make process')
 parser.add_argument('--version', action='version', version='%(prog)s '+version)
 
-#parser.add_argument('--with-numpy', action='store_true', default=True, help='This is now the default. Numeric is no longer supported.')
 parser.add_argument('--writemodules', action='store_true', default=True, dest='writemodules')
 parser.add_argument('--nowritemodules', action='store_false', default=True, dest='writemodules', help="Don't write out the module definitions. Useful if the modules have been written already. Note that if variables of derived type are used, the original code will need to be modified. See example2. Also note that if this option is used, no checks are made to ensure the consistency between the interface file description and the actual module.")
 
@@ -101,4 +100,3 @@ if os.path.basename(sys.argv[0]).startswith('Forthon') or sys.argv[0] == '-c':
     args = parser.parse_args()
 else:
     args = parser.parse_args(args=['dummypkg'])
-
