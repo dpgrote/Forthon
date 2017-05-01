@@ -71,6 +71,8 @@ parser.add_argument('--pkgsuffix', default='', help='Suffix added to the name of
 
 parser.add_argument('--realsize', choices=['4', '8'], default='8', metavar='[4, 8]', help='The size of reals to use for variables that are declared to of type real in the variable description file. It defaults to 8.')
 
+parser.add_argument('--script', action='append', dest='scripts', help='script to be installed in the path. The option can be specified multiple times for multiple scripts.')
+
 parser.add_argument('--timeroutines', action='store_true', default=False)
 parser.add_argument('--notimeroutines', action='store_false', default=False, help='Specifies if timers are added for each python callable fortran routine. The default is --notimeroutines.')
 

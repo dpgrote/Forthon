@@ -31,41 +31,42 @@ while remainder:
 distutil_args = remainder
 
 # --- Default values for command line args
-machine        = args.machine
-interfacefile  = args.interfacefile or (pkg + '.v')
-fortranfile    = args.fortranfile
-initialgallot  = args.initialgallot
-dependencies   = args.dependencies
-defines        = args.defines
-fcomp          = args.fcomp
-fcompexec      = args.fcompexec
-f90            = args.f90
-writemodules   = args.writemodules
-timeroutines   = args.timeroutines
-othermacros    = args.othermacros
-debug          = args.debug
-underscoring   = args.underscoring
-twounderscores = args.twounderscores
-fopt           = args.fopt
-fargslist      = args.fargslist
-cargs          = args.cargs
-realsize       = args.realsize
-libs           = args.libs
-libdirs        = args.libdirs
-includedirs    = args.includedirs
-free_suffix    = args.free_suffix
-fixed_suffix   = args.fixed_suffix
-compile_first  = args.compile_first
-builddir       = args.builddir
-implicitnone   = args.implicitnone
 build_base     = args.build_base
 build_temp     = args.build_temp
-verbose        = args.verbose
+builddir       = args.builddir
+cargs          = args.cargs
+compile_first  = args.compile_first
+debug          = args.debug
+defines        = args.defines
+dependencies   = args.dependencies
 dobuild        = args.dobuild
-with_feenableexcept = args.with_feenableexcept
+f90            = args.f90
+fargslist      = args.fargslist
+fcomp          = args.fcomp
+fcompexec      = args.fcompexec
+fixed_suffix   = args.fixed_suffix
+fopt           = args.fopt
+fortranfile    = args.fortranfile
+free_suffix    = args.free_suffix
+implicitnone   = args.implicitnone
+includedirs    = args.includedirs
+initialgallot  = args.initialgallot
+interfacefile  = args.interfacefile or (pkg + '.v')
+libdirs        = args.libdirs
+libs           = args.libs
+machine        = args.machine
+othermacros    = args.othermacros
 pkgbase        = args.pkgbase
 pkgdir         = args.pkgdir
 pkgsuffix      = args.pkgsuffix
+realsize       = args.realsize
+timeroutines   = args.timeroutines
+scripts        = args.scripts
+twounderscores = args.twounderscores
+underscoring   = args.underscoring
+verbose        = args.verbose
+with_feenableexcept = args.with_feenableexcept
+writemodules   = args.writemodules
 
 # --- These args require special handling
 
@@ -494,6 +495,7 @@ setup(name = pkgbase,
                                libraries=fcompiler.libs+libs,
                                define_macros=define_macros,
                                extra_compile_args=extra_compile_args,
-                               extra_link_args=extra_link_args)]
+                               extra_link_args=extra_link_args)],
+      scripts = scripts
      )
 
