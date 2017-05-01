@@ -53,7 +53,6 @@ realsize       = args.realsize
 libs           = args.libs
 libdirs        = args.libdirs
 includedirs    = args.includedirs
-static         = args.static
 free_suffix    = args.free_suffix
 fixed_suffix   = args.fixed_suffix
 compile_first  = args.compile_first
@@ -193,7 +192,6 @@ fcompiler = FCompiler(machine=machine,
                       debug=debug,
                       fcompname=fcomp,
                       fcompexec=fcompexec,
-                      static=static,
                       implicitnone=implicitnone,
                       twounderscores=twounderscores)
 
@@ -277,13 +275,9 @@ definesstr = ''
 for d in (defines + fcompiler.defines):
     definesstr = definesstr + d + '\n'
 
-# --- Define default rule. Note that static doesn't work yet.
+# --- Define default rule.
 fortranroot,fortransuffix = getpathbasename(fortranfile)
-if fcompiler.static:
-    defaultrule = 'static:'
-    raise InputError('Static linking not supported at this time')
-else:
-    defaultrule = 'dynamic: %(compile_firstobject)s %(pkg)s_p%(osuffix)s %(fortranroot)s%(osuffix)s %(pkg)spymodule.c Forthon.h Forthon.c %(extraobjectsstr)s'%locals()
+defaultrule = 'dependencies: %(compile_firstobject)s %(pkg)s_p%(osuffix)s %(fortranroot)s%(osuffix)s %(pkg)spymodule.c Forthon.h Forthon.c %(extraobjectsstr)s'%locals()
 
 if writemodules:
     # --- Fortran modules are written by the wrapper to the _p file.

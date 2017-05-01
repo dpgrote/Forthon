@@ -29,7 +29,7 @@ class FCompiler:
     """
 
     def __init__(self,machine=None,debug=0,fcompname=None,fcompexec=None,
-                      static=0,implicitnone=1,twounderscores=0):
+                      implicitnone=1,twounderscores=0):
         if machine is None: machine = sys.platform
         self.machine = machine
         if self.machine != 'win32':
@@ -40,7 +40,6 @@ class FCompiler:
 
         self.fcompname = fcompname
         self.fcompexec = fcompexec
-        self.static = static
         self.implicitnone = implicitnone
         self.twounderscores = twounderscores
         self.defines = []

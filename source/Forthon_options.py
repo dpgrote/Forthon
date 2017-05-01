@@ -71,8 +71,6 @@ parser.add_argument('--pkgsuffix', default='', help='Suffix added to the name of
 
 parser.add_argument('--realsize', choices=['4', '8'], default='8', metavar='[4, 8]', help='The size of reals to use for variables that are declared to of type real in the variable description file. It defaults to 8.')
 
-parser.add_argument('--static', action='store_true', default=False, help='Build the static version of the code by default, rather than the dynamically linker version. Not yet supported.')
-
 parser.add_argument('--timeroutines', action='store_true', default=False)
 parser.add_argument('--notimeroutines', action='store_false', default=False, help='Specifies if timers are added for each python callable fortran routine. The default is --notimeroutines.')
 
@@ -92,9 +90,6 @@ parser.add_argument('--nowritemodules', action='store_false', default=True, dest
 if len(sys.argv) == 1:
     parser.print_help()
     sys.exit(0)
-
-class InputError(Exception):
-    pass
 
 # --- Only process the true argument list when this is called from Forthon.
 # --- Otherwise ignore the arguments. This is needed since for example this
