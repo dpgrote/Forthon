@@ -6,13 +6,13 @@ import sys
 import re
 import struct
 
-from Forthon_options import options,args
+from Forthon_options import args
 
 # Set default values of inputs
-machine = options.machine
-realsize = options.realsize
-underscoring = options.underscoring
-twounderscores = options.twounderscores
+machine = args.machine
+realsize = args.realsize
+underscoring = args.underscoring
+twounderscores = args.twounderscores
 
 #----------------------------------------------------------------------------
 # Set size of fortran integers and logicals, which is the same size as a

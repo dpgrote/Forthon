@@ -11,16 +11,16 @@ else:
 from cfinterface import *
 
 class ForthonDerivedType:
-    def __init__(self,typelist,pname,psuffix,pkgbase,c,f,isz,writemodules,fcompname):
+    def __init__(self,typelist,pkgname,pkgsuffix,pkgbase,c,f,isz,writemodules,fcompname):
         if not typelist: return
 
-        self.pname = pname
-        self.psuffix = psuffix
+        self.pkgname = pkgname
+        self.pkgsuffix = pkgsuffix
         self.pkgbase = pkgbase
 
         self.cfile = open(c,'a')
         self.ffile = open(f,'a')
-        self.wrapderivedtypes(typelist,pname,psuffix,isz,writemodules,fcompname)
+        self.wrapderivedtypes(typelist,pkgname,pkgsuffix,isz,writemodules,fcompname)
         self.cfile.close()
         self.ffile.close()
 
@@ -99,7 +99,7 @@ class ForthonDerivedType:
         if self.pkgbase is not None:
             return self.pkgbase
         else:
-            return self.pname + self.psuffix + 'py'
+            return self.pkgname + self.pkgsuffix + 'py'
 
     # --------------------------------------------
     def cw(self,text,noreturn=0):
@@ -125,7 +125,7 @@ class ForthonDerivedType:
             self.ffile.write(text+'\n')
 
     # --- This is the routine that does all of the work for derived types
-    def wrapderivedtypes(self,typelist,pname,psuffix,isz,writemodules,fcompname):
+    def wrapderivedtypes(self,typelist,pkgname,pkgsuffix,isz,writemodules,fcompname):
 
         for t in typelist:
             self.cw('')
@@ -400,7 +400,7 @@ class ForthonDerivedType:
 
             #########################################################################
             #########################################################################
-            self.cw('PyObject *'+pname+'_'+t.name+
+            self.cw('PyObject *'+pkgname+'_'+t.name+
                     'New(PyObject *self, PyObject *args)')
             self.cw('{')
             self.cw('  return '+fname(self.fsub(t,'newf'))+'();')
@@ -417,7 +417,7 @@ class ForthonDerivedType:
             self.cw('  ForthonObject *obj;')
             self.cw('  obj=(ForthonObject *) PyObject_GC_New(ForthonObject,'+
                        '&ForthonType);')
-            self.cw('  if (*i > 0) {obj->name = '+pname+'_fscalars[*i].name;}')
+            self.cw('  if (*i > 0) {obj->name = '+pkgname+'_fscalars[*i].name;}')
             self.cw('  else        {obj->name = %spointee__;}'%t.name)
             self.cw('  obj->typename = "'+t.name+'";')
             self.cw('  '+t.name+'declarevars(obj);')

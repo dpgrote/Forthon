@@ -3,25 +3,32 @@
 # $Id: preprocess.py,v 1.9 2009/09/08 18:01:56 dave Exp $
 
 from cfinterface import *
-import sys
+
+# --- This is a bit of a hack. The preprocessor takes many of the same arguments as Forthon, but not all.
+# --- It uses Forthon_options to avoid duplication.
+# --- It uses the first two positional arguments as the input and output filenames.
 from Forthon_options import args
 
-def py_ifelse(m,v,t,f=''):
+def py_ifelse(m, v, t, f=''):
     if m==v:
         return t
     else:
         return f
 
 def main():
-    file = open(args[0],'r')
-    text = file.readlines()
-    sys.stdout = open(args[1],'w')
+    infile = args.pkgname
+    outfile = args.remainder[0]
 
-    for line in text:
-        if line[0] == '%':
-            print eval(line[1:],globals())
-        else:
-            print line[:-1]
+    with open(infile, 'r') as fin:
+        text = fin.readlines()
+
+    with open(outfile, 'w') as fout:
+
+        for line in text:
+            if line.startswith('%'):
+                fout.write(eval(line[1:],globals()))
+            else:
+                fout.write(line)
 
 if __name__ == '__main__':
     main()

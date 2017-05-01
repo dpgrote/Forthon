@@ -11,7 +11,7 @@ import string
 import re
 import fvars
 import pickle
-from Forthon_options import options,args
+from Forthon_options import args
 from cfinterface import *
 import wrappergen_derivedtypes
 if sys.hexversion >= 0x20501f0:
@@ -37,12 +37,12 @@ class PyWrap:
       [file2, ...] Subsidiary variable description files
     """
 
-    def __init__(self,ifile,pname,psuffix,pkgbase,initialgallot=1,writemodules=1,
+    def __init__(self,varfile,pkgname,pkgsuffix,pkgbase,initialgallot=1,writemodules=1,
                  otherinterfacefiles=[],other_scalar_vars=[],timeroutines=0,
                  otherfortranfiles=[],fcompname=None):
-        self.ifile = ifile
-        self.pname = pname
-        self.psuffix = psuffix
+        self.varfile = varfile
+        self.pkgname = pkgname
+        self.pkgsuffix = pkgsuffix
         self.pkgbase = pkgbase
         self.initialgallot = initialgallot
         self.writemodules = writemodules
@@ -58,7 +58,7 @@ class PyWrap:
     def cname(self,n):
         # --- Standard name of the C interface to a Fortran routine
         # --- pkg_varname
-        return self.pname+'_'+n
+        return self.pkgname+'_'+n
 
     transtable = (10*string.ascii_lowercase)[:256]
     def fsub(self,prefix,suffix=''):
@@ -69,7 +69,7 @@ class PyWrap:
         the next 16. This does not guarantee uniqueness, but the nonuniqueness
         should be minute.
         """
-        name = self.pname+prefix+suffix
+        name = self.pkgname+prefix+suffix
         if len(name) < 32: return name
         transtable = PyWrap.transtable
         if sys.hexversion >= 0x03000000:
@@ -100,7 +100,7 @@ class PyWrap:
             if re.search('[a-zA-Z]',ss) != None:
                 if ss in self.sdict:
                     dim = re.sub(ss,
-                             '*(long *)'+self.pname+'_fscalars['+repr(self.sdict[ss])+'].data',
+                             '*(long *)'+self.pkgname+'_fscalars['+repr(self.sdict[ss])+'].data',
                              dim,count=1)
                 else:
                     for other_vars in self.other_scalar_vars:
@@ -147,7 +147,7 @@ class PyWrap:
         if self.pkgbase is not None:
             return self.pkgbase
         else:
-            return self.pname+self.psuffix + 'py'
+            return self.pkgname+self.pkgsuffix + 'py'
 
     def cw(self,text,noreturn=0):
         if noreturn:
@@ -180,7 +180,7 @@ class PyWrap:
         if 'ffile' in self.__dict__: status = 'a'
         else:                        status = 'w'
         if status == 'w' or (status == 'a' and self.ffile.closed):
-            self.ffile = open(self.pname+'_p.F90',status)
+            self.ffile = open(self.pkgname+'_p.F90',status)
 
     def processvariabledescriptionfile(self):
         """
@@ -189,7 +189,7 @@ class PyWrap:
         """
 
         # --- Get the list of variables and subroutine from the var file
-        vlist,hidden_vlist,typelist = processfile(self.pname,self.ifile,
+        vlist,hidden_vlist,typelist = processfile(self.pkgname,self.varfile,
                                                   self.otherinterfacefiles,
                                                   self.timeroutines)
 
@@ -252,10 +252,10 @@ class PyWrap:
         # --- This is the routine that does all of the work
 
         # --- Create the module file
-        self.cfile = open(self.pname+'pymodule.c','w')
+        self.cfile = open(self.pkgname+'pymodule.c','w')
         self.cw('#include "Forthon.h"')
         self.cw('#include <setjmp.h>')
-        self.cw('ForthonObject *'+self.pname+'Object;')
+        self.cw('ForthonObject *'+self.pkgname+'Object;')
 
         # --- See the kaboom command in Forthon.c for information on these two
         # --- variables.
@@ -340,9 +340,9 @@ class PyWrap:
         # --- standard C to have function pointers in structure initializers.
 
         # --- Scalars
-        self.cw('int '+self.pname+'nscalars = '+repr(len(self.slist))+';')
+        self.cw('int '+self.pkgname+'nscalars = '+repr(len(self.slist))+';')
         if len(self.slist) > 0:
-            self.cw('Fortranscalar '+self.pname+'_fscalars['+repr(len(self.slist))+']={')
+            self.cw('Fortranscalar '+self.pkgname+'_fscalars['+repr(len(self.slist))+']={')
             for i in range(len(self.slist)):
                 s = self.slist[i]
                 self.cw('{NPY_%s,'%fvars.ftop(s.type) +
@@ -362,13 +362,13 @@ class PyWrap:
                 if i < len(self.slist)-1: self.cw(',')
             self.cw('};')
         else:
-            self.cw('Fortranscalar *'+self.pname+'_fscalars=NULL;')
+            self.cw('Fortranscalar *'+self.pkgname+'_fscalars=NULL;')
 
         # --- Arrays
-        self.cw('int '+self.pname+'narrays = '+repr(len(self.alist))+';')
+        self.cw('int '+self.pkgname+'narrays = '+repr(len(self.alist))+';')
         if len(self.alist) > 0:
             self.cw('static Fortranarray '+
-                    self.pname+'_farrays['+repr(len(self.alist))+']={')
+                    self.pkgname+'_farrays['+repr(len(self.alist))+']={')
             for i in range(len(self.alist)):
                 a = self.alist[i]
                 if a.data and a.dynamic:
@@ -394,11 +394,11 @@ class PyWrap:
                 if i < len(self.alist)-1: self.cw(',')
             self.cw('};')
         else:
-            self.cw('static Fortranarray *'+self.pname+'_farrays=NULL;')
+            self.cw('static Fortranarray *'+self.pkgname+'_farrays=NULL;')
 
         #########################################################################
         # --- Write declarations of c pointers to fortran variables
-        self.cw('void '+self.pname+'declarevars(ForthonObject *obj) {')
+        self.cw('void '+self.pkgname+'declarevars(ForthonObject *obj) {')
 
         # --- Scalars
         for i in range(len(self.slist)):
@@ -437,7 +437,7 @@ class PyWrap:
 # Some extra work is needed to get the getset attribute access scheme working.
 #   # --- Write out the table of getset routines
 #   self.cw('')
-#   self.cw('static PyGetSetDef '+self.pname+'_getseters[] = {')
+#   self.cw('static PyGetSetDef '+self.pkgname+'_getseters[] = {')
 #   for i in range(len(self.slist)):
 #     s = self.slist[i]
 #     if s.type == 'real': gstype = 'double'
@@ -697,7 +697,7 @@ class PyWrap:
             if self.timeroutines:
                 # --- Now get ending time and add to timer variable
                 self.cw('  time2 = cputime();')
-                self.cw('  *(double *)'+self.pname+'_fscalars['+
+                self.cw('  *(double *)'+self.pkgname+'_fscalars['+
                              repr(self.sdict[f.name+'runtime'])+'].data += (time2-time1);')
 
             # --- Write return sequence
@@ -725,7 +725,7 @@ class PyWrap:
 
         ###########################################################################
         # --- Write out method list
-        self.cw('static struct PyMethodDef '+self.pname+'_methods[] = {')
+        self.cw('static struct PyMethodDef '+self.pkgname+'_methods[] = {')
         for f in self.flist:
             if f.function:
                 self.cw('{"'+f.name+'",(PyCFunction)'+self.cname(f.name)+',1,'+
@@ -738,13 +738,13 @@ class PyWrap:
 
         ###########################################################################
         # --- Write static array initialization routines
-        self.cw('void '+self.pname+'setstaticdims(ForthonObject *self)')
+        self.cw('void '+self.pkgname+'setstaticdims(ForthonObject *self)')
         self.cw('{')
 
         i = -1
         for a in self.alist:
             i = i + 1
-            vname = self.pname+'_farrays['+repr(i)+']'
+            vname = self.pkgname+'_farrays['+repr(i)+']'
             if a.dims and not a.dynamic:
                 j = 0
                 for d in a.dims:
@@ -788,12 +788,12 @@ class PyWrap:
                 currentgroup = a.group
                 if len(dyngroups) > 0: dyngroups[-1][2] = i
                 dyngroups.append([currentgroup,i+1,len(self.alist)])
-                self.cw('static void '+self.pname+'setdims'+currentgroup+'(char *name,long i)')
+                self.cw('static void '+self.pkgname+'setdims'+currentgroup+'(char *name,long i)')
                 self.cw('{')
                 self.cw('  if (strcmp(name,"'+a.group+'") || strcmp(name,"*")) {')
 
             i = i + 1
-            vname = self.pname+'_farrays['+repr(i)+']'
+            vname = self.pkgname+'_farrays['+repr(i)+']'
             if a.dynamic == 1 or a.dynamic == 2:
                 j = 0
                 self.cw('  if (i == -1 || i == %d) {'%i)
@@ -818,12 +818,12 @@ class PyWrap:
 
         # --- Now write out the setdims routine which calls of the routines
         # --- for the individual groups.
-        self.cw('void '+self.pname+'setdims(char *name,ForthonObject *obj,long i)')
+        self.cw('void '+self.pkgname+'setdims(char *name,ForthonObject *obj,long i)')
         self.cw('{')
         for groupinfo in dyngroups:
             self.cw('  if (i == -1 || (%d <= i && i <= %d))'%tuple(groupinfo[1:]),
                     noreturn=1)
-            self.cw('  '+self.pname+'setdims'+groupinfo[0]+'(name,i);')
+            self.cw('  '+self.pkgname+'setdims'+groupinfo[0]+'(name,i);')
         self.cw('}')
 
         self.cw('')
@@ -833,7 +833,7 @@ class PyWrap:
         self.cw('void '+fname(self.fsub('grabscalarpointers'))+'(long *i,char *p)')
         self.cw('{')
         self.cw('  /* Gabs pointer for the scalar */')
-        self.cw('  '+self.pname+'_fscalars[*i].data = (char *)p;')
+        self.cw('  '+self.pkgname+'_fscalars[*i].data = (char *)p;')
         self.cw('}')
 
         # --- A serarate routine is needed for derived types since the cobj__
@@ -841,14 +841,14 @@ class PyWrap:
         self.cw('void '+fname(self.fsub('setderivedtypepointers'))+'(long *i,char **p)')
         self.cw('{')
         self.cw('  /* Gabs pointer for the scalar */')
-        self.cw('  '+self.pname+'_fscalars[*i].data = (char *)(*p);')
+        self.cw('  '+self.pkgname+'_fscalars[*i].data = (char *)(*p);')
         self.cw('}')
 
         # --- Get pointer to an array. This takes an integer to specify which array
         self.cw('void '+fname(self.fsub('grabarraypointers'))+'(long *i,char *p)')
         self.cw('{')
         self.cw('  /* Grabs pointer for the array */')
-        self.cw('  '+self.pname+'_farrays[*i].data.s = (char *)p;')
+        self.cw('  '+self.pkgname+'_farrays[*i].data.s = (char *)p;')
         self.cw('}')
 
         # --- This takes a Fortranarray object directly.
@@ -875,10 +875,10 @@ class PyWrap:
         if sys.hexversion >= 0x03000000:
             self.cw('static struct PyModuleDef moduledef = {')
             self.cw('  PyModuleDef_HEAD_INIT,')
-            self.cw('  "{0}py", /* m_name */'.format(self.pname+self.psuffix))
-            self.cw('  "{0}", /* m_doc */'.format(self.pname))
+            self.cw('  "{0}py", /* m_name */'.format(self.pkgname+self.pkgsuffix))
+            self.cw('  "{0}", /* m_doc */'.format(self.pkgname))
             self.cw('  -1,                  /* m_size */')
-            self.cw('  {0}_methods,    /* m_methods */'.format(self.pname))
+            self.cw('  {0}_methods,    /* m_methods */'.format(self.pkgname))
             self.cw('  NULL,                /* m_reload */')
             self.cw('  NULL,                /* m_traverse */')
             self.cw('  NULL,                /* m_clear */')
@@ -887,9 +887,9 @@ class PyWrap:
 
         self.cw('PyMODINIT_FUNC')
         if sys.hexversion >= 0x03000000:
-            self.cw('PyInit_'+self.pname+self.psuffix+'py(void)')
+            self.cw('PyInit_'+self.pkgname+self.pkgsuffix+'py(void)')
         else:
-            self.cw('init'+self.pname+self.psuffix+'py(void)')
+            self.cw('init'+self.pkgname+self.pkgsuffix+'py(void)')
         self.cw('{')
 
         self.cw('  PyObject *m;')
@@ -897,8 +897,8 @@ class PyWrap:
             self.cw('  int argc; char **argv;')
             self.cw('  Py_GetArgcArgv(&argc,&argv);')
             self.cw('  f90_init(argc,argv);')
-#   self.cw('  ForthonType.tp_getset = '+self.pname+'_getseters;')
-#   self.cw('  ForthonType.tp_methods = '+self.pname+'_methods;')
+#   self.cw('  ForthonType.tp_getset = '+self.pkgname+'_getseters;')
+#   self.cw('  ForthonType.tp_methods = '+self.pkgname+'_methods;')
         self.cw('  if (PyType_Ready(&ForthonType) < 0)')
         if sys.hexversion >= 0x03000000:
             self.cw('    return NULL;')
@@ -908,33 +908,33 @@ class PyWrap:
         if sys.hexversion >= 0x03000000:
             self.cw('  m = PyModule_Create(&moduledef);')
         else:
-            self.cw('  m = Py_InitModule("'+self.pname+self.psuffix+'py",'+self.pname+'_methods);')
+            self.cw('  m = Py_InitModule("'+self.pkgname+self.pkgsuffix+'py",'+self.pkgname+'_methods);')
 
-         #self.cw('  PyModule_AddObject(m,"'+self.pname+'Type",'+
+         #self.cw('  PyModule_AddObject(m,"'+self.pkgname+'Type",'+
          #               '(PyObject *)&ForthonType);')
-        self.cw('  '+self.pname+'Object=(ForthonObject *)'+
+        self.cw('  '+self.pkgname+'Object=(ForthonObject *)'+
                    'PyObject_GC_New(ForthonObject, &ForthonType);')
                             #'ForthonObject_New(NULL,NULL);')
-        self.cw('  '+self.pname+'Object->name = "'+self.pname+'";')
-        self.cw('  '+self.pname+'Object->typename = "'+self.pname+'";')
-        self.cw('  '+self.pname+'Object->nscalars = '+self.pname+'nscalars;')
-        self.cw('  '+self.pname+'Object->fscalars = '+self.pname+'_fscalars;')
-        self.cw('  '+self.pname+'Object->narrays = '+self.pname+'narrays;')
-        self.cw('  '+self.pname+'Object->farrays = '+self.pname+'_farrays;')
-        self.cw('  '+self.pname+'Object->setdims = *'+self.pname+'setdims;')
-        self.cw('  '+self.pname+'Object->setstaticdims = *'+
-                    self.pname+'setstaticdims;')
-        self.cw('  '+self.pname+'Object->fmethods = '+self.pname+'_methods;')
-        self.cw('  '+self.pname+'Object->__module__ = Py_BuildValue("s","%s");'%self.getmodulename())
-        self.cw('  '+self.pname+'Object->fobj = NULL;')
-        self.cw('  '+self.pname+'Object->fobjdeallocate = NULL;')
-        self.cw('  '+self.pname+'Object->nullifycobj = NULL;')
-        self.cw('  '+self.pname+'Object->allocated = 0;')
-        self.cw('  '+self.pname+'Object->garbagecollected = 0;')
-        self.cw('  PyModule_AddObject(m,"'+self.pname+'",(PyObject *)'+
-                    self.pname+'Object);')
-        self.cw('  ErrorObject = PyErr_NewException("'+self.pname+self.psuffix+'py.error",NULL,NULL);')
-        self.cw('  PyModule_AddObject(m,"'+self.pname+'error", ErrorObject);')
+        self.cw('  '+self.pkgname+'Object->name = "'+self.pkgname+'";')
+        self.cw('  '+self.pkgname+'Object->typename = "'+self.pkgname+'";')
+        self.cw('  '+self.pkgname+'Object->nscalars = '+self.pkgname+'nscalars;')
+        self.cw('  '+self.pkgname+'Object->fscalars = '+self.pkgname+'_fscalars;')
+        self.cw('  '+self.pkgname+'Object->narrays = '+self.pkgname+'narrays;')
+        self.cw('  '+self.pkgname+'Object->farrays = '+self.pkgname+'_farrays;')
+        self.cw('  '+self.pkgname+'Object->setdims = *'+self.pkgname+'setdims;')
+        self.cw('  '+self.pkgname+'Object->setstaticdims = *'+
+                    self.pkgname+'setstaticdims;')
+        self.cw('  '+self.pkgname+'Object->fmethods = '+self.pkgname+'_methods;')
+        self.cw('  '+self.pkgname+'Object->__module__ = Py_BuildValue("s","%s");'%self.getmodulename())
+        self.cw('  '+self.pkgname+'Object->fobj = NULL;')
+        self.cw('  '+self.pkgname+'Object->fobjdeallocate = NULL;')
+        self.cw('  '+self.pkgname+'Object->nullifycobj = NULL;')
+        self.cw('  '+self.pkgname+'Object->allocated = 0;')
+        self.cw('  '+self.pkgname+'Object->garbagecollected = 0;')
+        self.cw('  PyModule_AddObject(m,"'+self.pkgname+'",(PyObject *)'+
+                    self.pkgname+'Object);')
+        self.cw('  ErrorObject = PyErr_NewException("'+self.pkgname+self.pkgsuffix+'py.error",NULL,NULL);')
+        self.cw('  PyModule_AddObject(m,"'+self.pkgname+'error", ErrorObject);')
         self.cw('  PyModule_AddObject(m,"fcompname",'+
                    'PyUnicode_FromString("'+self.fcompname+'"));')
         if sys.hexversion >= 0x03000000:
@@ -943,20 +943,20 @@ class PyWrap:
             self.cw('  PyModule_AddObject(m,"realsize",'+ 'PyInt_FromLong((long)%s'%realsize+'));')
         self.cw('  if (PyErr_Occurred()) {')
         self.cw('    PyErr_Print();')
-        self.cw('    Py_FatalError("can not initialize module '+self.pname+'");')
+        self.cw('    Py_FatalError("can not initialize module '+self.pkgname+'");')
         self.cw('    }')
         self.cw('  import_array();')
-        self.cw('  '+self.pname+'declarevars('+self.pname+'Object);')
-        self.cw('  Forthon_BuildDicts('+self.pname+'Object);')
-        self.cw('  ForthonPackage_allotdims('+self.pname+'Object);')
+        self.cw('  '+self.pkgname+'declarevars('+self.pkgname+'Object);')
+        self.cw('  Forthon_BuildDicts('+self.pkgname+'Object);')
+        self.cw('  ForthonPackage_allotdims('+self.pkgname+'Object);')
         self.cw('  '+fname(self.fsub('passpointers'))+'();')
         self.cw('  '+fname(self.fsub('nullifypointers'))+'();')
-        self.cw('  ForthonPackage_staticarrays('+self.pname+'Object);')
+        self.cw('  ForthonPackage_staticarrays('+self.pkgname+'Object);')
         if self.initialgallot:
             self.cw('  {')
             self.cw('  PyObject *s;')
             self.cw('  s = Py_BuildValue("(s)","*");')
-            self.cw('  ForthonPackage_gallot((PyObject *)'+self.pname+'Object,s);')
+            self.cw('  ForthonPackage_gallot((PyObject *)'+self.pkgname+'Object,s);')
             self.cw('  Py_XDECREF(s);')
             self.cw('  }')
 
@@ -970,11 +970,11 @@ class PyWrap:
         self.cw('      f = PyDict_GetItemString(d,"registerpackage");')
         self.cw('      if (f != NULL) {')
         self.cw('        r = PyObject_CallFunction(f,"Os",(PyObject *)'+
-                    self.pname+'Object,"'+self.pname+'");')
+                    self.pkgname+'Object,"'+self.pkgname+'");')
         self.cw('  }}}')
         self.cw('  if (NULL == r) {')
         self.cw('    if (PyErr_Occurred()) PyErr_Print();')
-        self.cw('    Py_FatalError("unable to find a compatible Forthon module in which to register module ' + self.pname + '");')
+        self.cw('    Py_FatalError("unable to find a compatible Forthon module in which to register module ' + self.pkgname + '");')
         self.cw('  }')
         self.cw('  Py_XDECREF(m);')
         self.cw('  Py_XDECREF(r);')
@@ -1004,9 +1004,9 @@ class PyWrap:
         ###########################################################################
         ###########################################################################
         # --- Process any derived types
-        wrappergen_derivedtypes.ForthonDerivedType(self.typelist,self.pname,self.psuffix,self.pkgbase,
-                                   self.pname+'pymodule.c',
-                                   self.pname+'_p.F90',self.isz,
+        wrappergen_derivedtypes.ForthonDerivedType(self.typelist,self.pkgname,self.pkgsuffix,self.pkgbase,
+                                   self.pkgname+'pymodule.c',
+                                   self.pkgname+'_p.F90',self.isz,
                                    self.writemodules,self.fcompname)
         ###########################################################################
         ###########################################################################
@@ -1151,8 +1151,8 @@ class PyWrap:
         # --- Close fortran file
         self.ffile.close()
 
-        scalar_pickle_file = open(self.pname + '.scalars','wb')
-        self.sdict['_module_name_'] = self.pname
+        scalar_pickle_file = open(self.pkgname + '.scalars','wb')
+        self.sdict['_module_name_'] = self.pkgname
         pickle.dump(self.sdict, scalar_pickle_file)
         pickle.dump(self.slist, scalar_pickle_file)
         scalar_pickle_file.close()
@@ -1228,30 +1228,28 @@ def get_another_scalar_dict(file_name,other_scalar_vars):
 def wrappergenerator_main(argv=None,writef90modulesonly=0):
     # --- Get package name from argument list
     try:
-        pname = args[0]
-        ifile = args[1]
-        otherfortranfiles = args[2:]
-        #pname = os.path.splitext(os.path.split(ifile)[1])[0]
-        #pname = args[0][:re.search('\.',args[0]).start()]
+        pkgname = args.pkgname
+        varfile = args.remainder[0]
+        otherfortranfiles = args.remainder[1:]
     except IndexError:
         print PyWrap.__doc__
         sys.exit(1)
 
-    # --- get other command line options and default actions
-    psuffix = options.pkgsuffix
-    pkgbase = options.pkgbase
-    initialgallot = options.initialgallot
-    fcompname = options.fcomp
-    writemodules = options.writemodules
-    timeroutines = options.timeroutines
-    otherinterfacefiles = options.othermacros
+    # --- get other command line args and default actions
+    pkgsuffix = args.pkgsuffix
+    pkgbase = args.pkgbase
+    initialgallot = args.initialgallot
+    fcompname = args.fcomp
+    writemodules = args.writemodules
+    timeroutines = args.timeroutines
+    otherinterfacefiles = args.othermacros
 
     # --- a list of scalar dictionaries from other modules.
     other_scalar_vars = []
-    for d in options.dependencies:
+    for d in args.dependencies:
         get_another_scalar_dict(d,other_scalar_vars)
 
-    cc = PyWrap(ifile,pname,psuffix,pkgbase,initialgallot,writemodules,
+    cc = PyWrap(varfile,pkgname,pkgsuffix,pkgbase,initialgallot,writemodules,
                 otherinterfacefiles,other_scalar_vars,timeroutines,
                 otherfortranfiles,fcompname)
     if writef90modulesonly:

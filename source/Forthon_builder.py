@@ -7,66 +7,68 @@ from distutils.core import setup, Extension
 from distutils.dist import Distribution
 from distutils.command.build import build
 
-from Forthon_options import options,args
+from Forthon_options import args
 from Forthon.compilers import FCompiler
 
 # --- Get the package name, which is assumed to be the first argument.
-pkg = args[0]
-del args[0]
+pkg = args.pkgname
 
 print "Building package " + pkg
 
 # --- Get any extra fortran, C or object files listed.
-# --- This scans through args until the end or until it finds an option
-# --- argument (that begins with a '-'). Any remaining option arguments
+# --- This scans through args until the end or until it finds an optional
+# --- argument (that begins with a '-'). Any remaining optional arguments
 # --- are passed to distutils.
+remainder = args.remainder
 extrafiles = []
-while len(args) > 0:
-    if args[0][0] != '-':
-        extrafiles += [args[0]]
-        del args[0]
+while remainder:
+    if not remainder[0].startswith('-'):
+        extrafiles.append(remainder[0])
+        del remainder[0]
     else:
         break
 
-# --- Default values for command line options
-machine        = options.machine
-interfacefile  = options.interfacefile or (pkg + '.v')
-fortranfile    = options.fortranfile
-initialgallot  = options.initialgallot
-dependencies   = options.dependencies
-defines        = options.defines
-fcomp          = options.fcomp
-fcompexec      = options.fcompexec
-f90            = options.f90
-writemodules   = options.writemodules
-timeroutines   = options.timeroutines
-othermacros    = options.othermacros
-debug          = options.debug
-underscoring   = options.underscoring
-twounderscores = options.twounderscores
-fopt           = options.fopt
-fargslist      = options.fargslist
-cargs          = options.cargs
-realsize       = options.realsize
-libs           = options.libs
-libdirs        = options.libdirs
-includedirs    = options.includedirs
-static         = options.static
-free_suffix    = options.free_suffix
-fixed_suffix   = options.fixed_suffix
-compile_first  = options.compile_first
-builddir       = options.builddir
-implicitnone   = options.implicitnone
-build_base     = options.build_base
-build_temp     = options.build_temp
-verbose        = options.verbose
-dobuild        = options.dobuild
-with_feenableexcept = options.with_feenableexcept
-pkgbase        = options.pkgbase
-pkgdir         = options.pkgdir
-pkgsuffix      = options.pkgsuffix
+distutil_args = remainder
 
-# --- There options require special handling
+# --- Default values for command line args
+machine        = args.machine
+interfacefile  = args.interfacefile or (pkg + '.v')
+fortranfile    = args.fortranfile
+initialgallot  = args.initialgallot
+dependencies   = args.dependencies
+defines        = args.defines
+fcomp          = args.fcomp
+fcompexec      = args.fcompexec
+f90            = args.f90
+writemodules   = args.writemodules
+timeroutines   = args.timeroutines
+othermacros    = args.othermacros
+debug          = args.debug
+underscoring   = args.underscoring
+twounderscores = args.twounderscores
+fopt           = args.fopt
+fargslist      = args.fargslist
+cargs          = args.cargs
+realsize       = args.realsize
+libs           = args.libs
+libdirs        = args.libdirs
+includedirs    = args.includedirs
+static         = args.static
+free_suffix    = args.free_suffix
+fixed_suffix   = args.fixed_suffix
+compile_first  = args.compile_first
+builddir       = args.builddir
+implicitnone   = args.implicitnone
+build_base     = args.build_base
+build_temp     = args.build_temp
+verbose        = args.verbose
+dobuild        = args.dobuild
+with_feenableexcept = args.with_feenableexcept
+pkgbase        = args.pkgbase
+pkgdir         = args.pkgdir
+pkgsuffix      = args.pkgsuffix
+
+# --- These args require special handling
 
 if initialgallot:
     initialgallot = '-a'
@@ -83,10 +85,10 @@ fargs = ' '.join(fargslist)
 if not fortranfile:
     # --- Find the main fortran file, which should have a name like pkg.suffix
     # --- where suffix is one of the free or fixed suffices.
-    if os.access(pkg + '.' + options.fixed_suffix,os.F_OK):
-        fortranfile = pkg + '.' + options.fixed_suffix
-    elif os.access(pkg + '.' + options.free_suffix,os.F_OK):
-        fortranfile = pkg + '.' + options.free_suffix
+    if os.access(pkg + '.' + args.fixed_suffix,os.F_OK):
+        fortranfile = pkg + '.' + args.fixed_suffix
+    elif os.access(pkg + '.' + args.free_suffix,os.F_OK):
+        fortranfile = pkg + '.' + args.free_suffix
     else:
         raise Exception('Main fortran file can not be found, please specify using the fortranfile option')
 
@@ -148,7 +150,7 @@ forthonhome = fixpath(forthonhome)
 del fvars
 
 # --- Reset sys.argv removing the Forthon options and appending any extra
-# --- distutils options remaining in args.
+# --- distutils options remaining in the argument list.
 # --- This needs to be done for generating builddir since the distutils
 # --- options may affect its value.
 sys.argv = ['Forthon','build']
@@ -156,7 +158,7 @@ if build_base:
     sys.argv += ['--build-base',build_base]
 if not dobuild:
     sys.argv += ['install']
-sys.argv += args
+sys.argv += distutil_args
 
 # --- Find the location of the build directory. There must be a better way
 # --- of doing this.
