@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # Created by David P. Grote, March 6, 1998
-# $Id: preprocess.py,v 1.9 2009/09/08 18:01:56 dave Exp $
 
 from cfinterface import *
 
@@ -26,7 +25,7 @@ def main():
 
         for line in text:
             if line.startswith('%'):
-                fout.write(eval(line[1:],globals()))
+                fout.write(eval(line[1:], globals()))
             else:
                 fout.write(line)
 

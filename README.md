@@ -23,6 +23,11 @@ See [License.txt](License.txt) for license information.
 
 ## Release Notes
 
+0.8.25:
+ - Switched to argparse
+ - Added script option
+ - Internal clean up
+
 0.8.24:
  - Fixed fetching the git hash for Py2.6
  - Fixed PyInt for Python version 2 and 3

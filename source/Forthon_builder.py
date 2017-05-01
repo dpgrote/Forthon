@@ -1,6 +1,8 @@
 """Process and build a Forthon package"""
 
-import sys,os,re
+import sys
+import os
+import re
 import distutils
 import distutils.sysconfig
 from distutils.core import setup, Extension
@@ -85,9 +87,9 @@ fargs = ' '.join(fargslist)
 if not fortranfile:
     # --- Find the main fortran file, which should have a name like pkg.suffix
     # --- where suffix is one of the free or fixed suffices.
-    if os.access(pkg + '.' + args.fixed_suffix,os.F_OK):
+    if os.access(pkg + '.' + args.fixed_suffix, os.F_OK):
         fortranfile = pkg + '.' + args.fixed_suffix
-    elif os.access(pkg + '.' + args.free_suffix,os.F_OK):
+    elif os.access(pkg + '.' + args.free_suffix, os.F_OK):
         fortranfile = pkg + '.' + args.free_suffix
     else:
         raise Exception('Main fortran file can not be found, please specify using the fortranfile option')
@@ -123,15 +125,15 @@ else:
     includedirs.append(numpy.get_include())
 
 # --- Fix path - needed for Cygwin
-def fixpath(path,dos=1):
+def fixpath(path, dos=1):
     if machine == 'win32':
         # --- Cygwin does path mangling, requiring two back slashes
         if(dos):
-            p = re.sub(r'\\',r'\\\\',path)
-            p = re.sub(r':',r':\\\\',p)
+            p = re.sub(r'\\', r'\\\\', path)
+            p = re.sub(r':', r':\\\\', p)
         else:
-            p = re.sub(r'\\',r'/',path)
-#      p = re.sub(r'C:',r'/c',p)
+            p = re.sub(r'\\', r'/', path)
+#      p = re.sub(r'C:', r'/c', p)
 #      if p[1:2] == ':': p = '/cygdrive/'+string.lower(p[0])+p[2:]
         return p
     else:
@@ -153,9 +155,9 @@ del fvars
 # --- distutils options remaining in the argument list.
 # --- This needs to be done for generating builddir since the distutils
 # --- options may affect its value.
-sys.argv = ['Forthon','build']
+sys.argv = ['Forthon', 'build']
 if build_base:
-    sys.argv += ['--build-base',build_base]
+    sys.argv += ['--build-base', build_base]
 if not dobuild:
     sys.argv += ['install']
 sys.argv += distutil_args
@@ -170,7 +172,7 @@ if builddir is None:
     builddir = dummybuild.build_temp
     bb = builddir.split(os.sep)
     upbuilddir = len(bb)*(os.pardir + os.sep)
-    del dummydist,dummybuild,bb
+    del dummydist, dummybuild, bb
 else:
     upbuilddir = os.getcwd()
 
@@ -179,14 +181,14 @@ if dobuild:
     # --- put the object files from compiling the pkgnamepy.c file in a temp
     # --- directory relative to the file. build_temp defaults to an empty string,
     # --- so the .o files are put in the same place as the .c files.
-    sys.argv += ['--build-temp',build_temp]
+    sys.argv += ['--build-temp', build_temp]
 
 # --- Add prefix to interfacefile since it will only be referenced from
 # --- the build directory.
-interfacefile = fixpath(os.path.join(upbuilddir,interfacefile))
+interfacefile = fixpath(os.path.join(upbuilddir, interfacefile))
 
 # --- Get path to fortranfile relative to the build directory.
-upfortranfile = os.path.join(upbuilddir,fortranfile)
+upfortranfile = os.path.join(upbuilddir, fortranfile)
 
 # --- Pick the fortran compiler
 fcompiler = FCompiler(machine=machine,
@@ -208,13 +210,13 @@ define_macros = fcompiler.define_macros
 
 # --- Create path to fortran files for the Makefile since they will be
 # --- referenced from the build directory.
-freepath = os.path.join(upbuilddir,'%%.%(free_suffix)s'%locals())
-fixedpath = os.path.join(upbuilddir,'%%.%(fixed_suffix)s'%locals())
+freepath = os.path.join(upbuilddir, '%%.%(free_suffix)s'%locals())
+fixedpath = os.path.join(upbuilddir, '%%.%(fixed_suffix)s'%locals())
 
 # --- Find location of the python libraries and executable.
-prefix = fixpath(sys.prefix,dos=0)
+prefix = fixpath(sys.prefix, dos=0)
 pyvers = sys.version[:3]
-python = fixpath(sys.executable,dos=0)
+python = fixpath(sys.executable, dos=0)
 
 # --- Generate list of package dependencies
 dep = ''
@@ -223,11 +225,11 @@ for d in dependencies:
 
 sourcedirs = []
 def getpathbasename(f):
-    dirname,basename = os.path.split(f)
-    rootname,suffix = os.path.splitext(basename)
+    dirname, basename = os.path.split(f)
+    rootname, suffix = os.path.splitext(basename)
     if dirname not in sourcedirs:
         sourcedirs.append(dirname)
-    return rootname,suffix
+    return rootname, suffix
 
 # --- Loop over extrafiles. For each fortran file, append the object name
 # --- to be used in the makefile and for setup. For each C file, add to a
@@ -240,18 +242,18 @@ extrafilesstr = ''
 extraobjectsstr = ''
 extraobjectslist = []
 extracfiles = []
-fortransuffices = [fixed_suffix,free_suffix]
+fortransuffices = [fixed_suffix, free_suffix]
 if machine == 'win32':
     osuffix = '.obj'
 else:
     osuffix = '.o'
 for f in extrafiles:
-    extrafilesstr = extrafilesstr + ' ' + os.path.join(upbuilddir,f)
-    root,suffix = getpathbasename(f)
-    if suffix[1:] in ['o','obj']:
+    extrafilesstr = extrafilesstr + ' ' + os.path.join(upbuilddir, f)
+    root, suffix = getpathbasename(f)
+    if suffix[1:] in ['o', 'obj']:
         extraobjectsstr = extraobjectsstr + ' ' + root + osuffix
         extraobjectslist = extraobjectslist + [root + osuffix]
-    elif suffix[1:] in ['F','F90','f','f90','for',fixed_suffix,free_suffix]:
+    elif suffix[1:] in ['F', 'F90', 'f', 'f90', 'for', fixed_suffix, free_suffix]:
         extraobjectsstr = extraobjectsstr + ' ' + root + osuffix
         extraobjectslist = extraobjectslist + [root + osuffix]
         if suffix[1:] not in fortransuffices:
@@ -260,7 +262,7 @@ for f in extrafiles:
         extracfiles.append(f)
 
 if compile_first != '':
-    compile_firstroot,compile_firstsuffix = getpathbasename(compile_first)
+    compile_firstroot, compile_firstsuffix = getpathbasename(compile_first)
     compile_firstobject = compile_firstroot + osuffix
 else:
     compile_firstobject = ''
@@ -268,7 +270,7 @@ else:
 # --- Make string containing other macros files
 othermacstr = ''
 for f in othermacros:
-    othermacstr = othermacstr + ' --macros ' + os.path.join(upbuilddir,f)
+    othermacstr = othermacstr + ' --macros ' + os.path.join(upbuilddir, f)
 
 # --- Put any defines in a string that will appear at the beginning of the
 # --- makefile.
@@ -277,7 +279,7 @@ for d in (defines + fcompiler.defines):
     definesstr = definesstr + d + '\n'
 
 # --- Define default rule.
-fortranroot,fortransuffix = getpathbasename(fortranfile)
+fortranroot, fortransuffix = getpathbasename(fortranfile)
 defaultrule = 'dependencies: %(compile_firstobject)s %(pkg)s_p%(osuffix)s %(fortranroot)s%(osuffix)s %(pkg)spymodule.c Forthon.h Forthon.c %(extraobjectsstr)s'%locals()
 
 if writemodules:
@@ -322,7 +324,7 @@ compile_firstrule = ''
 if compile_first != '':
     compile_firstrule = '%(pkg)s_p%(osuffix)s %(fortranroot)s%(osuffix)s %(extraobjectsstr)s: %(compile_firstobject)s\n'%locals()
     if compile_firstsuffix != '':
-        suffixpath = os.path.join(upbuilddir,'%(compile_first)s'%locals())
+        suffixpath = os.path.join(upbuilddir, '%(compile_first)s'%locals())
         if compile_firstsuffix[-2:] == '90': ff = f90free
         else:                                ff = f90fixed
         compile_firstrule = """
@@ -336,14 +338,14 @@ if compile_first != '':
 extrafortranrules = ''
 if len(fortransuffices) > 2:
     for suffix in fortransuffices[2:]:
-        suffixpath = os.path.join(upbuilddir,'%%.%(suffix)s'%locals())
+        suffixpath = os.path.join(upbuilddir, '%%.%(suffix)s'%locals())
         if suffix[-2:] == '90': ff = f90free
         else:                   ff = f90fixed
         extrafortranrules += """
 %%%(osuffix)s: %(suffixpath)s %(modulecontainer)s%(osuffix)s
 	%(ff)s %(fopt)s %(fargs)s -c $<
     """%locals()
-        del suffix,suffixpath,ff
+        del suffix, suffixpath, ff
 
 compilerulestemplate = """
 %%%(osuffix)s: %(fixedpath)s %(modulecontainer)s%(osuffix)s
@@ -370,8 +372,8 @@ else:
 for sourcedir in sourcedirs:
     # --- Create path to fortran files for the Makefile since they will be
     # --- referenced from the build directory.
-    freepath = os.path.join(os.path.join(upbuilddir,sourcedir),'%%.%(free_suffix)s'%locals())
-    fixedpath = os.path.join(os.path.join(upbuilddir,sourcedir),'%%.%(fixed_suffix)s'%locals())
+    freepath = os.path.join(os.path.join(upbuilddir, sourcedir), '%%.%(free_suffix)s'%locals())
+    fixedpath = os.path.join(os.path.join(upbuilddir, sourcedir), '%%.%(fixed_suffix)s'%locals())
     compilerules += compilerulestemplate%locals()
 
 # --- First, create Makefile.pkg which has all the needed definitions
@@ -403,10 +405,10 @@ Forthon.c:%(forthonhome)s%(pathsep)sForthon.c
 clean:
 	rm -rf *%(osuffix)s *_p.%(free_suffix)s *.mod *module.c *.scalars *.so Forthon.c Forthon.h forthonf2c.h build
 """%(locals())
-builddir=fixpath(builddir,0)
+builddir=fixpath(builddir, 0)
 try: os.makedirs(builddir)
 except: pass
-makefile = open(os.path.join(builddir,'Makefile.%s'%pkg),'w')
+makefile = open(os.path.join(builddir, 'Makefile.%s'%pkg), 'w')
 makefile.write(makefiletext)
 makefile.close()
 
@@ -429,8 +431,8 @@ try:
 except:
     pass
 
-cfiles = [os.path.join(builddir,p) for p in [pkg+'pymodule.c','Forthon.c']]
-ofiles = [os.path.join(builddir,p) for p in [fortranroot+osuffix,
+cfiles = [os.path.join(builddir, p) for p in [pkg+'pymodule.c', 'Forthon.c']]
+ofiles = [os.path.join(builddir, p) for p in [fortranroot+osuffix,
                                              pkg+'_p'+osuffix] +
                                              extraobjectslist]
 
@@ -454,9 +456,9 @@ if machine == 'darwin':
 #---  This can be over-ridden by defining MACHTYPE.
     else:
         archtype = os.uname()[-1]
-        if archtype in ['Power Macintosh','ppc']:
+        if archtype in ['Power Macintosh', 'ppc']:
             os.environ['ARCHFLAGS'] = '-arch ppc'
-        elif archtype in ['i386','x86_64']:
+        elif archtype in ['i386', 'x86_64']:
             kernel_major = eval(os.uname()[2].split('.')[0])
             if kernel_major < 10 :
                 os.environ['ARCHFLAGS'] = '-arch i386'  # Leopard or earlier
@@ -468,12 +470,12 @@ if not verbose:
     sys.stdout = open(os.devnull, 'w')
 
 if with_feenableexcept:
-    define_macros.append(('WITH_FEENABLEEXCEPT',1))
+    define_macros.append(('WITH_FEENABLEEXCEPT', 1))
 
 if pkgbase is None:
     pkgbase = pkg + pkgsuffix
 
-define_macros.append(('FORTHON_PKGNAME','"%s"'%pkgbase))
+define_macros.append(('FORTHON_PKGNAME', '"%s"'%pkgbase))
 
 package_dir = None
 packages = None
@@ -487,7 +489,7 @@ if not dobuild:
 setup(name = pkgbase,
       packages = packages,
       package_dir = package_dir,
-      ext_modules = [Extension('.'.join([pkgbase,pkg+pkgsuffix+'py']),
+      ext_modules = [Extension('.'.join([pkgbase, pkg+pkgsuffix+'py']),
                                cfiles+extracfiles,
                                include_dirs=[forthonhome]+includedirs,
                                extra_objects=ofiles,

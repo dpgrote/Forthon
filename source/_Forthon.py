@@ -18,7 +18,7 @@ import copy
 import warnings
 import cPickle
 try:
-    from PyPDB import PW,PR
+    from PyPDB import PW, PR
 except ImportError:
     pass
 try:
@@ -36,20 +36,20 @@ else:
 
 ##############################################################################
 # --- Functions needed for object pickling. These should be moved to C.
-def forthonobject_constructor(typename,arg=None):
-    if isinstance(arg,str):
+def forthonobject_constructor(typename, arg=None):
+    if isinstance(arg, str):
         mname = arg
     else:
         # --- In old versions, second arg was None or a dict.
         # --- In those cases, use main as the module.
         mname = "__main__"
     m = __import__(mname)
-    typecreator = getattr(m,typename)
+    typecreator = getattr(m, typename)
     if callable(typecreator):
         obj = typecreator()
         # --- For old pickle files, a dict will still be passed in, relying on
         # --- this rather than setstate.
-        if isinstance(arg,dict): obj.setdict(arg)
+        if isinstance(arg, dict): obj.setdict(arg)
         return obj
     else:
         # --- When typecreator is not callable, this means that it is a top
@@ -61,12 +61,12 @@ def pickle_forthonobject(o):
         # --- For top level Forthon objects (which are package objects
         # --- as opposed to derived type objects) only save the typename.
         # --- This assumes that the package will be written out directly
-        # --- elsewhere.
-        return (forthonobject_constructor, (o.gettypename(),o.__module__))
+        #  --- elsewhere.
+        return (forthonobject_constructor, (o.gettypename(), o.__module__))
     else:
         # --- The dictionary from getdict will be passed into the __setstate__
         # --- method upon unpickling.
-        return (forthonobject_constructor, (o.gettypename(),o.__module__),
+        return (forthonobject_constructor, (o.gettypename(), o.__module__),
                 o.getdict())
 
 # --- The following routines deal with multiple packages. The ones setting
@@ -88,7 +88,7 @@ def setcurrpkg(pkg):
 
 _pkg_dict = {}
 _pkg_list = []
-def registerpackage(pkg,name):
+def registerpackage(pkg, name):
     """
     Registers a package so it can be accessed using various global routines.
     """
@@ -98,9 +98,9 @@ def registerpackage(pkg,name):
     # --- for packages that are class instances.
     if IsForthonType(pkg):
         import copy_reg
-        copy_reg.pickle(type(pkg),pickle_forthonobject,forthonobject_constructor)
+        copy_reg.pickle(type(pkg), pickle_forthonobject, forthonobject_constructor)
     else:
-        assert isinstance(pkg,PackageBase),\
+        assert isinstance(pkg, PackageBase),\
                "Only instances of classes inheritting from PackageBase can be registered as a package"
 
     _pkg_dict[name] = pkg
@@ -115,7 +115,7 @@ def package(name=None):
     if name is None: return copy.deepcopy(_pkg_list)
     setcurrpkg(name)
     _pkg_list.remove(name)
-    _pkg_list.insert(0,name)
+    _pkg_list.insert(0, name)
 
 def packageobject(name):
     """
@@ -123,25 +123,25 @@ def packageobject(name):
     """
     return _pkg_dict[name]
 
-def gallot(group='*',iverbose=0):
+def gallot(group='*', iverbose=0):
     """
     Allocates all dynamic arrays in the specified group.
     If the group is not given or is '*', then all groups are allocated.
     When optional argument iverbose is true, the variables allocated and their new size is printed.
     """
     for pkg in _pkg_dict.itervalues():
-        r = pkg.gallot(group,iverbose)
+        r = pkg.gallot(group, iverbose)
         if r and (group != '*'): return
     if group != '*': raise NameError("No such group")
 
-def gchange(group='*',iverbose=0):
+def gchange(group='*', iverbose=0):
     """
     Changes the allocation of all dynamic arrays in the specified group if it is needed.
     If the group is not given or is '*', then all groups are changed.
     When optional argument iverbose is true, the variables changed and their new size is printed.
     """
     for pkg in _pkg_dict.itervalues():
-        r = pkg.gchange(group,iverbose)
+        r = pkg.gchange(group, iverbose)
         if r and (group != '*'): return
     if group != '*': raise NameError("No such group")
 
@@ -164,13 +164,13 @@ def gsetdims(group='*'):
         r = pkg.gsetdims(group)
         if r and (group != '*'): return
     if group != '*': raise NameError("No such group")
-
-def forceassign(name,v):
+ 
+def forceassign(name, v):
     """
     Forces the assignment to an array, resizing the array is necessary.
     """
     for pkg in _pkg_dict.itervalues():
-        pkg.forceassign(name,v)
+        pkg.forceassign(name, v)
 
 def listvar(name):
     """
@@ -210,7 +210,7 @@ def totmembytes():
 
 def IsForthonType(v):
     t = repr(type(v))
-    if re.search("Forthon",t): return 1
+    if re.search("Forthon", t): return 1
     else: return 0
 
 # --- Create a base class that can be used as a package object.
@@ -220,12 +220,12 @@ class PackageBase(object):
     def generate(self): raise NotImplementedError
     def step(self): raise NotImplementedError
     def finish(self): raise NotImplementedError
-    def gallot(self,group='*',iverbose=0): return 0
-    def gchange(self,group='*',iverbose=0): return 0
-    def gfree(self,group='*'): return 0
-    def gsetdims(self,group='*'): return 0
-    def forceassign(self,name,v): pass
-    def listvar(self,name): return name
+    def gallot(self, group='*', iverbose=0): return 0
+    def gchange(self, group='*', iverbose=0): return 0
+    def gfree(self, group='*'): return 0
+    def gsetdims(self, group='*'): return 0
+    def forceassign(self, name, v): pass
+    def listvar(self, name): return name
     def deprefix(self): pass
     def reprefix(self): pass
     def totmembytes(self): return getobjectsize(self)
@@ -243,25 +243,25 @@ else:
     false = 0
 
 # --- Converts an array of characters into a string.
-def arraytostr(a,strip=true):
+def arraytostr(a, strip=true):
     a = array(a)
     if len(shape(a)) == 1:
         result = a[0]
         if sys.hexversion >= 0x03000000:
             # --- This is needed for Python3, where string arrays give
             # --- numpy.bytes_ objects. It needs to be converted to unicode.
-            if isinstance(result,bytes_): result = result.decode()
+            if isinstance(result, bytes_): result = result.decode()
         if strip: result = result.strip()
     elif len(shape(a)) == 2:
         result = []
         for i in xrange(shape(a)[1]):
-            result.append(arraytostr(a[:,i]))
+            result.append(arraytostr(a[:, i]))
     return result
 
 # --- Allows int operation on arrrays
 builtinint = int
 def aint(x):
-    if isinstance(x,ndarray):
+    if isinstance(x, ndarray):
         return x.astype('l')
     else:
         return builtinint(x)
@@ -272,13 +272,13 @@ if sys.hexversion < 0x03000000:
 
 # --- Return the nearest integer
 def nint(x):
-    if isinstance(x,ndarray):
-        return where(greater(x,0),aint(x+0.5),-aint(abs(x)+0.5))
+    if isinstance(x, ndarray):
+        return where(greater(x, 0), aint(x+0.5), -aint(abs(x)+0.5))
     else:
         if x >= 0: return int(x+0.5)
         else: return -int(abs(x)+0.5)
 
-def fones(shape,*args):
+def fones(shape, *args):
     """T
     his is a replacement for the array creation routine, ones, which
     creates arrays which have the proper ordering for fortran. When arrays
@@ -286,8 +286,8 @@ def fones(shape,*args):
     get the data into the proper order for fortran. It takes the same arguments
     as ones, except for 'order' which is set to F.
     """
-    return ones(shape,order='F',*args)
-def fzeros(shape,*args):
+    return ones(shape, order='F', *args)
+def fzeros(shape, *args):
     """
     This is a replacement for the array creation routine, zeros, which
     creates arrays which have the proper ordering for fortran. When arrays
@@ -295,9 +295,9 @@ def fzeros(shape,*args):
     get the data into the proper order for fortran. It takes the same arguments
     as zeros, except for 'order' which is set to F.
     """
-    return zeros(shape,order='F',*args)
+    return zeros(shape, order='F', *args)
 
-def doc(f,printit=1):
+def doc(f, printit=1):
     """
     Prints out the documentation of the subroutine or variable.
     The name of package variables must be given in quotes, as a string.
@@ -307,7 +307,7 @@ def doc(f,printit=1):
     # --- The for loop only gives the code something to break out of. There's
     # --- probably a better way of doing this.
     for i in range(1):
-        if isinstance(f,str):
+        if isinstance(f, str):
             # --- Check if it is a Forthon variable
             try:
                 d = listvar(f)
@@ -362,7 +362,7 @@ def determineoriginatingfile(o):
     where the file name can not be determined - None is returned.
     """
     import types
-    if isinstance(o,str):
+    if isinstance(o, str):
         # --- First, deal with strings
         try:
             # --- Look in __main__
@@ -382,29 +382,29 @@ def determineoriginatingfile(o):
     # --- coding.
     # --- For all other types, either the information is not available,
     # --- or it doesn't make sense.
-    if isinstance(o,types.ModuleType):
+    if isinstance(o, types.ModuleType):
         try:
             return o.__file__
         except AttributeError:
             return '%s (statically linked into python)'%o.__name__
-    if isinstance(o,(types.MethodType,types.UnboundMethodType)):
+    if isinstance(o, (types.MethodType, types.UnboundMethodType)):
         return determineoriginatingfile(o.im_class)
-    if isinstance(o,(types.FunctionType,types.LambdaType)):
+    if isinstance(o, (types.FunctionType, types.LambdaType)):
         return determineoriginatingfile(o.func_code)
-    if isinstance(o,(types.BuiltinFunctionType,types.BuiltinMethodType)):
+    if isinstance(o, (types.BuiltinFunctionType, types.BuiltinMethodType)):
         try: m = __import__(o.__module__)
         except AttributeError: return None
         if m is not None: return determineoriginatingfile(m)
         else:             return None
-    if isinstance(o,types.CodeType):
+    if isinstance(o, types.CodeType):
         return o.co_filename
-    if isinstance(o,types.InstanceType):
+    if isinstance(o, types.InstanceType):
         return determineoriginatingfile(o.__class__)
-    if isinstance(o,(types.ClassType,types.TypeType)):
+    if isinstance(o, (types.ClassType, types.TypeType)):
         return determineoriginatingfile(__import__(o.__module__))
 
 # --- Get size of an object, recursively including anything inside of it.
-def oldgetobjectsize(pkg,grp='',recursive=1):
+def oldgetobjectsize(pkg, grp='', recursive=1):
     """
     Gets the total size of a package or dictionary.
       - pkg: Either a Forthon object, dictionary, or a class instance
@@ -427,9 +427,9 @@ def oldgetobjectsize(pkg,grp='',recursive=1):
 
 
     # --- Return sizes of shallow objects
-    if isinstance(pkg,(int,float)):
+    if isinstance(pkg, (int, float)):
         result = 1
-    elif isinstance(pkg,ndarray):
+    elif isinstance(pkg, ndarray):
         result = product(array(shape(pkg)))
     else:
         result = 0
@@ -438,9 +438,9 @@ def oldgetobjectsize(pkg,grp='',recursive=1):
     # --- affects Forthon objects.
     if IsForthonType(pkg):
         ll = pkg.varlist(grp)
-    elif isinstance(pkg,dict):
+    elif isinstance(pkg, dict):
         ll = pkg.iterkeys()
-    elif isinstance(pkg,(list,tuple)):
+    elif isinstance(pkg, (list, tuple)):
         ll = pkg
     else:
         try:
@@ -456,13 +456,13 @@ def oldgetobjectsize(pkg,grp='',recursive=1):
         if IsForthonType(pkg):
             # --- This is needed so unallocated arrays will only return None
             vv = pkg.getpyobject(v)
-        elif isinstance(pkg,dict):
+        elif isinstance(pkg, dict):
             vv = pkg[v]
-        elif isinstance(pkg,(list,tuple)):
+        elif isinstance(pkg, (list, tuple)):
             vv = v
         else:
-            vv = getattr(pkg,v)
-        result = result + getobjectsize(vv,'',recursive=recursive)
+            vv = getattr(pkg, v)
+        result = result + getobjectsize(vv, '', recursive=recursive)
 
     # --- Do some clean up or accounting before exiting.
     if getobjectsize.calllevel == 0:
@@ -476,7 +476,7 @@ def oldgetobjectsize(pkg,grp='',recursive=1):
 
 # --- Get size of an object, recursively including anything inside of it.
 # --- New improved version, though should be tested more
-def getobjectsize(pkg,grp='',recursive=1,grouplist=None):
+def getobjectsize(pkg, grp='', recursive=1, grouplist=None):
     """
     Gets the total size of a package or dictionary.
       - pkg: Either a Forthon object, dictionary, or a class instance
@@ -495,9 +495,9 @@ def getobjectsize(pkg,grp='',recursive=1,grouplist=None):
     grouplist.append(id(pkg))
 
     # --- Return sizes of shallow objects
-    if isinstance(pkg,(int,float,bool)):
+    if isinstance(pkg, (int, float, bool)):
         return 1
-    elif isinstance(pkg,ndarray):
+    elif isinstance(pkg, ndarray):
         return product(array(shape(pkg)))
 
     # --- The object itself gets count of 1
@@ -508,14 +508,14 @@ def getobjectsize(pkg,grp='',recursive=1,grouplist=None):
     import collections
     if IsForthonType(pkg):
         ll = pkg.varlist(grp)
-    elif isinstance(pkg,dict):
+    elif isinstance(pkg, dict):
         ll = pkg.iterkeys()
-    elif isinstance(pkg,(list,tuple)):
+    elif isinstance(pkg, (list, tuple)):
         ll = pkg
     else:
         try:
             ll = pkg.__dict__.iterkeys()
-        except (AttributeError,NameError):
+        except (AttributeError, NameError):
             ll = []
 
     if not recursive and len(grouplist) > 1:
@@ -526,17 +526,17 @@ def getobjectsize(pkg,grp='',recursive=1,grouplist=None):
         if IsForthonType(pkg):
             # --- This is needed so unallocated arrays will only return None
             vv = pkg.getpyobject(v)
-        elif isinstance(pkg,dict):
+        elif isinstance(pkg, dict):
             result += 1 # --- Add one for the key
             vv = pkg[v]
-        elif isinstance(pkg,(ndarray,collections.Sequence)):
+        elif isinstance(pkg, (ndarray, collections.Sequence)):
             vv = v
         else:
             try:
-                vv = getattr(pkg,v)
+                vv = getattr(pkg, v)
             except AttributeError:
                 vv = 0
-        result = result + getobjectsize(vv,'',recursive=recursive,grouplist=grouplist)
+        result = result + getobjectsize(vv, '', recursive=recursive, grouplist=grouplist)
 
     # --- Return the result
     return result
@@ -544,7 +544,7 @@ def getobjectsize(pkg,grp='',recursive=1,grouplist=None):
 # --- Keep the old name around
 getgroupsize = getobjectsize
 
-def getgroupsizes(pkg,minsize=1,sortby='sizes'):
+def getgroupsizes(pkg, minsize=1, sortby='sizes'):
     """
     Get the sizes of groups in the specified package.
      - pkg: package to list
@@ -557,7 +557,7 @@ def getgroupsizes(pkg,minsize=1,sortby='sizes'):
     for n in varlist:
         group = pkg.getgroup(n)
         v = pkg.getpyobject(n)
-        groups[group] = groups.get(group,0) + size(v)
+        groups[group] = groups.get(group, 0) + size(v)
 
     if sortby == 'sizes':
         ii = argsort(groups.values())
@@ -576,12 +576,12 @@ def getgroupsizes(pkg,minsize=1,sortby='sizes'):
     for k in keys:
         v = groups[k]
         if v > minsize:
-            print k,v,'(words)'
+            print k, v, '(words)'
 
-    print "Total size of allocated arrays",pkg.totmembytes()
+    print "Total size of allocated arrays", pkg.totmembytes()
 
 # --- Print out all variables in a group
-def printgroup(pkg,group='',maxelements=10,sumarrays=0):
+def printgroup(pkg, group='', maxelements=10, sumarrays=0):
     """
     Print out all variables in a group or with an attribute
       - pkg: package name or class instance (where group is ignored)
@@ -590,7 +590,7 @@ def printgroup(pkg,group='',maxelements=10,sumarrays=0):
       - sumarrays=0: when true, prints the total sum of arrays rather than the
                      first several elements
     """
-    if isinstance(pkg,str): pkg = __main__.__dict__[pkg]
+    if isinstance(pkg, str): pkg = __main__.__dict__[pkg]
     try:
         vlist = pkg.varlist(group)
     except AttributeError:
@@ -605,13 +605,13 @@ def printgroup(pkg,group='',maxelements=10,sumarrays=0):
             v = pkg.__dict__[vname]
         if v is None:
             print vname+' is not allocated'
-        elif not isinstance(v,ndarray):
+        elif not isinstance(v, ndarray):
             print vname+' = '+str(v)
         else:
             if gettypecode(v) == 'c':
                 print vname+' = "'+str(arraytostr(v))+'"'
             elif sumarrays:
-                sumv = sum(reshape(v,tuple([product(array(v.shape))])))
+                sumv = sum(reshape(v, tuple([product(array(v.shape))])))
                 print 'sum('+vname+') = '+str(sumv)
             elif size(v) <= maxelements:
                 print vname+' = '+str(v)
@@ -644,7 +644,7 @@ def printgroup(pkg,group='',maxelements=10,sumarrays=0):
 
 ##############################################################################
 ##############################################################################
-def pydumpforthonobject(ff,attr,objname,obj,varsuffix,writtenvars,serial,verbose):
+def pydumpforthonobject(ff, attr, objname, obj, varsuffix, writtenvars, serial, verbose):
     """Loops over the variables in the Forthon object and writes each out if requested
     All variables are written directly to the datawriter (assuming that it can handle
     arbitrary objects, such as Forthon derived types).
@@ -653,7 +653,7 @@ def pydumpforthonobject(ff,attr,objname,obj,varsuffix,writtenvars,serial,verbose
     # --- Get variables in this package which have attribute attr.
     vlist = []
     for a in attr:
-        if isinstance(a,str):
+        if isinstance(a, str):
             vlist = vlist + obj.varlist(a)
     # --- Loop over list of variables
     for vname in vlist:
@@ -666,7 +666,7 @@ def pydumpforthonobject(ff,attr,objname,obj,varsuffix,writtenvars,serial,verbose
         # --- If serial flag is set, check if it has the parallel attribute
         if serial:
             a = obj.getvarattr(vname)
-            if re.search('parallel',a):
+            if re.search('parallel', a):
                 if verbose: print "variable "+vname+varsuffix+" skipped since it is a parallel variable"
                 continue
         # --- Check if variable with same name has already been written out.
@@ -680,7 +680,7 @@ def pydumpforthonobject(ff,attr,objname,obj,varsuffix,writtenvars,serial,verbose
         # --- If this point is reached, then variable is written out to file
         if verbose: print "writing "+objname+"."+vname+" as "+vname+varsuffix
         # --- Write it out to the file
-        ff.write(vname+varsuffix,v)
+        ff.write(vname+varsuffix, v)
 
 ##############################################################################
 # Python version of the dump routine. This uses the varlist command to
@@ -696,8 +696,8 @@ def pydumpforthonobject(ff,attr,objname,obj,varsuffix,writtenvars,serial,verbose
 # used, allowing names with an '@' in them. The writing of python variables
 # is put into a 'try' command since some variables cannot be written to
 # a dump file.
-def pydump(fname=None,attr=["dump"],vars=[],serial=0,ff=None,varsuffix=None,
-           verbose=false,hdf=0,datawriter=None):
+def pydump(fname=None, attr=["dump"], vars=[], serial=0, ff=None, varsuffix=None,
+           verbose=false, hdf=0, datawriter=None):
     """
     Dump data into a pdb file
       - fname: dump file name
@@ -743,7 +743,7 @@ def pydump(fname=None,attr=["dump"],vars=[],serial=0,ff=None,varsuffix=None,
             except:
                 pass
 
-        assert ff is not None,"Dump file cannot be created, the datawriter cannot open the file or is unspecified"
+        assert ff is not None, "Dump file cannot be created, the datawriter cannot open the file or is unspecified"
         closefile = 1
     else:
         closefile = 0
@@ -758,7 +758,7 @@ def pydump(fname=None,attr=["dump"],vars=[],serial=0,ff=None,varsuffix=None,
     if verbose: print "Data will be written using %s format"%ff.file_type
 
     # --- Convert attr into a list if needed
-    if not isinstance(attr,list): attr = [attr]
+    if not isinstance(attr, list): attr = [attr]
 
     # --- Loop through all of the packages (getting pkg object).
     # --- When varsuffix is specified, the list of variables already written
@@ -772,9 +772,9 @@ def pydump(fname=None,attr=["dump"],vars=[],serial=0,ff=None,varsuffix=None,
     writtenvars = []
     for pname in packagelist:
         pkg = packageobject(pname)
-        if isinstance(pkg,PackageBase): continue
+        if isinstance(pkg, PackageBase): continue
         if varsuffix is None: pkgsuffix = '@' + pname
-        pydumpforthonobject(ff,attr,pname,pkg,pkgsuffix,writtenvars,serial,verbose)
+        pydumpforthonobject(ff, attr, pname, pkg, pkgsuffix, writtenvars, serial, verbose)
         # --- Make sure that pname does not appear in vars
         try: vars.remove(pname)
         except ValueError: pass
@@ -807,7 +807,7 @@ def pydump(fname=None,attr=["dump"],vars=[],serial=0,ff=None,varsuffix=None,
             if source is None:
                 try:
                     source = inspect.getsource(vval)
-                except (IOError,NameError,TypeError):
+                except (IOError, NameError, TypeError):
                     pass
             if source is not None:
                 if verbose: print "writing python function "+vname+" as "+vname+varsuffix+'@function'
@@ -815,20 +815,20 @@ def pydump(fname=None,attr=["dump"],vars=[],serial=0,ff=None,varsuffix=None,
                 # --- an indented block of code
                 while source[0] == ' ': source = source[1:]
                 # --- Now write it out
-                ff.write(vname+varsuffix+'@function',source)
+                ff.write(vname+varsuffix+'@function', source)
                 # --- Save the source of a function as an attribute of itself to make
                 # --- retreival easier the next time.
-                setattr(vval,'__source__',source)
+                setattr(vval, '__source__', source)
             else:
                 if verbose: print "could not write python function "+vname
             continue
         # --- Zero length arrays cannot by written out.
-        if isinstance(vval,ndarray) and product(array(shape(vval))) == 0:
+        if isinstance(vval, ndarray) and product(array(shape(vval))) == 0:
             continue
         # --- Try writing as normal variable.
         try:
             if verbose: print "writing python variable "+vname+" as "+vname+varsuffix
-            ff.write(vname+varsuffix,vval)
+            ff.write(vname+varsuffix, vval)
             continue
         except:
             pass
@@ -839,9 +839,9 @@ def pydump(fname=None,attr=["dump"],vars=[],serial=0,ff=None,varsuffix=None,
             try:
                 if verbose:
                     print "writing python variable "+vname+" as "+vname+varsuffix+'@pickle'
-                ff.write(vname+varsuffix+'@pickle',cPickle.dumps(vval,-1))
+                ff.write(vname+varsuffix+'@pickle', cPickle.dumps(vval, -1))
                 docontinue = 1
-            except (cPickle.PicklingError,TypeError):
+            except (cPickle.PicklingError, TypeError):
                 pass
             if docontinue: continue
         # --- All attempts failed so write warning message
@@ -856,9 +856,9 @@ def pydump(fname=None,attr=["dump"],vars=[],serial=0,ff=None,varsuffix=None,
 # in of python variables is put in a 'try' command to make it idiot proof.
 # More fancy foot work is done to get new variables read in into the
 # global dictionary.
-def pyrestore(filename=None,fname=None,verbose=0,skip=[],ff=None,
-              varsuffix=None,ls=0,lreturnfobjdict=0,lreturnff=0,
-              datareader=None,main=None):
+def pyrestore(filename=None, fname=None, verbose=0, skip=[], ff=None,
+              varsuffix=None, ls=0, lreturnfobjdict=0, lreturnff=0,
+              datareader=None, main=None):
     """
     Restores all of the variables in the specified file.
       - filename: file to read in from (assumes PDB format)
@@ -892,7 +892,7 @@ def pyrestore(filename=None,fname=None,verbose=0,skip=[],ff=None,
                 pass
 
         # --- Check if file exists
-        assert os.access(filename,os.F_OK),"File %s does not exist"%filename
+        assert os.access(filename, os.F_OK), "File %s does not exist"%filename
 
         # --- Try opening file with either the default PR or user supplied reader
         try:
@@ -900,7 +900,7 @@ def pyrestore(filename=None,fname=None,verbose=0,skip=[],ff=None,
         except:
             pass
 
-        assert ff is not None,"File %s could not be opened"%filename
+        assert ff is not None, "File %s could not be opened"%filename
         closefile = 1
     else:
         closefile = 0
@@ -927,7 +927,7 @@ def pyrestore(filename=None,fname=None,verbose=0,skip=[],ff=None,
             for l in vlist: print l
 
     # --- First, sort out the list of variables
-    groups = sortrestorevarsbysuffix(vlist,skip)
+    groups = sortrestorevarsbysuffix(vlist, skip)
     fobjdict = {}
 
     # --- Read in the variables with the standard suffices.
@@ -995,12 +995,12 @@ def pyrestore(filename=None,fname=None,verbose=0,skip=[],ff=None,
                 try:
                     if verbose: print "reading in python function"+vname
                     source = ff.__getattr__(vname+'@function')
-                    exec(source,__main__.__dict__)
+                    exec(source, __main__.__dict__)
                     # --- Save the source of the function as an attribute of itself
                     # --- so that it can be latter saved in a dump file again.
                     # --- This is needed since for any functions defined here,
                     # --- inspect.getsource cannot get the source.
-                    setattr(__main__.__dict__[vname],'__source__',source)
+                    setattr(__main__.__dict__[vname], '__source__', source)
                 except:
                     if verbose: print "error with function "+vname
 
@@ -1009,11 +1009,11 @@ def pyrestore(filename=None,fname=None,verbose=0,skip=[],ff=None,
         del groups['parallel']
 
     for gname in groups.iterkeys():
-        pyrestoreforthonobject(main,ff,gname,groups[gname],fobjdict,varsuffix,
-                               verbose,doarrays=0,main=main)
+        pyrestoreforthonobject(main, ff, gname, groups[gname], fobjdict, varsuffix,
+                               verbose, doarrays=0, main=main)
     for gname in groups.iterkeys():
-        pyrestoreforthonobject(main,ff,gname,groups[gname],fobjdict,varsuffix,
-                               verbose,doarrays=1,main=main)
+        pyrestoreforthonobject(main, ff, gname, groups[gname], fobjdict, varsuffix,
+                               verbose, doarrays=1, main=main)
 
     if closefile: ff.close()
     resultlist = []
@@ -1022,7 +1022,7 @@ def pyrestore(filename=None,fname=None,verbose=0,skip=[],ff=None,
     if len(resultlist) == 1: return resultlist[0]
     elif len(resultlist) > 1: return resultlist
 
-def sortrestorevarsbysuffix(vlist,skip):
+def sortrestorevarsbysuffix(vlist, skip):
     # --- Sort the variables, collecting them in groups based on their suffix.
     groups = {}
     for v in vlist:
@@ -1041,13 +1041,13 @@ def sortrestorevarsbysuffix(vlist,skip):
             continue
 
         # --- Now add the variable to the appropriate group list.
-        groups.setdefault(gname,[]).append(vname)
+        groups.setdefault(gname, []).append(vname)
 
     return groups
 
 #-----------------------------------------------------------------------------
-def pyrestoreforthonobject(obj,ff,gname,vlist,fobjdict,varsuffix,verbose,doarrays,
-                           gpdbname=None,main=None):
+def pyrestoreforthonobject(obj, ff, gname, vlist, fobjdict, varsuffix, verbose, doarrays,
+                           gpdbname=None, main=None):
     """
       - obj: Forthon object data is being restored into
       - ff: reference to file being written to
@@ -1077,7 +1077,7 @@ def pyrestoreforthonobject(obj,ff,gname,vlist,fobjdict,varsuffix,verbose,doarray
 
     # --- Always create a new object except for the top level packages.
     try:
-        attrobj = getattr(obj,attrname)
+        attrobj = getattr(obj, attrname)
     except AttributeError:
         attrobj = None
     neednew = (attrobj is None)
@@ -1094,7 +1094,7 @@ def pyrestoreforthonobject(obj,ff,gname,vlist,fobjdict,varsuffix,verbose,doarray
             attrobj = fobjdict[fobj]
             setattr(obj, attrname, attrobj)
             #main.__dict__[gname] = main.__dict__[fobjdict[fobj]]
-            #exec("%s = %s"%(gname,fobjdict[fobj]),main.__dict__)
+            #exec("%s = %s"%(gname, fobjdict[fobj]), main.__dict__)
             # return ???
         else:
             # --- Otherwise, create a new instance of the appropriate type,
@@ -1104,14 +1104,14 @@ def pyrestoreforthonobject(obj,ff,gname,vlist,fobjdict,varsuffix,verbose,doarray
                 attrobj = main.__dict__[typename]()
                 setattr(obj, attrname, attrobj)
                 #main.__dict__[gname] = main.__dict__[typename]()
-                #exec("%s = %s()"%(gname,typename),main.__dict__)
+                #exec("%s = %s()"%(gname, typename), main.__dict__)
             except:
                 # --- If it gets here, it might mean that the name no longer exists.
                 return
             fobjdict[fobj] = attrobj
 
     # --- Sort out the list of variables
-    groups = sortrestorevarsbysuffix(vlist,[])
+    groups = sortrestorevarsbysuffix(vlist, [])
 
     # --- Get "leaf" variables
     if '' in groups:
@@ -1122,14 +1122,14 @@ def pyrestoreforthonobject(obj,ff,gname,vlist,fobjdict,varsuffix,verbose,doarray
 
     # --- Fix the case when the variable ff appears in the main dictionary.
     # --- This messes up the exec commands below
-    def doassignment(fullname,val):
+    def doassignment(fullname, val):
         # --- This loops over the attributes, finding the second to the last
         # --- level. setattr is then used to assign the value to the leaf.
         n = fullname.split('.')
         v = main.__dict__[n[0]]
         for a in n[1:-1]:
-            v = getattr(v,a)
-        setattr(v,n[-1],val)
+            v = getattr(v, a)
+        setattr(v, n[-1], val)
 
     # --- Read in leafs.
     for vname in leafvars:
@@ -1142,30 +1142,30 @@ def pyrestoreforthonobject(obj,ff,gname,vlist,fobjdict,varsuffix,verbose,doarray
 
         try:
             val = ff.__getattr__(vname + '@' + gpdbname)
-            if not isinstance(val,ndarray) and not doarrays:
+            if not isinstance(val, ndarray) and not doarrays:
                 # --- Simple assignment is done for scalars, using the exec command
                 if verbose: print "reading in "+fullname
-                #doassignment(fullname,val)
+                #doassignment(fullname, val)
                 setattr(attrobj, vname, val)
-            elif isinstance(val,ndarray) and doarrays:
+            elif isinstance(val, ndarray) and doarrays:
                 if verbose: print "reading in "+fullname
                 if varsuffix is None:
                     if (len(str(val.dtype)) > 1 and
                         str(val.dtype)[1] == 'S' and
-                        getattr(attrobj,vname).shape != val.shape):
+                        getattr(attrobj, vname).shape != val.shape):
                         # --- This is a crude fix for backwards compatibility. The way
                         # --- strings are handled changed, so that they now have an
                         # --- element size > 1. This coding converts old style strings
                         # --- into a single string before doing the setattr. The change
                         # --- affects restart dumps make before July 2008.
-                        setattr(attrobj,vname,''.join(val))
+                        setattr(attrobj, vname, ''.join(val))
                     else:
-                        setattr(attrobj,vname,val)
+                        setattr(attrobj, vname, val)
                 else:
                     # --- If varsuffix is specified, then put the variable directly into
                     # --- the main dictionary.
-                    #doassignment(fullname,val)
-                    setattr(attrobj,vname+str(varsuffix),val)
+                    #doassignment(fullname, val)
+                    setattr(attrobj, vname+str(varsuffix), val)
         except:
             # --- The catches errors in cases where the variable is not an
             # --- actual variable in the package, for example if it had been deleted
@@ -1175,9 +1175,9 @@ def pyrestoreforthonobject(obj,ff,gname,vlist,fobjdict,varsuffix,verbose,doarray
             if verbose: sys.excepthook(*sys.exc_info())
 
     # --- Read in rest of groups.
-    for g,v in groups.iteritems():
-        pyrestoreforthonobject(getattr(obj, attrname), ff,gname+'.'+g,v,fobjdict,varsuffix,verbose,doarrays,
-                               g+'@'+gpdbname,main=main)
+    for g, v in groups.iteritems():
+        pyrestoreforthonobject(getattr(obj, attrname), ff, gname+'.'+g, v, fobjdict, varsuffix, verbose, doarrays,
+                               g+'@'+gpdbname, main=main)
 
 
 # --- create an alias for pyrestore
