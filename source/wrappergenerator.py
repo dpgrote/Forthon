@@ -603,7 +603,7 @@ class PyWrap:
                 for arg in f.args:
                     i += 1
                     if len(arg.dims) > 0:
-                        # --- Check the rank of the input argument
+                        # --- Check the number of dimensions of the input argument
                         # --- For a 1-D argument, allow a scaler to be passed, which has
                         # --- a number of dimensions (nd) == 0.
                         self.cw('  if (!(PyArray_NDIM(ax[%d]) == %d'%(i, len(arg.dims)), noreturn=1)

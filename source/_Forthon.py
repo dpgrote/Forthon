@@ -673,30 +673,30 @@ def printgroup(pkg, group='', maxelements=10, sumarrays=0):
             elif size(v) <= maxelements:
                 print vname + ' = ' + str(v)
             else:
-                if rank(v) == 1:
+                if ndim(v) == 1:
                     print vname + ' = ' + str(v[:maxelements])[:-1] + " ..."
                 else:
                     if shape(v)[0] <= maxelements:
-                        if rank(v) == 2:
+                        if ndim(v) == 2:
                             print vname + ' = [' + str(v[:,0]) + "] ..."
-                        elif rank(v) == 3:
+                        elif ndim(v) == 3:
                             print vname + ' = [[' + str(v[:,0,0]) + "]] ..."
-                        elif rank(v) == 4:
+                        elif ndim(v) == 4:
                             print vname + ' = [[[' + str(v[:,0,0,0]) + "]]] ..."
-                        elif rank(v) == 5:
+                        elif ndim(v) == 5:
                             print vname + ' = [[[[' + str(v[:,0,0,0,0]) + "]]]] ..."
-                        elif rank(v) == 6:
+                        elif ndim(v) == 6:
                             print vname + ' = [[[[[' + str(v[:,0,0,0,0,0]) + "]]]]] ..."
                     else:
-                        if rank(v) == 2:
+                        if ndim(v) == 2:
                             print vname + ' = [' + str(v[:maxelements,0])[:-1] + " ..."
-                        elif rank(v) == 3:
+                        elif ndim(v) == 3:
                             print vname + ' = [[' + str(v[:maxelements,0,0])[:-1] + " ..."
-                        elif rank(v) == 4:
+                        elif ndim(v) == 4:
                             print vname + ' = [[[' + str(v[:maxelements,0,0,0])[:-1] + " ..."
-                        elif rank(v) == 5:
+                        elif ndim(v) == 5:
                             print vname + ' = [[[[' + str(v[:maxelements,0,0,0,0])[:-1] + " ..."
-                        elif rank(v) == 6:
+                        elif ndim(v) == 6:
                             print vname + ' = [[[[[' + str(v[:maxelements,0,0,0,0,0])[:-1] + " ..."
 
 ##############################################################################
