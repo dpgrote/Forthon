@@ -23,6 +23,10 @@ See [License.txt](License.txt) for license information.
 
 ## Release Notes
 
+0.8.27:
+ - Replaced rank with ndim
+ - Fixed parsing when elements are no separated by spaces
+
 0.8.26:
  - Reverted to optparse because of a stupid bug in argparse
 
