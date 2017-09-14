@@ -170,59 +170,59 @@ def processfile(packname, filename, othermacros=[], timeroutines=0):
             i = 0
 
         # Check if type is real
-        elif re.match('real\s', text):
+        elif re.match('real[\s/\-\+\$[#]', text):
             v.type = 'real'
             i = 3
             readyfortype = 0
 
         # Check if type is double
-        elif re.match('double\s', text):
+        elif re.match('double[\s/\-\+\$[#]', text):
             v.type = 'double'
             i = 5
             readyfortype = 0
 
         # Check if type is float
-        elif re.match('float\s', text):
+        elif re.match('float[\s/\-\+\$[#]', text):
             v.type = 'float'
             i = 4
             readyfortype = 0
 
         # Check if type is integer
-        elif re.match('integer\s', text):
+        elif re.match('integer[\s/\-\+\$[#]', text):
             v.type = 'integer'
             i = 6
             readyfortype = 0
 
         # Check if type is logical
-        elif re.match('logical\s', text):
+        elif re.match('logical[\s/\-\+\$[#]', text):
             v.type = 'logical'
             i = 6
             readyfortype = 0
 
         # Check if type is Filedes (temporary fix for now)
-        elif re.match('Filedes\s', text):
+        elif re.match('Filedes[\s/\-\+\$[#]', text):
             v.type = 'integer'
             i = 6
             readyfortype = 0
 
         # Check if type is Filename (assumed to a string of length 256)
-        elif re.match('Filename\s', text):
+        elif re.match('Filename[\s/\-\+\$[#]', text):
             v.type = 'character'
             i = 7
             v.dims = ['256'] + v.dims
             readyfortype = 0
 
         # Check if type is character
-        elif re.match('character[\s*]', text):
+        elif re.match('character[\s\*/\-\+\$[#]', text):
             v.type = 'character'
             v.array = 1
-            i = re.search('[ \t\n]', text).start()
+            i = re.search('[ \t\n/\-\+\$[#]', text).start()
             if text[9] == '*':
                 v.dims = [text[10:i]] + v.dims
             readyfortype = 0
 
         # Check if type is complex
-        elif re.match('complex\s', text):
+        elif re.match('complex[\s/\-\+\$[#]', text):
             v.type = 'complex'
             i = 6
             readyfortype = 0
@@ -230,7 +230,7 @@ def processfile(packname, filename, othermacros=[], timeroutines=0):
            #  v.dims = ['1']
 
         # Check if variable is a function
-        elif re.match('function\s', text):
+        elif re.match('function[\s\$#]', text):
             v.function = 'fsub'
             v.array = 0
             i = 7
@@ -248,7 +248,7 @@ def processfile(packname, filename, othermacros=[], timeroutines=0):
                 vlist.append(timerv)
 
         # Check if variable is a subroutine
-        elif re.match('subroutine\s', text):
+        elif re.match('subroutine[\s\$#]', text):
             v.function = 'fsub'
             v.array = 0
             v.type = 'void'
@@ -267,7 +267,7 @@ def processfile(packname, filename, othermacros=[], timeroutines=0):
                 vlist.append(timerv)
 
         # Check if variable is a C subroutine (takes C ordered arrays)
-        elif re.match('csubroutine\s', text):
+        elif re.match('csubroutine[\s\$#]', text):
             v.function = 'csub'
             v.array = 0
             v.type = 'void'
@@ -286,7 +286,7 @@ def processfile(packname, filename, othermacros=[], timeroutines=0):
                 vlist.append(timerv)
 
         # Check if variable is a parameter, i.e. not writable
-        elif re.match('parameter\s', text):
+        elif re.match('parameter[\s/\-\+\$[#]', text):
             if v.array or v.function:
                 raise SyntaxError('%s: only scalar variables can be a parameter'%v.name)
             v.parameter = 1
@@ -321,7 +321,7 @@ def processfile(packname, filename, othermacros=[], timeroutines=0):
             readyfortype = 0
 
         # Look for a limited field
-        elif text[0:7] == 'limited':
+        elif re.match('limited[\s\(/\-\+\$[#]', text):
             j = re.search('\(', text).start()
             i = findmatchingparenthesis(j, text, v.name)
             v.limit = text[j:i+1]
@@ -349,13 +349,13 @@ def processfile(packname, filename, othermacros=[], timeroutines=0):
             readyfortype = 0
 
         # Look for a set action flag
-        elif re.match('SET\s', text):
+        elif re.match('SET[\s/\-\+\$[#]', text):
             v.setaction = 1
             i = 2
             readyfortype = 0
 
         # Look for a get action flag
-        elif re.match('GET\s', text):
+        elif re.match('GET[\s/\-\+\$[#]', text):
             v.getaction = 1
             i = 2
             readyfortype = 0
@@ -382,14 +382,14 @@ def processfile(packname, filename, othermacros=[], timeroutines=0):
                     hidden_vlist.append(v)
                 elif istype:
                     ftype.addvar(v)
-                i = re.search('[ (\t\n]', text).start() - 1
+                i = re.search('[ (\t\n/\-\+\$[#]', text).start() - 1
                 v.name = text[:i+1]
                 v.group = group
                 v.attr = attributes
                 readyfortype = 1
             else:
                 readyfortype = 0
-                i = re.search('[ \t\n]', text).start() - 1
+                i = re.search('[ \t\n/\-\+\$[#]', text).start() - 1
                 v.type = text[:i+1]
                 v.derivedtype = 1
 
