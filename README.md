@@ -26,11 +26,12 @@ python run_forthon_example.py
 This will produce output like this:
 
 Before setsqrt, x = 0.0
+
 After setsqrt, x = 3.1622776601683795
 
 A more extensive example can be found in the example subdirectory. It can be built and run with the "make" command.
 
-## Release nontes
+## Release notes
 
 See [Release_Notes](Release_Notes)
 
