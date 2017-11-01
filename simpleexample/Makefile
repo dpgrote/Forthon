@@ -1,10 +1,6 @@
-FORTHON=Forthon
-PYTHON=python
 
-example: example.F example.v
-	$(FORTHON) example
-	mv build/*/*/*.so .
-	$(PYTHON) example.py
+install:
+	(cd forthon_example_source ; Forthon --install --pkgdir . forthon_example)
 
 clean:
-	rm -rf build *.so
+	rm -rf forthon_example_source/build

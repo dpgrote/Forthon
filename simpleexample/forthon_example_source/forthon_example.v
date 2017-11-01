@@ -1,4 +1,4 @@
-example
+forthon_example
 
 ****** SimpleModule:
 i integer /3/ # Sample integer variable

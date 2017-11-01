@@ -1,10 +1,30 @@
-This contains a simple example.
+This contains a simple example demonstrating the use of Forthon.
 
 List of files:
-  example.F:       fortran90 source file containing python callable subroutines
-  example.v:       interface description file
-  example.py:      python script which tests the example
-  Makefile:        builds the example and test it
-  README:          this file
 
-Dave Grote
+  forthon_example_source/
+      __init__.py: Imports the dynamic library
+      fortrhon_example.F: fortran90 source file containing python callable subroutines
+      fortrhon_example.v: interface description file
+  run_forthon_example.py: python script which tests the example
+  Makefile: builds the example and test it
+  README: this file
+
+Building:
+
+  To build, run "make". This runs the Forthon command that compiles and installs the example.
+
+Running:
+
+  Run the following command:
+
+  python run_forthon_example.py
+
+  This will produce output like this:
+
+  Before setsqrt, x = 0.0
+  After setsqrt, x = 3.1622776601683795
+
+Notes:
+
+  This example will work with both python2 and python3.

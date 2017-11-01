@@ -23,6 +23,9 @@ See [License.txt](License.txt) for license information.
 
 ## Release Notes
 
+0.8.28:
+ - Reworked the simpleexample so that it can be installed as a package
+
 0.8.27:
  - Replaced rank with ndim
  - Fixed parsing when elements are no separated by spaces
