@@ -33,4 +33,4 @@ def update():
     updatefile('setup.py',version.commithash,commithash)
 
 if __name__ == "__main__":
-    print version.__doc__
+    print(version.__doc__)
