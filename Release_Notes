@@ -1,0 +1,214 @@
+## Release Notes
+
+0.8.28:
+ - Reworked the simpleexample so that it can be installed as a package
+ - Updated README, adding reference to the example
+ - Moved release notes to this file
+
+0.8.27:
+ - Replaced rank with ndim
+ - Fixed parsing when elements are no separated by spaces
+
+0.8.26:
+ - Reverted to optparse because of a stupid bug in argparse
+
+0.8.25:
+ - Switched to argparse
+ - Added script option
+ - Internal clean up
+
+0.8.24:
+ - Fixed fetching the git hash for Py2.6
+ - Fixed PyInt for Python version 2 and 3
+
+0.8.23:
+ - Cleaned makefile dependencies (allowing make -j)
+
+0.8.22: May 25, 2016
+ - Revamped dumping of derived type objects - now they pickled with everything else
+
+0.8.21: April 15, 2016
+ - Updates to PyPI interface
+ - Minor fixes
+
+0.8.20: April 15, 2016
+ - Added Forthon3 to MANIFEST
+
+0.8.19: April 1, 2016
+ - Bug fix for strings in derived types
+ - Fixed restart of packages that are not "import *" into main
+ - Added optional pkgsuffix option
+ - Removed references to PW, PR packages (which are part of Warp).
+ - Fixed module names of packages
+
+0.8.18: September 29, 2015
+ - Clean up of update
+ - Rearranged the source, moving Src and Lib into source
+ - This fixes install problem when using pip
+
+0.8.17: September 29, 2015
+ - pkgbase now works in combination with pkgdir
+ - minor fix avoid redundant dependency in the makefile
+
+0.8.16: July 16, 2015
+ - Added pkgdir option
+ - Internal fix in the makefile when not building fortran modules
+ - Added build-base option
+ - Allowed for c++ file suffices (for simple c-interface)
+ - Other minor fixes
+
+0.8.15: May 30, 2014
+ - Minor change, fixing commithash
+
+0.8.14: May 30, 2014
+ - Added pkgbase option. Also, changed the install location of packages to
+   be either the package name or pkgbase.
+ - Arrays and derived types can be set to None to deallocate them.
+ - Removed references to warp, mostly effecting callpyfunc
+ - Allowed source files to be in a subdirectory
+ - Added parameter variable attribute
+ - Updates for uploading to PyPI
+
+0.8.13: October 4, 2013
+ - Forthon is now compatible with python3
+ - Forthon is compatible with numpy API version 1.8
+
+0.8.12: September 13, 2013
+ - Added dyanamic arrays of strings
+ - Updated the example
+ - With debug, adds -O0 argument when compiling the wrapper
+ - Checks the version of gfortran (skipping buggy older versions)
+ - Imports PWpickle and PRpickle as PW and PR if PyPDB is not installed
+ - Cleaned up Portland Group complier options
+ - Some internal clean up, removing obsolete code
+
+0.8.11: November 30, 2012
+ - callpythonfunc now raises errors if there are any problems
+
+0.8.10: August 7, 2012
+ - Put the version number in an automatically generated file, version.py
+ - Removed old cvs version numbers
+ - Fix for darwin in setup.py when not using the system python
+ - The compile_first argument can now include the fortran suffix
+ - Now accepts files with the "for" suffix
+
+0.8.9: June 29, 2012
+ - Added getgroupsizes
+ - Fixed install location on Mac OSX
+ - Change in Forthon_repr
+
+0.8.8: April 2, 2012
+ - Forthon released under the BSD license
+ - Now under git
+ - removed unused argno variable in Fortran subroutine interfaces
+ - Changes to support Python version 3.
+   - Fixes in python for compatibility
+   - Can write to version 3 API
+   - Reworked how functions are searched
+
+0.8.7: February 13, 2012
+ - updated compile options for intel compilers
+ - made getobjectsize more robust by trapping some errors
+
+0.8.6: October 28, 2011
+ - Fix for OSX Lion when using bash
+ - Fixed when checking arrays dimensions in Fortran calls
+ - Derived type instances that are not connected with module variables
+   are now named by the type name
+ - Fix, allowing for the equivalence of LONG and INT on some machine
+   when they are passed into Fortran
+ - Clean up of setup.py
+
+0.8.5: June 30, 2011
+ - Minor fix to getobjectsize, adding a check for NameError
+ - Now uses PyMem_Malloc and PyMem_Free
+ - Added some documentation and error checking in interfaceparser.py
+ - Removed old intel compiler ifc
+ - Changes to allow inclusion of extra arguments to pass to distutils
+ - Changes in pyrestoreforthonobject for code clean up
+ - pydump and pyrestore can now use the PWpickle and PRpickle,
+   or with datawriter, any object with same API
+ - Updated the use of the raise statement
+ - cleaned up handling of online documentation
+ - allowed multiline dimension descriptoin for arrays
+
+0.8.4: May 19, 2010
+ - Fixed a memory leak for derived type objects, Decreffing __module__
+ - Fix in compilers.py findfile - checks if the thing it found is a file
+
+0.8.3: March 10, 2010
+ - On Darwin, now accepts MACHTYPE x86-64
+ - Also, if MACHTYPE is not defined, it uses uname to get the equivalent
+   information.
+ - Fixed the action2 set/get action example in example
+
+0.8.2: February 18, 2010
+ - In Forthon_builder, put the check of MACHTYPE in a try/except
+   in case it is not defined.
+ - Fixes and changes to get and setaction for derived types
+ - Added the fcompexec option, which allows specifying the fortran compiler
+   executable name.
+
+0.8.1: October 26, 2009
+ - Now supports single precision scalars and arrays.
+ - In compilers.py, the macro ISZ is set appropriately for all compilers
+ - Added the similar FPSIZE macro for floating point variable size
+ - Uses optparse instead of getopt for handling command line arguments.
+ - Imports hashlib for newer versions of python, md5 for older.
+ - In interfaceparser, white space is stripped off the beginning and end
+   of comments
+ - In determineoriginatingfile, when checking for __module__, the imported
+   module is passed to determineoriginatingfile instead of the module name.
+   This removes name collision problems.
+ - For darwin (Mac OSX), now checks MACHTYPE when setting ARCHFLAGS
+ - Added new routine pkgdeclarevars to initialize the set and getpointer
+   and set and getaction routines.
+
+0.7.18: May 08, 2009
+ - Added /usr/bin/env to the shebang in Forthon
+ - In setup.py, prints a warning message if it can't change the permissions
+   of the files.
+ - In compilers.py, fixed the findfile code when dealing with links
+
+0.7.17: April 3, 2009
+ - Add the underscoring and nounderscoring option
+ - Added linux_xlf_r in compilers.py, though for now it is specific to
+   Blue Gene serial nodes
+ - Bug fix in ForthonPackage_updatearray - dimensions are now cleared out
+   if the array is unallocated
+
+0.7.16: January 29, 2009
+ - Removed all reference to Numeric, which is no long supported
+ - createnew and nullit were changed from long to int
+ - Minor fixes for code cleanup
+   - removed unneeded i argument in Forthon_checksubroutineargtype
+   - added some extra parenthesis for clarity
+ - For darwin, sets ARCHFLAGS="-arch i386" since this is mucked up
+   by distutils
+ - Added SET and GET flags for variable in the .v file which indicate
+   a set or get action, a subroutine that is called when the variable is
+   set or get
+
+0.7.15: October 30, 2008
+ - Fix for arrays of strings (including the Filename type)
+
+0.7.14: October 3, 2008
+ - Added -qaudodbl=dbl4 option for the xlf compilers
+ - Reworked the code in Lib/compilers for the xlf compilers on AIX
+ - Added command line option cargs
+
+0.7.13: September 12, 2008
+ - Now uses new import method for the PyPDB modules
+ - Forthon is now installed as a package, and no Forthon.pth is created
+
+0.7.12: August 29, 2008
+
+ - Added the __version__ attribute
+ - In Forthon_builder, added a fix to handle a problem with older versions of
+   numpy. numpy would monkey path some of distutils routines and these would
+   get imported when get_include was called. So, for older versions of numpy,
+   the code from get_include is included explicitly rather than calling it
+   from numpy. This only affects numpy versions older than 1.1.0.
+   Note that this fix does not work for numpy 1.0.4.
+ - Fixed ForthonPackage_staticarrays for multi-dimensional strings
+
