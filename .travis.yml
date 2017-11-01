@@ -4,6 +4,7 @@ python:
  - "2.7"
  - "3.4"
  - "3.5"
+ - "3.6"
  - "nightly"
  - "pypy"
  - "pypy3"
@@ -59,4 +60,5 @@ script:
   # - make FORTHON=$FORTHON_CMD
   - cd ../simpleexample
   - make FORTHON=$FORTHON_CMD
+  - python run_forthon_example.py
   - cd ..
