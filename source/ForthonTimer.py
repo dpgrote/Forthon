@@ -155,7 +155,7 @@ class ForthonProfiler:
                 # --- at the proper time relative to the trace.
                 sys.stdout.flush()
                 sys.stderr.flush()
-                print "%s %s %s"%(self.level*'  ', event, name)
+                print "%s %s %s %s %d"%(self.level*'  ', event, name, frame.f_code.co_filename, frame.f_lineno)
         if event == 'call':
             self.level = self.level + 1
             self.timer = self.timer.newtimer(name)

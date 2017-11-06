@@ -4,6 +4,7 @@
  - Reworked the simpleexample so that it can be installed as a package
  - Updated README, adding reference to the example
  - Moved release notes to this file
+ - Added more info in ForthonProfiler trace
 
 0.8.27:
  - Replaced rank with ndim
