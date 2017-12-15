@@ -42,6 +42,7 @@ parser.disable_interspersed_args()
 #parser.add_argument('pkgname', help=argparse.SUPPRESS)
 #parser.add_argument('remainder', nargs=argparse.REMAINDER, help=argparse.SUPPRESS)
 
+parser.add_option('--2to3', action='store_true', default=False, dest='do2to3', help='convert the script from Python2 to Python3')
 parser.add_option('--build', action='store_true', default=True, dest='dobuild', help='build the package only, the default')
 parser.add_option('--build-base', default='', help='Location where the build related temporary files are put.')
 parser.add_option('--build-temp', default='', help='Location where the *pymodule.o files should be placed. This is relative to the builddir. This defaults to the builddir.')

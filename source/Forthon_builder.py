@@ -33,6 +33,7 @@ while remainder:
 distutil_args = remainder
 
 # --- Default values for command line args
+do2to3         = args.do2to3
 build_base     = args.build_base
 build_temp     = args.build_temp
 builddir       = args.builddir
@@ -486,6 +487,17 @@ if not dobuild:
         package_dir = {pkgbase:pkgdir}
         packages = [pkgbase]
 
+if do2to3:
+    try:
+        from distutils.command.build_py import build_py_2to3 as build_py
+        from distutils.command.build_scripts import build_scripts_2to3 as build_scripts
+    except ImportError:
+        from distutils.command.build_py import build_py
+        from distutils.command.build_scripts import build_scripts
+else:
+    from distutils.command.build_py import build_py
+    from distutils.command.build_scripts import build_scripts
+
 setup(name = pkgbase,
       packages = packages,
       package_dir = package_dir,
@@ -498,6 +510,8 @@ setup(name = pkgbase,
                                define_macros=define_macros,
                                extra_compile_args=extra_compile_args,
                                extra_link_args=extra_link_args)],
-      scripts = scripts
+      scripts = scripts,
+      cmdclass={'build_py': build_py,
+                'build_scripts': build_scripts},
      )
 

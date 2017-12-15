@@ -5,6 +5,7 @@
  - Updated README, adding reference to the example
  - Moved release notes to this file
  - Added more info in ForthonProfiler trace
+ - Added 2to3 conversion option for installs
 
 0.8.27:
  - Replaced rank with ndim
