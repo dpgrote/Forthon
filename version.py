@@ -1,6 +1,7 @@
 "0.8.28"
 commithash = "8081a42"
 
+import sys
 import version
 import subprocess
 
@@ -28,6 +29,8 @@ def update():
     # --- Update the commithash of the release.
     # --- This line is the same as the line in setup.py.
     commithash = subprocess.check_output('git log -n 1 --pretty=%h',stderr=subprocess.STDOUT,shell=True).strip()
+    if sys.hexversion >= 0x03000000:
+        commithash = commithash.decode('utf-8')
     updatefile('version.py',version.commithash,commithash)
     updatefile('setup.py',version.commithash,commithash)
 

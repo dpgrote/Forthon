@@ -1,5 +1,8 @@
 ## Release Notes
 
+0.8.29:
+ - Fixed version.py for Python3
+
 0.8.28:
  - Reworked the simpleexample so that it can be installed as a package
  - Updated README, adding reference to the example
