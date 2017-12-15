@@ -26,7 +26,7 @@ except:
     print('Permissions on License.txt and Src files needs to be set by hand')
 
 # --- Write out version information to the version.py file.
-version = '0.8.27'
+version = '0.8.28'
 try:
     # --- In python3, check_output or Popen returns a byte string that needs to be decoded to get the string.
     # --- The decode method is mostly harmless in python2.

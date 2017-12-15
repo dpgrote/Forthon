@@ -1,4 +1,4 @@
-"0.8.27"
+"0.8.28"
 commithash = "8081a42"
 
 import version
