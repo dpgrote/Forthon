@@ -1,7 +1,6 @@
 "0.8.27"
 commithash = "8081a42"
 
-import string
 import version
 import subprocess
 
@@ -17,9 +16,9 @@ def updatefile(filename,vvold,vvnew):
 
 def update():
     vvold = version.__doc__
-    vv = string.split(vvold,'.')
+    vv = vvold.split('.')
     vv[2] = str(int(vv[2])+1)
-    vvnew = string.join(vv,'.')
+    vvnew = '.'.join(vv)
 
     # --- Update the version number in the files.
     updatefile('version.py',vvold,vvnew)
