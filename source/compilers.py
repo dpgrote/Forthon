@@ -7,6 +7,7 @@ import os
 import re
 import platform
 import struct
+import subprocess
 from cfinterface import realsize, intsize
 
 
@@ -52,6 +53,15 @@ class FCompiler:
         self.extra_link_args = []
         self.extra_compile_args = []
         self.define_macros = []
+
+        if self.fcompname is None and self.fcompexec in ['mpif90', 'mpifort']:
+            # --- Use mpifort --show to discover which compiler is being used since it was not specified.
+            try:
+                show = subprocess.check_output([fcompexec, '--show'], universal_newlines=True)
+            except (FileNotFoundError, subprocess.CalledProcessError):
+                pass
+            else:
+                self.fcompname = show.split()[0]
 
         # --- Pick the fortran compiler
         # --- When adding a new compiler, it must be listed here under the correct
