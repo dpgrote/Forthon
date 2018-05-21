@@ -1,5 +1,8 @@
 ## Release Notes
 
+0.8.30:
+ - In compilers.py, use fcompexec instead of explicit compiler names
+
 0.8.29:
  - Fixed version.py for Python3
 

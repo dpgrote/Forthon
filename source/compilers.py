@@ -236,7 +236,7 @@ class FCompiler:
                 self.f90free += ' -implicitnone'
                 self.f90fixed += ' -implicitnone'
             self.popt = '-O'
-            flibroot, b = os.path.split(self.findfile('ifort'))
+            flibroot, b = os.path.split(self.findfile(self.fcompexec))
             self.libdirs = [flibroot + '/lib']
             self.libs = ['ifcore', 'ifport', 'imf', 'svml', 'irc']
             cpuinfo = open('/proc/cpuinfo', 'r').read()
@@ -274,7 +274,7 @@ class FCompiler:
                 self.f90free += ' -fno-second-underscore'
                 self.f90fixed += ' -fno-second-underscore'
             self.popt = '-O'
-            self.libdirs = self.findgnulibdirs('g95', self.fcompexec)
+            self.libdirs = self.findgnulibdirs(self.fcompname, self.fcompexec)
             self.libs = ['f95']
             cpuinfo = open('/proc/cpuinfo', 'r').read()
             if re.search('Pentium III', cpuinfo):
@@ -313,7 +313,7 @@ class FCompiler:
             else:
                 self.f90free += ' -fno-second-underscore'
                 self.f90fixed += ' -fno-second-underscore'
-            self.libdirs = self.findgnulibdirs('gfortran', self.fcompexec)
+            self.libdirs = self.findgnulibdirs(self.fcompname, self.fcompexec)
             self.libs = ['gfortran']
             self.fopt = '-O3 -ftree-vectorize -ftree-vectorizer-verbose=0'
             return 1
@@ -337,7 +337,7 @@ class FCompiler:
             self.f90fixed += f90opts
             self.popt = '-Mcache_align'
             if platform.python_compiler().startswith('GCC'):
-                flibroot, b = os.path.split(self.findfile('pgf90'))
+                flibroot, b = os.path.split(self.findfile(self.fcompexec))
                 self.libdirs = [flibroot + '/lib']
                 self.libs = ['pgf90']  # ???
             else:
@@ -358,7 +358,7 @@ class FCompiler:
             self.f90fixed += ' -DISZ=%s -i%s'%(intsize, intsize)
             self.popt = '-Mcache_align'
             self.forthonargs = ['--2underscores']  # --- This needs to be fixed XXX
-            flibroot, b = os.path.split(self.findfile('f90'))
+            flibroot, b = os.path.split(self.findfile(self.fcompexec))
             self.libdirs = [flibroot + '/lib']
             self.libs = ['U77', 'V77', 'f77math', 'f90math', 'fio']
             self.fopt = '-O'
@@ -384,7 +384,7 @@ class FCompiler:
                 self.f90free += ' --in'
                 self.f90fixed += ' --in'
             self.popt = '-O'
-            flibroot, b = os.path.split(self.findfile('lf95'))
+            flibroot, b = os.path.split(self.findfile(self.fcompexec))
             self.libdirs = [flibroot + '/lib']
             self.libs = ["fj9i6", "fj9f6", "fj9e6", "fccx86"]
             cpuinfo = open('/proc/cpuinfo', 'r').read()
@@ -411,7 +411,7 @@ class FCompiler:
                 self.f90free += ' -fno-second-underscore'
                 self.f90fixed += ' -fno-second-underscore'
             self.popt = '-O'
-            flibroot, b = os.path.split(self.findfile(self.fcompname))
+            flibroot, b = os.path.split(self.findfile(self.fcompexec))
             self.libdirs = [flibroot + '/lib/2.1']
             self.libs = ['pathfortran']
             cpuinfo = open('/proc/cpuinfo', 'r').read()
@@ -504,7 +504,7 @@ class FCompiler:
 #           -fstrict-aliasing'
 #      self.extra_link_args = ['-flat_namespace', '-undefined suppress', '-lg2c']
             self.extra_link_args = ['-flat_namespace', '--allow-shlib-undefined', '-Wl,--export-all-symbols', '-Wl,-export-dynamic', '-Wl,--unresolved-symbols=ignore-all', '-lg2c']
-            self.libdirs = self.findgnulibdirs('g95', self.fcompexec)
+            self.libdirs = self.findgnulibdirs(self.fcompname, self.fcompexec)
             self.libdirs.append('/lib/w32api')
             self.libs = ['f95']
             return 1
@@ -535,7 +535,7 @@ class FCompiler:
                  -ffast-math -fstrict-aliasing'
 #      self.fopt = '-O3  -mtune=G5 -mcpu=G5 -mpowerpc64'
             self.extra_link_args = ['-flat_namespace']
-            self.libdirs = self.findgnulibdirs('g95', self.fcompexec)
+            self.libdirs = self.findgnulibdirs(self.fcompname, self.fcompexec)
             self.libs = ['f95']
             return 1
 
@@ -564,7 +564,7 @@ class FCompiler:
             else:
                 self.f90free += ' -fno-second-underscore'
                 self.f90fixed += ' -fno-second-underscore'
-            flibroot, b = os.path.split(self.findfile('gfortran'))
+            flibroot, b = os.path.split(self.findfile(self.fcompexec))
             self.fopt = '-O3 -funroll-loops -fstrict-aliasing -fsched-interblock  \
                  -falign-loops=16 -falign-jumps=16 -falign-functions=16 \
                  -malign-natural \
@@ -574,7 +574,7 @@ class FCompiler:
             self.fopt = '-O3 -ftree-vectorize -ftree-vectorizer-verbose=0'
 #      self.extra_link_args = ['-flat_namespace', '-lg2c']
             self.extra_link_args = ['-flat_namespace']
-            self.libdirs = self.findgnulibdirs('gfortran', self.fcompexec)
+            self.libdirs = self.findgnulibdirs(self.fcompname, self.fcompexec)
             self.libs = ['gfortran']
             return 1
 
@@ -592,7 +592,7 @@ class FCompiler:
                 self.f90fixed += ' -u'
             self.fopt = '-O5'
             self.extra_link_args = ['-flat_namespace']  # , '-Wl,-undefined, suppress']  # , '-Wl,-stack_size, 10000000']
-            flibroot, b = os.path.split(self.findfile('xlf95'))
+            flibroot, b = os.path.split(self.findfile(self.fcompexec))
             self.libdirs = [flibroot + '/lib']
             self.libs = ['xlf90', 'xl', 'xlfmath']
             return 1
@@ -606,7 +606,7 @@ class FCompiler:
             self.f90fixed += ' -DFPSIZE=%s'%(realsize)  # ???
             self.f90free += ' -DISZ=%s -i%s'%(intsize, intsize)
             self.f90fixed += ' -DISZ=%s -i%s'%(intsize, intsize)
-            flibroot, b = os.path.split(self.findfile('f90'))
+            flibroot, b = os.path.split(self.findfile(self.fcompexec))
             self.libdirs = [flibroot + '/lib']
             self.extra_link_args = ['-flat_namespace', '-Wl,-undefined, suppress']
             self.libs = ['fio', 'f77math', 'f90math', 'f90math_altivec', 'lapack', 'blas']
@@ -624,7 +624,7 @@ class FCompiler:
             self.f90fixed += ' -DFPSIZE=%s -r%s'%(realsize, realsize)
             self.f90free += ' -DISZ=%s -i%s'%(intsize, intsize)
             self.f90fixed += ' -DISZ=%s -i%s'%(intsize, intsize)
-            flibroot, b = os.path.split(self.findfile('f95'))
+            flibroot, b = os.path.split(self.findfile(self.fcompexec))
             self.extra_link_args = ['-flat_namespace', '-framework vecLib', '/usr/local/lib/NAGWare/quickfit.o', '/usr/local/lib/NAGWare/libf96.a']
             self.libs = ['m']
             self.fopt = '-Wc,-O3 -Wc,-funroll-loops -O3 -Ounroll=2'
@@ -641,7 +641,7 @@ class FCompiler:
             self.f90fixed += ' -DFPSIZE=%s -r%s'%(realsize, realsize)
             self.f90free += ' -DISZ=%s -i%s'%(intsize, intsize)
             self.f90fixed += ' -DISZ=%s -i%s'%(intsize, intsize)
-            flibroot, b = os.path.split(self.findfile('g95'))
+            flibroot, b = os.path.split(self.findfile(self.fcompexec))
             self.libdirs = [flibroot + '/lib']
             self.libs = ['???']
             self.fopts = '-O3'
@@ -660,7 +660,7 @@ class FCompiler:
             self.f90free += ' -DISZ=%s -i%s'%(intsize, intsize)
             self.f90fixed += ' -DISZ=%s -i%s'%(intsize, intsize)
             self.popt = '-Mcache_align'
-            flibroot, b = os.path.split(self.findfile('pgf90'))
+            flibroot, b = os.path.split(self.findfile(self.fcompexec))
             self.libdirs = [flibroot + '/Lib']
             self.libs = ['???']
             self.fopt = '-fast -Mcache_align'
@@ -675,7 +675,7 @@ class FCompiler:
             self.f90fixed += ' -DFPSIZE=%s'%(realsize)  # ???
             self.f90free += ' -DISZ=%s -i%s'%(intsize, intsize)
             self.f90fixed += ' -DISZ=%s -i%s'%(intsize, intsize)
-            flibroot, b = os.path.split(self.findfile('ifl'))
+            flibroot, b = os.path.split(self.findfile(self.fcompexec))
             self.libdirs = [flibroot + '/Lib']
             self.libs = ['CEPCF90MD', 'F90MD', 'intrinsMD']
             self.fopt = '-O3'
@@ -802,7 +802,7 @@ class FCompiler:
             self.f90free += ' -DISZ=%s -i%s'%(intsize, intsize)
             self.f90fixed += ' -DISZ=%s -i%s'%(intsize, intsize)
             self.popt = '-Mcache_align'
-            flibroot, b = os.path.split(self.findfile('pghpf'))
+            flibroot, b = os.path.split(self.findfile(self.fcompexec))
             self.libdirs = [flibroot + '/lib']
             self.libs = ['pghpf']  # ???
             self.fopt = '-fast -Mcache_align'
