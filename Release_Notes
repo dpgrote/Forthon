@@ -3,6 +3,7 @@
 0.8.30:
  - In compilers.py, use fcompexec instead of explicit compiler names
  - When using mpifort, use the show option to discover the compiler name if not provided
+ - For darwin, check for gfortran first since it is the most commonly used compiler
 
 0.8.29:
  - Fixed version.py for Python3

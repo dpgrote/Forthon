@@ -87,11 +87,11 @@ class FCompiler:
                 if self.linux_cray() is not None:
                     break
             elif self.machine == 'darwin':
+                if self.macosx_gfortran() is not None:
+                    break
                 if self.macosx_xlf() is not None:
                     break
                 if self.macosx_g95() is not None:
-                    break
-                if self.macosx_gfortran() is not None:
                     break
                 if self.macosx_absoft() is not None:
                     break
