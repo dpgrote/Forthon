@@ -55,13 +55,7 @@ class FCompiler:
         self.define_macros = []
 
         if self.fcompname is None and self.fcompexec in ['mpif90', 'mpifort']:
-            # --- Use mpifort --show to discover which compiler is being used since it was not specified.
-            try:
-                show = subprocess.check_output([fcompexec, '--show'], universal_newlines=True)
-            except (FileNotFoundError, subprocess.CalledProcessError):
-                pass
-            else:
-                self.fcompname = show.split()[0]
+            self.findmpicompilername()
 
         # --- Pick the fortran compiler
         # --- When adding a new compiler, it must be listed here under the correct
@@ -138,6 +132,29 @@ class FCompiler:
 
         # --- Add the compiler name to the forthon arguments
         self.forthonargs += ['-F ' + self.fcompname]
+
+    def findmpicompilername(self):
+        # --- With openmpi, use mpifort --show to discover which compiler is being used since it was not specified.
+        try:
+            show = subprocess.check_output(['mpifort', '--show'], universal_newlines=True, stderr=subprocess.STDOUT)
+        except (OSError, subprocess.CalledProcessError):
+            pass
+        else:
+            self.fcompname = show.split()[0]
+            return
+
+        # --- If fcompname was not found, try the mvapich2 command, mpiname
+        try:
+            output = subprocess.check_output(['mpiname', '-c'], universal_newlines=True, stderr=subprocess.STDOUT)
+        except (OSError, subprocess.CalledProcessError):
+            pass
+        else:
+            lines = output.split('\n')
+            for line in lines:
+                if line.startswith('FC'):
+                    compilerpath = line.split(' ')[1]
+                    self.fcompname = os.path.basename(compilerpath)
+                    return
 
     def usecompiler(self, fcompname, fcompexec):
         'Check if the specified compiler is found'
