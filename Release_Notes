@@ -1,6 +1,7 @@
 ## Release Notes
 
 0.8.31:
+ - Fix a bug when setting a string to an empty string
  - Added support for array dimensions of arrays in subroutine arguments
  - Minor clean up
 

@@ -853,8 +853,19 @@ static int Forthon_setarray(ForthonObject *self,PyObject *value,
       if (PyArray_ITEMSIZE(ax) < PyArray_ITEMSIZE(farray->pya)){
         d = (int)PyArray_ITEMSIZE(farray->pya);
         /* PyArray_ITEMSIZE(farray->pya) = PyArray_ITEMSIZE(ax); */
-        /* Is there a better way to do this? */
-        (((PyArrayObject_fields *)(farray->pya))->descr->elsize) = (int)PyArray_ITEMSIZE(ax);
+        /* Is there a better way to do this than assigning to elsize? */
+        if (strlen(PyArray_BYTES(ax)) == 0) {
+          /* This is for empty strings. In this case, the ITEMSIZE and SIZE will both be 1.
+           * Using strlen is the only reliable way I've found to check for an empty string.
+           * Since ITEMSIZE returns 1, elsize gets set to 1, which causes the null termination
+           * to be copied into the string. This breaks things at the Python level.
+           * An alternative would be to skip the copy if the size == 0. That coding is a bit
+           * messier and this seems to work fine. */
+          (((PyArrayObject_fields *)(farray->pya))->descr->elsize) = 0;
+        }
+        else {
+          (((PyArrayObject_fields *)(farray->pya))->descr->elsize) = (int)PyArray_ITEMSIZE(ax);
+        }
         }
       }
     /* Copy input data into the array. This does the copy */
