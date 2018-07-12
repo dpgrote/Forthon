@@ -215,8 +215,6 @@ freepath = os.path.join(upbuilddir, '%%.%(free_suffix)s'%locals())
 fixedpath = os.path.join(upbuilddir, '%%.%(fixed_suffix)s'%locals())
 
 # --- Find location of the python libraries and executable.
-prefix = fixpath(sys.prefix, dos=0)
-pyvers = sys.version[:3]
 python = fixpath(sys.executable, dos=0)
 
 # --- Generate list of package dependencies

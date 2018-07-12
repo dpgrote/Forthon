@@ -1,5 +1,9 @@
 ## Release Notes
 
+0.8.31:
+ - Added support for array dimensions of arrays in subroutine arguments
+ - Minor clean up
+
 0.8.30:
  - In compilers.py, use fcompexec instead of explicit compiler names
  - When using mpifort, use the show option to discover the compiler name if not provided
