@@ -185,3 +185,5 @@ add(10) _double /7./
 aff(10) _float /7./
 printrtypes() subroutine
 
+****** Checkarrayarraydims:
+arraydimargtest(xxx(2):integer, aaa(xxx(1), xxx(2)):real) subroutine

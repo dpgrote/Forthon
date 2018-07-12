@@ -592,12 +592,56 @@ class PyWrap:
             # --- and gives it the value passed in. Then any expressions in the
             # --- dimensions statements will be explicitly evaluated in C.
             if len(f.dimvars) > 0:
+
+                # --- Find the variables used as dimensions that are arrays
+                arraydimvarnames = []
+                for var, i in f.dimvars:
+                    for arg in f.args:
+                        if var.name == arg.name and  len(arg.dims) > 0:
+                            assert len(arg.dims) == 1, 'Only one dimensional arrays can be used as array dimensions'
+                            arraydimvarnames.append(var.name)
+
+                def maparraydimsctof(dim):
+                    # --- Map array dimensions from Fortran to C, e.g. convert (n) to [(n)-1].
+                    # --- Check for each array dimension variable.
+                    # --- The inner loop is needed in case the name appears multiple times.
+                    for d in arraydimvarnames:
+                        i = 0
+                        while True:
+                            m = re.search(r'\b'+d+r'\b', dim[i:])
+                            if m is None:
+                                break
+                            else:
+                                # --- Find the matching parenthesis
+                                # --- p1 and p1 will be the indices of the opening and closing parenthesis
+                                p1 = m.end() + i
+                                p2 = p1
+                                nn = 1
+                                while nn > 0:
+                                    p2 += 1
+                                    if dim[p2] == '(':
+                                        nn += 1
+                                    elif dim[p2] == ')':
+                                        nn -= 1
+                                # --- Do the replacement
+                                dim = dim[:p1] + '[' + dim[p1:p2+1] + '-1]' + dim[p2+1:]
+                                i = p2 + 1
+                    return dim
+
                 self.cw('  {')
                 self.cw('  long _n;')
+
                 # --- Declare the dimension variables.
                 for var, i in f.dimvars:
-                    self.cw('  ' + fvars.ftoc(var.type) + ' ' + var.name + '=*' +
-                            '(' + fvars.ftoc(var.type) + ' *)(PyArray_BYTES(ax[' + repr(i) + ']));')
+                    if var.name in arraydimvarnames:
+                        # --- Declare the variable as a pointer to an array
+                        self.cw('  ' + fvars.ftoc(var.type) + ' * ' + var.name + '=' +
+                                '(' + fvars.ftoc(var.type) + ' *)(PyArray_BYTES(ax[' + repr(i) + ']));')
+                    else:
+                        # --- Declare the variable as a scalar
+                        self.cw('  ' + fvars.ftoc(var.type) + ' ' + var.name + '= *' +
+                                '(' + fvars.ftoc(var.type) + ' *)(PyArray_BYTES(ax[' + repr(i) + ']));')
+
                 # --- Loop over the arguments, looking for dimensioned arrays
                 i = -1
                 for arg in f.args:
@@ -622,7 +666,7 @@ class PyWrap:
                         # --- C ordering.
                         self.cw('  if (1', noreturn=1)
                         for dim in arg.dims:
-                            self.cw('*((' + dim.high + ') - (' + dim.low + ') + 1)', noreturn=1)
+                            self.cw('*((' + maparraydimsctof(dim.high) + ') - (' + maparraydimsctof(dim.low) + ') + 1)', noreturn=1)
                         self.cw(' != 0) {')
 
                         j = -1
@@ -632,7 +676,7 @@ class PyWrap:
                             # --- For a 1-D argument, allow a scalar to be passed, which has
                             # --- a number of dimensions (nd) == 0, but only if the
                             # --- argument needs to have a length of 0 or 1.
-                            self.cw('    _n = (' + dim.high + ') - (' + dim.low + ') + 1;')
+                            self.cw('    _n = (' + maparraydimsctof(dim.high) + ') - (' + maparraydimsctof(dim.low) + ') + 1;')
                             if len(arg.dims) == 1:
                                 self.cw('    if (!((_n==0||_n==1)||(PyArray_NDIM(ax[%d]) > 0 &&'%i,
                                         noreturn=1)

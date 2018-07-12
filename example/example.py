@@ -82,4 +82,13 @@ print('The test "Type2 xx is being get" should be printed below')
 example.action2.xx
 print('')
 
+print('Testing arrays dimensions of subroutine argument')
+print('arraydimargtest(xxx(2):integer, aaa(xxx(1), xxx(2)):real)')
+print('There should be no errors')
+nn = array([4,5])
+xx = ones(nn)
+arraydimargtest(nn, xx)
+assert all(equal(xx, 0.)), 'call to arrayargdimtest failed'
+print('')
+
 print('Tests complete')
