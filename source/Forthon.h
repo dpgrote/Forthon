@@ -51,6 +51,7 @@ typedef struct {
   char* group;
   char* attributes;
   char* comment;
+  char* unit;
   int dynamic;
   int parameter;
   void (*setscalarpointer)(char *,char *,npy_intp *);
@@ -76,6 +77,7 @@ typedef struct Fortranarray_{
   char* group;
   char* attributes;
   char* comment;
+  char* unit;
   char* dimstring;
   } Fortranarray;
 
@@ -1731,6 +1733,36 @@ static PyObject *ForthonPackage_getvardoc(PyObject *_self_,PyObject *args)
 }
 
 /* ######################################################################### */
+/* # Get unit for the variable name.                                         */
+static char getvarunit_doc[] = "Gets the unit for a variable";
+static PyObject *ForthonPackage_getvarunit(PyObject *_self_,PyObject *args)
+{
+  ForthonObject *self = (ForthonObject *)_self_;
+  PyObject *pyi;
+  int i;
+  char *name;
+  if (!PyArg_ParseTuple(args,"s",&name)) return NULL;
+
+  /* Get index for variable from scalar dictionary */
+  /* If it is not found, the pyi is returned as NULL */
+  pyi = PyDict_GetItemString(self->scalardict,name);
+  if (pyi != NULL) {
+    PyArg_Parse(pyi,"i",&i);
+    return Py_BuildValue("s",self->fscalars[i].unit);
+    }
+
+  /* Get index for variable from array dictionary */
+  /* If it is not found, the pyi is returned as NULL */
+  pyi = PyDict_GetItemString(self->arraydict,name);
+  if (pyi != NULL) {
+    PyArg_Parse(pyi,"i",&i);
+    return Py_BuildValue("s",self->farrays[i].unit);
+    }
+
+  returnnone;
+}
+
+/* ######################################################################### */
 static char isdynamic_doc[] = "Checks whether a variable is dynamic.";
 static PyObject *ForthonPackage_isdynamic(PyObject *_self_,PyObject *args)
 {
@@ -2042,6 +2074,8 @@ static PyObject *ForthonPackage_listvar(PyObject *_self_,PyObject *args)
     if (self->fscalars[i].type == NPY_OBJECT)
       ForthonPackage_updatederivedtype(self,i,1);
     stringconcatanddellong(&doc,(long)(self->fscalars[i].data));
+    stringconcatanddel(&doc,"\nUnit:       ");
+    stringconcatanddel(&doc,self->fscalars[i].unit);
     stringconcatanddel(&doc,"\nComment:\n");
     stringconcatanddel(&doc,self->fscalars[i].comment);
     return doc;
@@ -2099,6 +2133,8 @@ static PyObject *ForthonPackage_listvar(PyObject *_self_,PyObject *args)
     else
       stringconcatanddellong(&doc,(long)(self->farrays[i].pya));
 
+    stringconcatanddel(&doc,"\nUnit:       ");
+    stringconcatanddel(&doc,self->farrays[i].unit);
     stringconcatanddel(&doc,"\nComment:\n");
     stringconcatanddel(&doc,self->farrays[i].comment);
     return doc;
@@ -2248,6 +2284,7 @@ static struct PyMethodDef ForthonPackage_methods[] = {
   {"setvarattr"  ,(PyCFunction)ForthonPackage_setvarattr,1,setvarattr_doc},
   {"delvarattr"  ,(PyCFunction)ForthonPackage_delvarattr,1,delvarattr_doc},
   {"getvardoc"   ,(PyCFunction)ForthonPackage_getvardoc,1,getvardoc_doc},
+  {"getvarunit"  ,(PyCFunction)ForthonPackage_getvarunit,1,getvarunit_doc},
   {"gfree"       ,(PyCFunction)ForthonPackage_gfree,1,gfree_doc},
   {"gsetdims"    ,(PyCFunction)ForthonPackage_gsetdims,1,gsetdims_doc},
   {"isdynamic"   ,(PyCFunction)ForthonPackage_isdynamic,1,isdynamic_doc},

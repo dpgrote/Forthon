@@ -240,6 +240,7 @@ class ForthonDerivedType:
                 self.cw('obj->fscalars[%d].attributes = "%s";'%(i, s.attr))
                 # The repr is used so newlines get written out as \n.
                 self.cw('obj->fscalars[%d].comment = "%s";'%(i, repr(s.comment)[1:-1].replace('"', '\\"')))
+                self.cw('obj->fscalars[%d].unit = "%s";'%(i, repr(s.unit)[1:-1]))
                 self.cw('obj->fscalars[%d].dynamic = %d;'%(i, s.dynamic))
                 self.cw('obj->fscalars[%d].parameter = %d;'%(i, s.parameter))
                 self.cw('obj->fscalars[%d].setscalarpointer = %s;'%(i, setscalarpointer))
@@ -290,6 +291,7 @@ class ForthonDerivedType:
                 self.cw('obj->farrays[%d].group = "%s";'%(i, a.group))
                 self.cw('obj->farrays[%d].attributes = "%s";'%(i, a.attr))
                 self.cw('obj->farrays[%d].comment = "%s";'%(i, repr(a.comment)[1:-1].replace('"', '\\"')))
+                self.cw('obj->farrays[%d].unit = "%s";'%(i, repr(a.unit)[1:-1]))
                 self.cw('obj->farrays[%d].dimstring = "%s";'%(i, repr(a.dimstring)[1:-1]))
             self.cw('}')
 
@@ -307,12 +309,14 @@ class ForthonDerivedType:
 #       self.cw('{"' + s.name + '", (getter)Forthon_getscalar' + gstype +
 #                            ', (setter)Forthon_setscalar' + gstype +
 #                      ', "%s"'%repr(s.comment)[1:-1].replace('"', '\\"') +
+#                      ', "%s"'%repr(s.unit)[1:-1] +
 #                           ', (void *)' + repr(i) + '}, ')
 #     for i in range(len(alist)):
 #       a = alist[i]
 #       self.cw('{"' + a.name + '", (getter)Forthon_getarray' +
 #                            ', (setter)Forthon_setarray' +
 #                      ', "%s"'%repr(a.comment)[1:-1].replace('"', '\\"') +
+#                      ', "%s"'%repr(a.unit)[1:-1] +
 #                           ', (void *)' + repr(i) + '}, ')
 #     self.cw('{"scalardict", (getter)Forthon_getscalardict, ' +
 #                           '(setter)Forthon_setscalardict, ' +

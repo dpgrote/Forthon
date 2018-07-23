@@ -358,6 +358,7 @@ class PyWrap:
                         '"%s",'%s.group +
                         '"%s",'%s.attr +
                         '"%s",'%repr(s.comment)[1:-1].replace('"', '\\"') +
+                        '"%s",'%repr(s.unit)[1:-1] +
                         '%i,'%s.dynamic +
                         '%i,'%s.parameter +
                         'NULL,' +  # setscalarpointer
@@ -397,6 +398,7 @@ class PyWrap:
                         '"%s",'%a.group +
                         '"%s",'%a.attr +
                         '"%s",'%repr(a.comment)[1:-1].replace('"', '\\"') +
+                        '"%s",'%repr(a.unit)[1:-1] +
                         '"%s"}'%repr(a.dimstring)[1:-1], noreturn=1)
                 if i < len(self.alist) - 1:
                     self.cw(',')
@@ -457,12 +459,14 @@ class PyWrap:
 #     self.cw('{"' + s.name + '", (getter)Forthon_getscalar' + gstype +
 #                          ', (setter)Forthon_setscalar' + gstype +
 #                    ', "%s"'%repr(s.comment)[1:-1].replace('"', '\\"') +
+#                    ', "%s"'%repr(s.unit)[1:-1] +
 #                         ', (void *)' + repr(i) + '}, ')
 #   for i in range(len(self.alist)):
 #     a = self.alist[i]
 #     self.cw('{"' + a.name + '", (getter)Forthon_getarray' +
 #                          ', (setter)Forthon_setarray' +
 #                    ', "%s"'%repr(a.comment)[1:-1].replace('"', '\\"') +
+#                    ', "%s"'%repr(a.unit)[1:-1] +
 #                         ', (void *)' + repr(i) + '}, ')
 #   self.cw('{"scalardict", (getter)Forthon_getscalardict, ' +
 #                         '(setter)Forthon_setscalardict, ' +
