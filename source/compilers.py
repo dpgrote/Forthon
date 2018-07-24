@@ -54,8 +54,8 @@ class FCompiler:
         self.extra_compile_args = []
         self.define_macros = []
 
-        if self.fcompname is None and self.fcompexec in ['mpif90', 'mpifort']:
-            self.findmpicompilername()
+        if self.fcompexec in ['mpif90', 'mpifort']:
+            self.getmpicompilerinfo()
 
         # --- Pick the fortran compiler
         # --- When adding a new compiler, it must be listed here under the correct
@@ -133,15 +133,24 @@ class FCompiler:
         # --- Add the compiler name to the forthon arguments
         self.forthonargs += ['-F ' + self.fcompname]
 
-    def findmpicompilername(self):
-        # --- Use mpifort -show to discover which compiler is being used since it was not specified.
+    def getmpicompilerinfo(self):
+        # --- Try using mpifort -show to discover the compiler information
         try:
             show = subprocess.check_output(['mpifort', '-show'], universal_newlines=True, stderr=subprocess.STDOUT)
         except (OSError, subprocess.CalledProcessError):
             pass
         else:
-            self.fcompname = os.path.basename(show.split()[0])
-            return
+            # --- Get mpi linking arguments
+            # --- These are needed since the linking will be done with a c compiler which will not know
+            # --- about the arguments needed for Fortran.
+            for s in show.split():
+                if s.startswith('-L') or s.startswith('-l'):
+                    self.extra_link_args += [s]
+            fcompname = os.path.basename(show.split()[0])
+            if self.fcompname is None:
+                self.fcompname = fcompname
+            else:
+                assert self.fcompname == fcompname, Exception('The compiler specified must be the same as the one used by mpifort')
 
     def usecompiler(self, fcompname, fcompexec):
         'Check if the specified compiler is found'
@@ -356,7 +365,7 @@ class FCompiler:
                 self.libs = ['pgf90']  # ???
             else:
                 # --- When using pgcc for linking, this includes the needed fortran libraries.
-                self.extra_link_args = ['-pgf90libs']
+                self.extra_link_args += ['-pgf90libs']
             self.fopt = '-fast -Mcache_align'
             return 1
 
@@ -430,7 +439,7 @@ class FCompiler:
             self.libs = ['pathfortran']
             cpuinfo = open('/proc/cpuinfo', 'r').read()
             self.extra_compile_args = ['-fPIC']
-            self.extra_link_args = ['-fPIC']
+            self.extra_link_args += ['-fPIC']
             if re.search('Pentium III', cpuinfo):
                 self.fopt = '-Ofast'
             elif re.search('AMD Athlon', cpuinfo):
@@ -457,7 +466,7 @@ class FCompiler:
                 self.f90free += ' -u'
                 self.f90fixed += ' -u'
             self.popt = '-O'
-            self.extra_link_args = []
+            #self.extra_link_args = []
             self.extra_compile_args = []
             # --- Note that these are specific the machine intrepid at Argonne.
             self.libdirs = ['/gpfs/software/linux-sles10-ppc64/apps/V1R3M0/ibmcmp-sep2008/opt/xlf/bg/11.1/lib', '/gpfs/software/linux-sles10-ppc64/apps/V1R3M0/ibmcmp-sep2008/opt/xlsmp/bg/1.7/lib']
@@ -516,8 +525,8 @@ class FCompiler:
 #           -falign-jumps-max-skip=15 -falign-loops-max-skip=15 -malign-natural \
 #           -ffast-math -mpowerpc-gpopt -force_cpusubtype_ALL \
 #           -fstrict-aliasing'
-#      self.extra_link_args = ['-flat_namespace', '-undefined suppress', '-lg2c']
-            self.extra_link_args = ['-flat_namespace', '--allow-shlib-undefined', '-Wl,--export-all-symbols', '-Wl,-export-dynamic', '-Wl,--unresolved-symbols=ignore-all', '-lg2c']
+#      self.extra_link_args += ['-flat_namespace', '-undefined suppress', '-lg2c']
+            self.extra_link_args += ['-flat_namespace', '--allow-shlib-undefined', '-Wl,--export-all-symbols', '-Wl,-export-dynamic', '-Wl,--unresolved-symbols=ignore-all', '-lg2c']
             self.libdirs = self.findgnulibdirs(self.fcompname, self.fcompexec)
             self.libdirs.append('/lib/w32api')
             self.libs = ['f95']
@@ -548,7 +557,7 @@ class FCompiler:
                  -ftree-vectorize -ftree-vectorizer-verbose=0 \
                  -ffast-math -fstrict-aliasing'
 #      self.fopt = '-O3  -mtune=G5 -mcpu=G5 -mpowerpc64'
-            self.extra_link_args = ['-flat_namespace']
+            self.extra_link_args += ['-flat_namespace']
             self.libdirs = self.findgnulibdirs(self.fcompname, self.fcompexec)
             self.libs = ['f95']
             return 1
@@ -586,8 +595,8 @@ class FCompiler:
                  -fstrict-aliasing -mtune=G5 -mcpu=G5 -mpowerpc64'
 #      self.fopt = '-O3  -mtune=G5 -mcpu=G5 -mpowerpc64'
             self.fopt = '-O3 -ftree-vectorize -ftree-vectorizer-verbose=0'
-#      self.extra_link_args = ['-flat_namespace', '-lg2c']
-            self.extra_link_args = ['-flat_namespace']
+#      self.extra_link_args += ['-flat_namespace', '-lg2c']
+            self.extra_link_args += ['-flat_namespace']
             self.libdirs = self.findgnulibdirs(self.fcompname, self.fcompexec)
             self.libs = ['gfortran']
             return 1
@@ -605,7 +614,7 @@ class FCompiler:
                 self.f90free += ' -u'
                 self.f90fixed += ' -u'
             self.fopt = '-O5'
-            self.extra_link_args = ['-flat_namespace']  # , '-Wl,-undefined, suppress']  # , '-Wl,-stack_size, 10000000']
+            self.extra_link_args += ['-flat_namespace']  # , '-Wl,-undefined, suppress']  # , '-Wl,-stack_size, 10000000']
             flibroot, b = os.path.split(self.findfile(self.fcompexec))
             self.libdirs = [flibroot + '/lib']
             self.libs = ['xlf90', 'xl', 'xlfmath']
@@ -622,7 +631,7 @@ class FCompiler:
             self.f90fixed += ' -DISZ=%s -i%s'%(intsize, intsize)
             flibroot, b = os.path.split(self.findfile(self.fcompexec))
             self.libdirs = [flibroot + '/lib']
-            self.extra_link_args = ['-flat_namespace', '-Wl,-undefined, suppress']
+            self.extra_link_args += ['-flat_namespace', '-Wl,-undefined, suppress']
             self.libs = ['fio', 'f77math', 'f90math', 'f90math_altivec', 'lapack', 'blas']
             self.fopt = '-O3'
             return 1
@@ -639,7 +648,7 @@ class FCompiler:
             self.f90free += ' -DISZ=%s -i%s'%(intsize, intsize)
             self.f90fixed += ' -DISZ=%s -i%s'%(intsize, intsize)
             flibroot, b = os.path.split(self.findfile(self.fcompexec))
-            self.extra_link_args = ['-flat_namespace', '-framework vecLib', '/usr/local/lib/NAGWare/quickfit.o', '/usr/local/lib/NAGWare/libf96.a']
+            self.extra_link_args += ['-flat_namespace', '-framework vecLib', '/usr/local/lib/NAGWare/quickfit.o', '/usr/local/lib/NAGWare/libf96.a']
             self.libs = ['m']
             self.fopt = '-Wc,-O3 -Wc,-funroll-loops -O3 -Ounroll=2'
             self.fopt = '-O4 -Wc,-fast'
@@ -714,7 +723,7 @@ class FCompiler:
             self.f90fixed += ' -WF,-DISZ=%s -qintsize%s'%(intsize, intsize)
             self.ld = 'xlf -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp %(bmax)s'%locals()
             self.popt = '-O'
-            self.extra_link_args = [bmax]
+            self.extra_link_args += [bmax]
             self.extra_compile_args = [bmax]
             if self.implicitnone:
                 self.f90free += ' -u'
@@ -743,7 +752,7 @@ class FCompiler:
                 self.f90free += ' -u'
                 self.f90fixed += ' -u'
             self.popt = '-O'
-            self.extra_link_args = [bmax]
+            self.extra_link_args += [bmax]
             self.extra_compile_args = [bmax]
             self.libs = ['xlf90', 'xlopt', 'xlf', 'xlomp_ser', 'pthread', 'essl']
             self.defines = ['PYMPI=/usr/common/homes/g/grote/pyMPI']
@@ -771,7 +780,7 @@ class FCompiler:
                 self.f90free += ' -u'
                 self.f90fixed += ' -u'
             self.popt = '-O'
-            self.extra_link_args = [bmax]
+            self.extra_link_args += [bmax]
             self.extra_compile_args = [bmax]
             self.libs = ['xlf90', 'xlopt', 'xlf', 'xlsmp', 'pthreads', 'essl']
             self.fopt = '-O3 -qstrict -qarch=auto -qtune=auto -qsmp=omp'
@@ -798,7 +807,7 @@ class FCompiler:
                 self.f90free += ' -u'
                 self.f90fixed += ' -u'
             self.popt = '-O'
-            self.extra_link_args = [bmax]
+            self.extra_link_args += [bmax]
             self.extra_compile_args = [bmax]
             self.libs = ['xlf90', 'xlopt', 'xlf', 'xlomp_ser', 'pthread', 'essl']
             self.defines = ['PYMPI=/usr/common/homes/g/grote/pyMPI']
