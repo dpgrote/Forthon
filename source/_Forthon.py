@@ -531,29 +531,33 @@ def oldgetobjectsize(pkg, grp='', recursive=1):
 
 # --- Get size of an object, recursively including anything inside of it.
 # --- New improved version, though should be tested more
-def getobjectsize(pkg, grp='', recursive=1, grouplist=None):
+def getobjectsize(pkg, grp='', recursive=1, grouplist=None, verbose=False):
     """
     Gets the total size of a package or dictionary.
       - pkg: Either a Forthon object, dictionary, or a class instance
       - grp='': For a Forthon object, only include the variables in the specified
                 group
       - recursive=1: When true, include the size of sub objects.
+      - verbose=False: When True, print the name of each attribute that is processed.
     """
 
+    # --- Return size of shallow objects
+    # --- There's no need to put these in grouplist since they will never be references.
+    if isinstance(pkg, (int, float, bool)):
+        return 1
+
     if grouplist is None:
-        grouplist = []
+        grouplist = set()
 
     # --- Keep track of objects already accounted for.
     if id(pkg) in grouplist:
         # --- Even the the item has already been counted, add the
         # --- approximate size of the reference
         return 1
-    grouplist.append(id(pkg))
+    grouplist.add(id(pkg))
 
-    # --- Return sizes of shallow objects
-    if isinstance(pkg, (int, float, bool)):
-        return 1
-    elif isinstance(pkg, ndarray):
+    # --- Return size of numpy array
+    if isinstance(pkg, ndarray):
         return product(array(shape(pkg)))
 
     # --- The object itself gets count of 1
@@ -565,12 +569,12 @@ def getobjectsize(pkg, grp='', recursive=1, grouplist=None):
     if IsForthonType(pkg):
         ll = pkg.varlist(grp)
     elif isinstance(pkg, dict):
-        ll = pkg.iterkeys()
+        ll = list(pkg.keys())
     elif isinstance(pkg, (list, tuple)):
         ll = pkg
     else:
         try:
-            ll = pkg.__dict__.iterkeys()
+            ll = list(pkg.__dict__.keys())
         except (AttributeError, NameError):
             ll = []
 
@@ -578,7 +582,14 @@ def getobjectsize(pkg, grp='', recursive=1, grouplist=None):
         ll = []
 
     # --- Now, add up the sizes.
+    ii = 0
     for v in ll:
+        if verbose:
+            if isinstance(v, str):
+                print v
+            if ii%100 == 0:
+                print ii,len(ll),'\r',
+            ii += 1
         if IsForthonType(pkg):
             # --- This is needed so unallocated arrays will only return None
             vv = pkg.getpyobject(v)
@@ -592,8 +603,10 @@ def getobjectsize(pkg, grp='', recursive=1, grouplist=None):
                 vv = getattr(pkg, v)
             except AttributeError:
                 vv = 0
-        result = result + getobjectsize(vv, '', recursive=recursive, grouplist=grouplist)
+        result = result + getobjectsize(vv, '', recursive=recursive+1, grouplist=grouplist, verbose=verbose)
 
+    if verbose and recursive == 1:
+        print ''
     # --- Return the result
     return result
 
