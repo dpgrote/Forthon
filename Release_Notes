@@ -1,5 +1,8 @@
 ## Release Notes
 
+0.8.33:
+ - Fixed the linking on OSX, removing flat_namespace option which is no longer needed
+
 0.8.32:
  - The units are now saved
  - Adds mpi linking arguments
