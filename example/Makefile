@@ -1,5 +1,5 @@
 FORTHON=Forthon
-PYTHON=python2
+PYTHON=python
 
 example: example.F example.v example_extra.f
 	$(FORTHON) --no2underscores -g example example_extra.f
