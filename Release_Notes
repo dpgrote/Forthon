@@ -1,5 +1,11 @@
 ## Release Notes
 
+0.8.35:
+ - Made check of mpifort compiler less strict
+
+0.8.34:
+ - Fixed example Makefile
+
 0.8.33:
  - Fixed the linking on OSX, removing flat_namespace option which is no longer needed
 
