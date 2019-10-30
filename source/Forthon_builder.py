@@ -331,21 +331,6 @@ if compile_first != '':
 	%(ff)s %(fopt)s %(fargs)s -c $<
   """%locals()
 
-# --- Add build rules for fortran files with suffices other than the
-# --- basic fixed and free ones. Those first two suffices are included
-# --- explicitly in the makefile. Note that this depends on fargs.
-extrafortranrules = ''
-if len(fortransuffices) > 2:
-    for suffix in fortransuffices[2:]:
-        suffixpath = os.path.join(upbuilddir, '%%.%(suffix)s'%locals())
-        if suffix[-2:] == '90': ff = f90free
-        else:                   ff = f90fixed
-        extrafortranrules += """
-%%%(osuffix)s: %(suffixpath)s %(modulecontainer)s%(osuffix)s
-	%(ff)s %(fopt)s %(fargs)s -c $<
-    """%locals()
-        del suffix, suffixpath, ff
-
 compilerulestemplate = """
 %%%(osuffix)s: %(fixedpath)s %(modulecontainer)s%(osuffix)s
 	%(f90fixed)s %(fopt)s %(fargs)s -c $<
@@ -368,12 +353,30 @@ if not writemodules and not fortranfile == compile_first:
 else:
     compilerules = ''
 
+extrafortranrules = ''
+
 for sourcedir in sourcedirs:
     # --- Create path to fortran files for the Makefile since they will be
     # --- referenced from the build directory.
     freepath = os.path.join(os.path.join(upbuilddir, sourcedir), '%%.%(free_suffix)s'%locals())
     fixedpath = os.path.join(os.path.join(upbuilddir, sourcedir), '%%.%(fixed_suffix)s'%locals())
     compilerules += compilerulestemplate%locals()
+
+    # --- Add build rules for fortran files with suffices other than the
+    # --- basic fixed and free ones.
+    if len(fortransuffices) > 2:
+        for suffix in fortransuffices[2:]:
+            suffixpath = os.path.join(upbuilddir, sourcedir, '%%.%(suffix)s'%locals())
+            if suffix[-2:] == '90':
+                ff = f90free
+            else:
+                ff = f90fixed
+            extrafortranrules += """
+%%%(osuffix)s: %(suffixpath)s %(modulecontainer)s%(osuffix)s
+	%(ff)s %(fopt)s %(fargs)s -c $<
+"""%locals()
+            del suffix, suffixpath, ff
+
 
 # --- First, create Makefile.pkg which has all the needed definitions
 # --- Note the two rules for the pymodule file. The first specifies that the
