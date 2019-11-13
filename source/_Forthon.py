@@ -43,7 +43,12 @@ def forthonobject_constructor(typename, arg=None):
         # --- In old versions, second arg was None or a dict.
         # --- In those cases, use main as the module.
         mname = "__main__"
-    m = __import__(mname)
+    try:
+        m = __import__(mname)
+    except ImportError:
+        # --- Sometimes, there are problems with the import. Skip the package.
+        print 'There was a problem importing %s from %s. It will need to be imported by hand'%(typename, mname)
+        return None
     typecreator = getattr(m, typename)
     if callable(typecreator):
         obj = typecreator()
