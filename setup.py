@@ -22,6 +22,7 @@ try:
     os.chmod('source/License.txt',perm644)
     os.chmod('source/Forthon.h',perm644)
     os.chmod('source/Forthon.c',perm644)
+    os.chmod('source/Fortran_callable.c',perm644)
 except:
     print('Permissions on License.txt and Src files needs to be set by hand')
 
@@ -119,7 +120,7 @@ Numpy are available.""",
         ],
        packages = ['Forthon'],
        package_dir = {'Forthon': 'source'},
-       package_data = {'Forthon': ['License.txt','Forthon.h','Forthon.c']},
+       package_data = {'Forthon': ['License.txt','Forthon.h','Forthon.c', 'Fortran_callable.c']},
        scripts = [Forthon],
        cmdclass = {'build_py':build_py}
        )
