@@ -258,7 +258,10 @@ class PyWrap:
 
         # --- Create the module file
         self.cfile = open(self.pkgname + 'pymodule.c', 'w')
+        self.cw('#define NO_IMPORT_ARRAY')
+        self.cw('#define PY_ARRAY_UNIQUE_SYMBOL Forthon_ARRAY_API')
         self.cw('#include "Forthon.h"')
+        self.cw('#include "forthonf2c.h"')
         self.cw('#include <setjmp.h>')
         self.cw('ForthonObject *' + self.pkgname + 'Object;')
 
@@ -927,7 +930,6 @@ class PyWrap:
         # --- routine so that it can be called independently.
         self.cw('void init' + self.pkgname + 'object' + '(PyObject *module)')
         self.cw('{')
-        self.cw('  import_array();')
         # self.cw('  PyModule_AddObject(m, "' + self.pkgname + 'Type", ' + '(PyObject *)&ForthonType);')
         self.cw('  ' + self.pkgname + 'Object=(ForthonObject *)' + 'PyObject_GC_New(ForthonObject, &ForthonType);')
         #       'ForthonObject_New(NULL, NULL);')
@@ -1022,6 +1024,7 @@ class PyWrap:
         else:
             self.cw('  m = Py_InitModule("' + self.pkgname + self.pkgsuffix + 'py", ' + self.pkgname + '_methods);')
 
+        self.cw('  Forthon_import_array();')
         self.cw('  init' + self.pkgname + 'object' + '(m);')
         self.cw('  ErrorObject = PyErr_NewException("' + self.pkgname + self.pkgsuffix + 'py.error", NULL, NULL);')
         self.cw('  PyModule_AddObject(m, "' + self.pkgname + 'error", ErrorObject);')

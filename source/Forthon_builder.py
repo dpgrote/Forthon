@@ -279,7 +279,7 @@ for d in (defines + fcompiler.defines):
 
 # --- Define default rule.
 fortranroot, fortransuffix = getpathbasename(fortranfile)
-defaultrule = 'dependencies: %(compile_firstobject)s %(pkg)s_p%(osuffix)s %(fortranroot)s%(osuffix)s %(pkg)spymodule.c Forthon.h Forthon.c %(extraobjectsstr)s'%locals()
+defaultrule = 'dependencies: %(compile_firstobject)s %(pkg)s_p%(osuffix)s %(fortranroot)s%(osuffix)s %(pkg)spymodule.c Forthon.h Forthon.c Fortran_callable.c %(extraobjectsstr)s'%locals()
 
 if writemodules:
     # --- Fortran modules are written by the wrapper to the _p file.
@@ -306,6 +306,7 @@ for i in includedirs:
 if cargs is not None:
     extra_compile_args.append(cargs)
 
+cp = 'cp'
 pypreproc = '%(python)s -c "from Forthon.preprocess import main;main()" %(f90)s -t%(machine)s %(forthonargs)s'%locals()
 forthon = '%(python)s -c "from Forthon.wrappergenerator import wrappergenerator_main;wrappergenerator_main()"'%locals()
 noprintdirectory = ''
@@ -313,6 +314,7 @@ if not verbose:
     # --- Set so that the make doesn't produce any output
     f90fixed = "@echo ' ' F90Fixed $(<F);" + f90fixed
     f90free = "@echo ' ' F90Free $(<F);" + f90free
+    cp = "@echo ' ' Copy $(<F);" + cp
     pypreproc = "@echo ' ' Preprocess $(<F);" + pypreproc
     forthon = "@echo ' ' Forthon $(<F);" + forthon
     noprintdirectory = '--no-print-directory'
@@ -395,7 +397,9 @@ makefiletext = """
 Forthon.h:%(forthonhome)s%(pathsep)sForthon.h
 	%(pypreproc)s %(forthonhome)s%(pathsep)sForthon.h Forthon.h
 Forthon.c:%(forthonhome)s%(pathsep)sForthon.c
-	%(pypreproc)s %(forthonhome)s%(pathsep)sForthon.c Forthon.c
+	%(cp)s %(forthonhome)s%(pathsep)sForthon.c Forthon.c
+Fortran_callable.c:%(forthonhome)s%(pathsep)sFortran_callable.c
+	%(pypreproc)s %(forthonhome)s%(pathsep)sFortran_callable.c Fortran_callable.c
 
 %(pkg)s_p%(osuffix)s:%(pkg)s_p.%(free_suffix)s %(wrapperdependency)s
 	%(f90free)s %(popt)s %(fargs)s -c %(pkg)s_p.%(free_suffix)s
@@ -405,7 +409,7 @@ Forthon.c:%(forthonhome)s%(pathsep)sForthon.c
 %(pkg)spymodule.c:: %(upfortranfile)s %(extrafilesstr)s
 	@touch %(pkg)spymodule.c
 clean:
-	rm -rf *%(osuffix)s *_p.%(free_suffix)s *.mod *module.c *.scalars *.so Forthon.c Forthon.h forthonf2c.h build
+	rm -rf *%(osuffix)s *_p.%(free_suffix)s *.mod *module.c *.scalars *.so Fortran_callable.c Forthon.c Forthon.h forthonf2c.h build
 """%(locals())
 builddir=fixpath(builddir, 0)
 try: os.makedirs(builddir)
@@ -433,7 +437,7 @@ try:
 except:
     pass
 
-cfiles = [os.path.join(builddir, p) for p in [pkg+'pymodule.c', 'Forthon.c']]
+cfiles = [os.path.join(builddir, p) for p in [pkg+'pymodule.c', 'Forthon.c', 'Fortran_callable.c']]
 ofiles = [os.path.join(builddir, p) for p in [fortranroot+osuffix,
                                              pkg+'_p'+osuffix] +
                                              extraobjectslist]
