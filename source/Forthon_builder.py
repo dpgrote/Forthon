@@ -2,6 +2,7 @@
 
 import sys
 import os
+import platform
 import re
 import distutils
 import distutils.sysconfig
@@ -466,6 +467,13 @@ if machine == 'darwin':
                 os.environ['ARCHFLAGS'] = '-arch i386'  # Leopard or earlier
             else:
                 os.environ['ARCHFLAGS'] = '-arch x86_64'  # Snow Leopard
+
+# --- On Fedora, override the rtld_now option which is the default,
+# --- replacing it with rtld_lazy (which is needed if shared objects
+# --- have cross references with each other).
+# --- Is there a different way of determining that this is fedora?
+if platform.platform().find('fedora') >= 0:
+    extra_link_args += ['-Wl,-z,lazy']
 
 if not verbose:
     print "  Setup " + pkg
