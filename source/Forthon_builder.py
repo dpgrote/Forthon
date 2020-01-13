@@ -172,11 +172,12 @@ if builddir is None:
     dummybuild = dummydist.get_command_obj('build')
     dummybuild.finalize_options()
     builddir = dummybuild.build_temp
-    bb = builddir.split(os.sep)
-    upbuilddir = len(bb)*(os.pardir + os.sep)
-    del dummydist, dummybuild, bb
-else:
-    upbuilddir = os.getcwd()
+    del dummydist, dummybuild
+
+# --- The path to the source directory from the build directory.
+# --- A relative path is used to avoid any problems in the full
+# --- source path name, such as spaces.
+upbuilddir = os.path.relpath(os.getcwd(), builddir)
 
 if dobuild:
     # --- Add the build-temp option. This is needed since distutils would otherwise
