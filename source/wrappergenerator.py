@@ -983,67 +983,132 @@ class PyWrap:
 
         ###########################################################################
         # --- And finally, the initialization function
-        if sys.hexversion >= 0x03000000:
-            self.cw('static struct PyModuleDef moduledef = {')
-            self.cw('  PyModuleDef_HEAD_INIT,')
-            self.cw('  "{0}py", /* m_name */'.format(self.pkgname + self.pkgsuffix))
-            self.cw('  "{0}", /* m_doc */'.format(self.pkgname))
-            self.cw('  -1,                  /* m_size */')
-            self.cw('  {0}_methods,    /* m_methods */'.format(self.pkgname))
-            self.cw('  NULL,                /* m_reload */')
-            self.cw('  NULL,                /* m_traverse */')
-            self.cw('  NULL,                /* m_clear */')
-            self.cw('  NULL,                /* m_free */')
-            self.cw('  };')
+        ###multi-phase init###############################################################
+        test_multi=True
+        if test_multi:
+                ModName=self.pkgname + self.pkgsuffix+ 'py'
+                
+                self.cw('static int '+ ModName+'_exec(PyObject *m) {')
+                if self.fcompname == 'nag':
+                    self.cw('  int argc; char **argv;')
+                    self.cw('  Py_GetArgcArgv(&argc, &argv);')
+                    self.cw('  f90_init(argc, argv);')
+                # self.cw('  ForthonType.tp_getset = ' + self.pkgname + '_getseters;')
+                # self.cw('  ForthonType.tp_methods = ' + self.pkgname + '_methods;')
+                self.cw('  if (PyType_Ready(&ForthonType) < 0)')
+                self.cw('    return NULL;')
+                self.cw('  import_array();')
+                self.cw('  init' + self.pkgname + 'object' + '(m);')
+                self.cw('  ErrorObject = PyErr_NewException("' + self.pkgname + self.pkgsuffix + 'py.error", NULL, NULL);')
+                self.cw('  PyModule_AddObject(m, "' + self.pkgname + 'error", ErrorObject);')
+                self.cw('  PyModule_AddObject(m, "fcompname", ' + 'PyUnicode_FromString("' + self.fcompname + '"));')
+                self.cw('  PyModule_AddObject(m, "realsize", ' + 'PyLong_FromLong((long)%s'%realsize + '));')
+                self.cw('  if (PyErr_Occurred()) {')
+                self.cw('    PyErr_Print();')
+                self.cw('    Py_FatalError("can not initialize module ' + self.pkgname + '");')
+                self.cw('    }')
+                if machine == 'win32':
+                    self.cw('  /* Initialize FORTRAN on CYGWIN */')
+                    self.cw(' initPGfortran();')
+                self.cw('return 0;')
+                self.cw('};')
+                
+                self.cw('static PyModuleDef_Slot ' + ModName +'_slots[] = {')
+                self.cw(' {Py_mod_exec, ' + ModName + '_exec},')
+                self.cw(' {0, NULL}')
+                self.cw('};')
+                
+                
+                self.cw('static struct PyModuleDef '+ ModName+'_def = {')
+                self.cw('  PyModuleDef_HEAD_INIT,')
+                self.cw('  "{0}", /* m_name */'.format(ModName))
+                self.cw('  "{0}", /* m_doc */'.format(self.pkgname))
+                self.cw('  0,                  /* m_size */')
+                self.cw('  {0}_methods,    /* m_methods */'.format(self.pkgname))
+                self.cw('  {0}_slots,    /* m_slots */'.format(ModName)), 
+                self.cw('  NULL,                /* m_reload */')
+                self.cw('  NULL,                /* m_traverse */')
+                self.cw('  NULL,                /* m_clear */')
+                self.cw('  NULL,                /* m_free */')
+                self.cw('  };')
+    
+                self.cw('PyMODINIT_FUNC')
+                self.cw('PyInit_' + ModName +'(void)')
+                self.cw('{')
+                self.cw('return PyModuleDef_Init(&'+ ModName +'_def);')
+                self.cw('};')
+                
 
-        self.cw('PyMODINIT_FUNC')
-        if sys.hexversion >= 0x03000000:
-            self.cw('PyInit_' + self.pkgname + self.pkgsuffix + 'py(void)')
+                
+         
+               
+     
+        ######### end test_multi 
         else:
-            self.cw('init' + self.pkgname + self.pkgsuffix + 'py(void)')
-        self.cw('{')
+            if sys.hexversion >= 0x03000000:
+                self.cw('static struct PyModuleDef moduledef = {')
+                self.cw('  PyModuleDef_HEAD_INIT,')
+                self.cw('  "{0}py", /* m_name */'.format(self.pkgname + self.pkgsuffix))
+                self.cw('  "{0}", /* m_doc */'.format(self.pkgname))
+                self.cw('  -1,                  /* m_size */')
+                self.cw('  {0}_methods,    /* m_methods */'.format(self.pkgname))
+                self.cw('  NULL,                /* m_reload */')
+                self.cw('  NULL,                /* m_traverse */')
+                self.cw('  NULL,                /* m_clear */')
+                self.cw('  NULL,                /* m_free */')
+                self.cw('  };')
+    
+            self.cw('PyMODINIT_FUNC')
+            if sys.hexversion >= 0x03000000:
+                self.cw('PyInit_' + self.pkgname + self.pkgsuffix + 'py(void)')
+            else:
+                self.cw('init' + self.pkgname + self.pkgsuffix + 'py(void)')
+            self.cw('{')
+    
+            self.cw('  PyObject *m;')
+            if self.fcompname == 'nag':
+                self.cw('  int argc; char **argv;')
+                self.cw('  Py_GetArgcArgv(&argc, &argv);')
+                self.cw('  f90_init(argc, argv);')
+            # self.cw('  ForthonType.tp_getset = ' + self.pkgname + '_getseters;')
+            # self.cw('  ForthonType.tp_methods = ' + self.pkgname + '_methods;')
+            self.cw('  if (PyType_Ready(&ForthonType) < 0)')
+            if sys.hexversion >= 0x03000000:
+                self.cw('    return NULL;')
+            else:
+                self.cw('    return;')
+    
+            if sys.hexversion >= 0x03000000:
+                self.cw('  m = PyModule_Create(&moduledef);')
+                #self.cw('  m = PyModuleDef_Init(&moduledef);')
+                
+            else:
+                self.cw('  m = Py_InitModule("' + self.pkgname + self.pkgsuffix + 'py", ' + self.pkgname + '_methods);')
+    
+            self.cw('  import_array();')
+            self.cw('  init' + self.pkgname + 'object' + '(m);')
+            self.cw('  ErrorObject = PyErr_NewException("' + self.pkgname + self.pkgsuffix + 'py.error", NULL, NULL);')
+            self.cw('  PyModule_AddObject(m, "' + self.pkgname + 'error", ErrorObject);')
+            self.cw('  PyModule_AddObject(m, "fcompname", ' + 'PyUnicode_FromString("' + self.fcompname + '"));')
+            if sys.hexversion >= 0x03000000:
+                self.cw('  PyModule_AddObject(m, "realsize", ' + 'PyLong_FromLong((long)%s'%realsize + '));')
+            else:
+                self.cw('  PyModule_AddObject(m, "realsize", ' + 'PyInt_FromLong((long)%s'%realsize + '));')
+            self.cw('  if (PyErr_Occurred()) {')
+            self.cw('    PyErr_Print();')
+            self.cw('    Py_FatalError("can not initialize module ' + self.pkgname + '");')
+            self.cw('    }')
 
-        self.cw('  PyObject *m;')
-        if self.fcompname == 'nag':
-            self.cw('  int argc; char **argv;')
-            self.cw('  Py_GetArgcArgv(&argc, &argv);')
-            self.cw('  f90_init(argc, argv);')
-        # self.cw('  ForthonType.tp_getset = ' + self.pkgname + '_getseters;')
-        # self.cw('  ForthonType.tp_methods = ' + self.pkgname + '_methods;')
-        self.cw('  if (PyType_Ready(&ForthonType) < 0)')
-        if sys.hexversion >= 0x03000000:
-            self.cw('    return NULL;')
-        else:
-            self.cw('    return;')
-
-        if sys.hexversion >= 0x03000000:
-            self.cw('  m = PyModule_Create(&moduledef);')
-        else:
-            self.cw('  m = Py_InitModule("' + self.pkgname + self.pkgsuffix + 'py", ' + self.pkgname + '_methods);')
-
-        self.cw('  import_array();')
-        self.cw('  init' + self.pkgname + 'object' + '(m);')
-        self.cw('  ErrorObject = PyErr_NewException("' + self.pkgname + self.pkgsuffix + 'py.error", NULL, NULL);')
-        self.cw('  PyModule_AddObject(m, "' + self.pkgname + 'error", ErrorObject);')
-        self.cw('  PyModule_AddObject(m, "fcompname", ' + 'PyUnicode_FromString("' + self.fcompname + '"));')
-        if sys.hexversion >= 0x03000000:
-            self.cw('  PyModule_AddObject(m, "realsize", ' + 'PyLong_FromLong((long)%s'%realsize + '));')
-        else:
-            self.cw('  PyModule_AddObject(m, "realsize", ' + 'PyInt_FromLong((long)%s'%realsize + '));')
-        self.cw('  if (PyErr_Occurred()) {')
-        self.cw('    PyErr_Print();')
-        self.cw('    Py_FatalError("can not initialize module ' + self.pkgname + '");')
-        self.cw('    }')
-
-        if machine == 'win32':
-            self.cw('  /* Initialize FORTRAN on CYGWIN */')
-            self.cw(' initPGfortran();')
-
-        if sys.hexversion >= 0x03000000:
-            self.cw('  return m;')
-
-        self.cw('}')
-        self.cw('')
+            if machine == 'win32':
+                self.cw('  /* Initialize FORTRAN on CYGWIN */')
+                self.cw(' initPGfortran();')
+    
+            if sys.hexversion >= 0x03000000:
+                self.cw('  return m;')
+    
+            self.cw('};')
+            self.cw('')
+            ###########################################################
 
         ###########################################################################
         # --- Close the c package module file
