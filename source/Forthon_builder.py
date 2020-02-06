@@ -473,7 +473,9 @@ if machine == 'darwin':
 # --- replacing it with rtld_lazy (which is needed if shared objects
 # --- have cross references with each other).
 # --- Is there a different way of determining that this is fedora?
-if platform.platform().find('fedora') >= 0 or platform.platform().find('centos') >= 0:
+if (platform.platform().find('fedora') >= 0
+    or platform.platform().find('centos') >= 0
+    or platform.platform().find('arch') >= 0):
     extra_link_args += ['-Wl,-z,lazy']
 
 if not verbose:
