@@ -32,7 +32,9 @@ void
   Py_XDECREF(m);
 
   PyMem_Free(cname);
-  if (PyErr_Occurred()) PyErr_Print();
+  if (PyErr_Occurred()){
+
+       PyErr_Print();}
 }
 
 void

@@ -5,14 +5,15 @@
 
 import sys
 import os.path
-from interfaceparser import processfile
+from .interfaceparser import processfile
 import string
 import re
-import fvars
+from . import fvars
 import pickle
-from Forthon_options import args
-from cfinterface import *
-import wrappergen_derivedtypes
+from .Forthon_options import args
+from .cfinterface import *
+from . import wrappergen_derivedtypes
+from colorama import Fore, Back, Style
 if sys.hexversion >= 0x20501f0:
     import hashlib
 else:
@@ -39,7 +40,7 @@ class PyWrap:
 
     def __init__(self, varfile, pkgname, pkgsuffix, pkgbase, initialgallot=1, writemodules=1,
                  otherinterfacefiles=[], other_scalar_vars=[], timeroutines=0,
-                 otherfortranfiles=[], fcompname=None):
+                 otherfortranfiles=[], fcompname=None,omppkg=[],ompvarlistfile=None):
         self.varfile = varfile
         self.pkgname = pkgname
         self.pkgsuffix = pkgsuffix
@@ -48,13 +49,33 @@ class PyWrap:
         self.writemodules = writemodules
         self.timeroutines = timeroutines
         self.otherinterfacefiles = otherinterfacefiles
+        print("{color}otherinterfacefiles:{}{reset}".format(','.join(otherinterfacefiles),color=Back.CYAN,reset=Style.RESET_ALL))
         self.other_scalar_vars = other_scalar_vars
         self.otherfortranfiles = otherfortranfiles
         self.fcompname = fcompname
         self.isz = isz  # isz defined in cfinterface
-
+        
         self.processvariabledescriptionfile()
-
+        #JG: omp flags
+        self.ompvarlistfile=ompvarlistfile
+        self.ompforceall=False
+        #JG: process ompvarlist file
+        self.ompverbose=True
+        self.omppkg=omppkg
+        if self.omppkg is not None:
+            self.omppkg=[L.strip() for L in self.omppkg.split(',')]
+        else:
+            self.omppkg=[]
+        print('$$$$ omp packages:',self.omppkg)
+        self.ompexcludelist=['yl', 'yldot00', 'ml', 'mu', 'wk','nnzmx', 'jac', 'ja', 'ia']
+        if self.pkgname in omppkg:  
+            self.ompactive=True
+            print('OMP implementation for package: {}'.format(self.pkgname))
+            self.processompvarlistfile()
+            self.checkompflag()
+        else:
+            self.ompactive=False
+        
     def cname(self, n):
         # --- Standard name of the C interface to a Fortran routine
         # --- pkg_varname
@@ -173,6 +194,22 @@ class PyWrap:
             self.ffile.write(text)
         else:
             self.ffile.write(text + '\n')
+# JG:  file to write a common block /ompcom/ with a list of variabless. The file is intended to be read with an include statement in fortran and provides a block of variables which can be included in an omp clause like private, copyprivate or copyin              
+    def fompw(self, text, noreturn=0):
+        i = 0
+        while len(text[i:]) > 132 and text[i:].find('&') == -1:
+            # --- If the line is too long, then break it up, adding line
+            # --- continuation marks in between any variable names.
+            # --- This is the same as \W, but also skips %, since PG compilers
+            # --- don't seem to like a line continuation mark just before a %.
+            ss = re.search('[^a-zA-Z0-9_%]', text[i+130::-1])
+            assert ss is not None, "Forthon can't find a place to break up this line:\n" + text
+            text = text[:i+130-ss.start()] + '&\n' + text[i+130-ss.start():]
+            i += 130 - ss.start() + 1
+        if noreturn:
+            self.fompfile.write(text)
+        else:
+            self.fompfile.write(text + '\n')        
 
     def setffile(self):
         """
@@ -186,6 +223,19 @@ class PyWrap:
             status = 'w'
         if status == 'w' or (status == 'a' and self.ffile.closed):
             self.ffile = open(self.pkgname + '_p.F90', status)
+            
+    def setfompfile(self):
+        """
+        JG:Set the fompfile attribute.
+        It the attribute hasn't been created, then open the file with write status.
+        If it has, and the file is closed, then open it with append status.
+        """
+        if 'fompfile' in self.__dict__:
+            status = 'a'
+        else:
+            status = 'w'
+        if status == 'w' or (status == 'a' and self.fompfile.closed):
+            self.fompfile = open(self.pkgname + '_omp.F', status)        
 
     def processvariabledescriptionfile(self):
         """
@@ -251,7 +301,50 @@ class PyWrap:
         self.flist = flist
         self.groups = groups
         self.hidden_groups = hidden_groups
-
+        
+    def processompvarlistfile(self):
+        """
+        Author: Jerome Guterl (JG)
+        Read in and parse a file which must be 
+        """
+        self.ompvarlist=[]
+        # First check that the file can be found and read
+        if self.ompvarlistfile is not None:
+            try: 
+                f=open(self.ompvarlistfile)
+            except:
+                # JG: We throw an error so the compilation will fail and the user will know that something
+                # is wrong. It is not easy to identify a simple warning during the compilation of the
+                # forthon packages.
+                raise IOError("Could not open/read the ompvarlistfile file :", {self.ompvarlistfile})
+                
+            with f:
+                for line in f:
+                    line = line.split('#', 1)[0]
+                    line = line.rstrip()
+                    if len(line)>0:
+                        self.ompvarlist.append(line)
+            print('### ompvarlist:',self.ompvarlist)
+            
+    def checkompflag(self):   
+        """
+        Check that omp flag used in the fortran file exist
+        """
+        pass
+        # ListFlag=['OMPAllocDebug']
+        
+        # for F in ListFlag:
+        #     check=False
+        #     for s in self.slist:
+        #         if s.name==F:
+        #             check=True
+        #     if not check:
+        #         raise ValueError('the omp flag {} is not defined for the package {}'.format(F,self.pkgname))
+                
+            
+        
+                
+        
     ###########################################################################
     def createmodulefile(self):
         # --- This is the routine that does all of the work
@@ -983,132 +1076,67 @@ class PyWrap:
 
         ###########################################################################
         # --- And finally, the initialization function
-        ###multi-phase init###############################################################
-        test_multi=True
-        if test_multi:
-                ModName=self.pkgname + self.pkgsuffix+ 'py'
-                
-                self.cw('static int '+ ModName+'_exec(PyObject *m) {')
-                if self.fcompname == 'nag':
-                    self.cw('  int argc; char **argv;')
-                    self.cw('  Py_GetArgcArgv(&argc, &argv);')
-                    self.cw('  f90_init(argc, argv);')
-                # self.cw('  ForthonType.tp_getset = ' + self.pkgname + '_getseters;')
-                # self.cw('  ForthonType.tp_methods = ' + self.pkgname + '_methods;')
-                self.cw('  if (PyType_Ready(&ForthonType) < 0)')
-                self.cw('    return NULL;')
-                self.cw('  import_array();')
-                self.cw('  init' + self.pkgname + 'object' + '(m);')
-                self.cw('  ErrorObject = PyErr_NewException("' + self.pkgname + self.pkgsuffix + 'py.error", NULL, NULL);')
-                self.cw('  PyModule_AddObject(m, "' + self.pkgname + 'error", ErrorObject);')
-                self.cw('  PyModule_AddObject(m, "fcompname", ' + 'PyUnicode_FromString("' + self.fcompname + '"));')
-                self.cw('  PyModule_AddObject(m, "realsize", ' + 'PyLong_FromLong((long)%s'%realsize + '));')
-                self.cw('  if (PyErr_Occurred()) {')
-                self.cw('    PyErr_Print();')
-                self.cw('    Py_FatalError("can not initialize module ' + self.pkgname + '");')
-                self.cw('    }')
-                if machine == 'win32':
-                    self.cw('  /* Initialize FORTRAN on CYGWIN */')
-                    self.cw(' initPGfortran();')
-                self.cw('return 0;')
-                self.cw('};')
-                
-                self.cw('static PyModuleDef_Slot ' + ModName +'_slots[] = {')
-                self.cw(' {Py_mod_exec, ' + ModName + '_exec},')
-                self.cw(' {0, NULL}')
-                self.cw('};')
-                
-                
-                self.cw('static struct PyModuleDef '+ ModName+'_def = {')
-                self.cw('  PyModuleDef_HEAD_INIT,')
-                self.cw('  "{0}", /* m_name */'.format(ModName))
-                self.cw('  "{0}", /* m_doc */'.format(self.pkgname))
-                self.cw('  0,                  /* m_size */')
-                self.cw('  {0}_methods,    /* m_methods */'.format(self.pkgname))
-                self.cw('  {0}_slots,    /* m_slots */'.format(ModName)), 
-                self.cw('  NULL,                /* m_reload */')
-                self.cw('  NULL,                /* m_traverse */')
-                self.cw('  NULL,                /* m_clear */')
-                self.cw('  NULL,                /* m_free */')
-                self.cw('  };')
-    
-                self.cw('PyMODINIT_FUNC')
-                self.cw('PyInit_' + ModName +'(void)')
-                self.cw('{')
-                self.cw('return PyModuleDef_Init(&'+ ModName +'_def);')
-                self.cw('};')
-                
+        if sys.hexversion >= 0x03000000:
+            self.cw('static struct PyModuleDef moduledef = {')
+            self.cw('  PyModuleDef_HEAD_INIT,')
+            self.cw('  "{0}py", /* m_name */'.format(self.pkgname + self.pkgsuffix))
+            self.cw('  "{0}", /* m_doc */'.format(self.pkgname))
+            self.cw('  -1,                  /* m_size */')
+            self.cw('  {0}_methods,    /* m_methods */'.format(self.pkgname))
+            self.cw('  NULL,                /* m_reload */')
+            self.cw('  NULL,                /* m_traverse */')
+            self.cw('  NULL,                /* m_clear */')
+            self.cw('  NULL,                /* m_free */')
+            self.cw('  };')
 
-                
-         
-               
-     
-        ######### end test_multi 
+        self.cw('PyMODINIT_FUNC')
+        if sys.hexversion >= 0x03000000:
+            self.cw('PyInit_' + self.pkgname + self.pkgsuffix + 'py(void)')
         else:
-            if sys.hexversion >= 0x03000000:
-                self.cw('static struct PyModuleDef moduledef = {')
-                self.cw('  PyModuleDef_HEAD_INIT,')
-                self.cw('  "{0}py", /* m_name */'.format(self.pkgname + self.pkgsuffix))
-                self.cw('  "{0}", /* m_doc */'.format(self.pkgname))
-                self.cw('  -1,                  /* m_size */')
-                self.cw('  {0}_methods,    /* m_methods */'.format(self.pkgname))
-                self.cw('  NULL,                /* m_reload */')
-                self.cw('  NULL,                /* m_traverse */')
-                self.cw('  NULL,                /* m_clear */')
-                self.cw('  NULL,                /* m_free */')
-                self.cw('  };')
-    
-            self.cw('PyMODINIT_FUNC')
-            if sys.hexversion >= 0x03000000:
-                self.cw('PyInit_' + self.pkgname + self.pkgsuffix + 'py(void)')
-            else:
-                self.cw('init' + self.pkgname + self.pkgsuffix + 'py(void)')
-            self.cw('{')
-    
-            self.cw('  PyObject *m;')
-            if self.fcompname == 'nag':
-                self.cw('  int argc; char **argv;')
-                self.cw('  Py_GetArgcArgv(&argc, &argv);')
-                self.cw('  f90_init(argc, argv);')
-            # self.cw('  ForthonType.tp_getset = ' + self.pkgname + '_getseters;')
-            # self.cw('  ForthonType.tp_methods = ' + self.pkgname + '_methods;')
-            self.cw('  if (PyType_Ready(&ForthonType) < 0)')
-            if sys.hexversion >= 0x03000000:
-                self.cw('    return NULL;')
-            else:
-                self.cw('    return;')
-    
-            if sys.hexversion >= 0x03000000:
-                self.cw('  m = PyModule_Create(&moduledef);')
-                #self.cw('  m = PyModuleDef_Init(&moduledef);')
-                
-            else:
-                self.cw('  m = Py_InitModule("' + self.pkgname + self.pkgsuffix + 'py", ' + self.pkgname + '_methods);')
-    
-            self.cw('  import_array();')
-            self.cw('  init' + self.pkgname + 'object' + '(m);')
-            self.cw('  ErrorObject = PyErr_NewException("' + self.pkgname + self.pkgsuffix + 'py.error", NULL, NULL);')
-            self.cw('  PyModule_AddObject(m, "' + self.pkgname + 'error", ErrorObject);')
-            self.cw('  PyModule_AddObject(m, "fcompname", ' + 'PyUnicode_FromString("' + self.fcompname + '"));')
-            if sys.hexversion >= 0x03000000:
-                self.cw('  PyModule_AddObject(m, "realsize", ' + 'PyLong_FromLong((long)%s'%realsize + '));')
-            else:
-                self.cw('  PyModule_AddObject(m, "realsize", ' + 'PyInt_FromLong((long)%s'%realsize + '));')
-            self.cw('  if (PyErr_Occurred()) {')
-            self.cw('    PyErr_Print();')
-            self.cw('    Py_FatalError("can not initialize module ' + self.pkgname + '");')
-            self.cw('    }')
+            self.cw('init' + self.pkgname + self.pkgsuffix + 'py(void)')
+        self.cw('{')
 
-            if machine == 'win32':
-                self.cw('  /* Initialize FORTRAN on CYGWIN */')
-                self.cw(' initPGfortran();')
-    
-            if sys.hexversion >= 0x03000000:
-                self.cw('  return m;')
-    
-            self.cw('};')
-            self.cw('')
-            ###########################################################
+        self.cw('  PyObject *m;')
+        if self.fcompname == 'nag':
+            self.cw('  int argc; char **argv;')
+            self.cw('  Py_GetArgcArgv(&argc, &argv);')
+            self.cw('  f90_init(argc, argv);')
+        # self.cw('  ForthonType.tp_getset = ' + self.pkgname + '_getseters;')
+        # self.cw('  ForthonType.tp_methods = ' + self.pkgname + '_methods;')
+        self.cw('  if (PyType_Ready(&ForthonType) < 0)')
+        if sys.hexversion >= 0x03000000:
+            self.cw('    return NULL;')
+        else:
+            self.cw('    return;')
+
+        if sys.hexversion >= 0x03000000:
+            self.cw('  m = PyModule_Create(&moduledef);')
+        else:
+            self.cw('  m = Py_InitModule("' + self.pkgname + self.pkgsuffix + 'py", ' + self.pkgname + '_methods);')
+
+        self.cw('  import_array();')
+        self.cw('  init' + self.pkgname + 'object' + '(m);')
+        self.cw('  ErrorObject = PyErr_NewException("' + self.pkgname + self.pkgsuffix + 'py.error", NULL, NULL);')
+        self.cw('  PyModule_AddObject(m, "' + self.pkgname + 'error", ErrorObject);')
+        self.cw('  PyModule_AddObject(m, "fcompname", ' + 'PyUnicode_FromString("' + self.fcompname + '"));')
+        if sys.hexversion >= 0x03000000:
+            self.cw('  PyModule_AddObject(m, "realsize", ' + 'PyLong_FromLong((long)%s'%realsize + '));')
+        else:
+            self.cw('  PyModule_AddObject(m, "realsize", ' + 'PyInt_FromLong((long)%s'%realsize + '));')
+        self.cw('  if (PyErr_Occurred()) {')
+        self.cw('    PyErr_Print();')
+        self.cw('    Py_FatalError("can not initialize module ' + self.pkgname + '");')
+        self.cw('    }')
+
+        if machine == 'win32':
+            self.cw('  /* Initialize FORTRAN on CYGWIN */')
+            self.cw(' initPGfortran();')
+
+        if sys.hexversion >= 0x03000000:
+            self.cw('  return m;')
+
+        self.cw('}')
+        self.cw('')
 
         ###########################################################################
         # --- Close the c package module file
@@ -1120,6 +1148,7 @@ class PyWrap:
         # --- Write out fortran initialization routines
         self.setffile()
         self.ffile.close()
+  
 
         ###########################################################################
         ###########################################################################
@@ -1132,12 +1161,14 @@ class PyWrap:
         ###########################################################################
 
         self.setffile()
-
+        #if self.ompactive:
+        #    self.setfompfile()
         ###########################################################################
         # --- Write out f90 modules, including any data statements
         if self.writemodules:
             self.writef90modules()
-
+            if self.ompactive:
+                self.writef90ompcopyhelper()
         ###########################################################################
         self.fw('subroutine ' + self.fsub('passpointers') + '()')
 
@@ -1175,20 +1206,41 @@ class PyWrap:
         # --- erroneous information if the status of a pointer is undefined.
         # --- Pointers must be explicitly nullified in order to get
         # --- associated to return a false value.
+        # --- we add omp here too for consistency. Not sure it is needed though 
         self.fw('subroutine ' + self.fsub('nullifypointers') + '()')
-
+         
         # --- Write out the Use statements
         for g in self.groups + self.hidden_groups:
             self.fw('  use ' + g)
-
+        if self.ompactive:
+            self.fw('  use OmpOptions')
+            self.fw('integer::tid,omp_get_thread_num')
         for i in range(len(self.slist)):
             s = self.slist[i]
             if s.dynamic:
-                self.fw('  nullify(' + s.name + ')')
+                if self.ompactive and (s.name in self.ompvarlist or self.ompforceall) and (s.name not in self.ompexcludelist):
+                        self.fw('!$omp parallel private(tid)') 
+                        self.fw('tid=omp_get_thread_num()')
+                        self.fw('if (OMPAllocDebug.gt.0) then')
+                        self.fw("write(*,'(a,i3)') '# Nullifying {} in thread #',tid".format(s.name))
+                        self.fw("endif")
+                        self.fw(' nullify({})'.format(s.name)) 
+                        self.fw('!$omp end parallel')
+                else:     
+                    self.fw('  nullify(' + s.name + ')')
         for i in range(len(self.alist)):
             a = self.alist[i]
             if a.dynamic:
-                self.fw('  nullify(' + a.name + ')')
+                if self.ompactive and (a.name in self.ompvarlist or self.ompforceall) and (a.name not in self.ompexcludelist):
+                    self.fw('!$omp parallel private(tid)') 
+                    self.fw('tid=omp_get_thread_num()')
+                    self.fw('if (OMPAllocDebug.gt.0) then')
+                    self.fw("write(*,'(a,i3)') '# Nullifying {} in thread #',tid".format(a.name))
+                    self.fw("endif")
+                    self.fw(' nullify({})'.format(a.name)) 
+                    self.fw('!$omp end parallel')
+                else:     
+                    self.fw('  nullify(' + a.name + ')')
 
         self.fw('  return')
         self.fw('end')
@@ -1245,16 +1297,89 @@ class PyWrap:
                         self.fw('  use ' + g)
                         groupsprinted.append(g)
                 self.fw('  use ' + a.group)
+                if self.ompactive and (a.name in self.ompvarlist or self.ompforceall) and (a.name not in self.ompexcludelist):
+                        self.fw('  use OmpOptions')
                 self.fw('  integer(' + self.isz + '):: fobj__')
                 self.fw('  integer(' + self.isz + '):: dims__(' + repr(len(a.dims)) + ')')
-
                 if a.type == 'character':
                     self.fw('  character(len=' + a.dims[0].high + '), target:: p__' +
                             self.prefixdimsf(re.sub('[ \t\n]', '', a.dimstring)))
                 else:
                     self.fw('  ' + fvars.ftof(a.type) + ', target:: p__' +
                             self.prefixdimsf(re.sub('[ \t\n]', '', a.dimstring)))
-                self.fw('  ' + a.name + ' => p__')
+                    if self.ompactive and (a.name in self.ompvarlist or self.ompforceall) and (a.name not in self.ompexcludelist):
+                        self.fw('  integer:: tid,omp_get_thread_num')
+                        Dim=a.dimstring.count(',')+1
+                        L=[':' for i in range(Dim)]
+                        if len(L)==1:
+                            Str=L[0]
+                        else:
+                            Str=','.join(L)
+                        self.fw('  ' + fvars.ftof(a.type) + ', target,allocatable,save:: pcopy__({})'.format(Str))
+                        self.fw('  ' + fvars.ftof(a.type) + ', pointer::ptop__('+Str+'),ptopcopy__('+Str+')')
+                    if self.ompactive and (a.name in self.ompvarlist or self.ompforceall) and (a.name not in self.ompexcludelist):
+                        self.fw('!$omp threadprivate(pcopy__)')
+                        self.fw('if (OMPAllocDebug.gt.1) then')
+                        self.fw("write(*,*) '##########OMP: association of the pointer: {}'".format(a.name))
+                        self.fw("write(*,*) '#OMP: is pcopy allocated:',allocated(pcopy__)")
+                        self.fw('endif')
+                        self.fw('if (.not.allocated(pcopy__)) then')
+                        self.fw('allocate(pcopy__'+self.prefixdimsf(re.sub('[ \t\n]', '', a.dimstring))+')')                    
+                        self.fw('endif')
+                        #self.fw("write(*,*) 'shape p__,pcopy__:',shape(p__),shape(pcopy__)")
+                        #self.fw("write(*,*) 'p__:',p__(1,1)")
+                        #self.fw("write(*,*) 'pcopy__:',pcopy__(1,1),pcopy__(neqmx,2)")
+                        #self.fw('  ' + a.name + ' => p__')
+                        self.fw('ptop__=>p__')
+                        self.fw('ptopcopy__=>pcopy__')
+                        self.fw('if (OMPAllocDebug.gt.1) then')
+                        self.fw("write(*,*) '#OMP: Are ptop__,ptopcopy__ associated:',associated(ptop__),associated(ptopcopy__)")
+                        self.fw('endif')
+                        S=self.prefixdimsf(re.sub('[ \t\n]', '', a.dimstring))
+                        self.fw('if (associated(ptop__)) then')
+                        self.fw('pcopy__'+S+'=p__'+S)
+                        self.fw('endif')
+                        self.fw('if (OMPAllocDebug.gt.1) then')
+                        self.fw("write(*,*) '#OMP: beginning of parallel construct for association'")
+                        self.fw('endif')
+# pcopy__ must be copied in so eahc thread has an allocated target for the pointer. Note that deallocation called after the parallel construct only deallocte pcopy__ for the master thread but not for the other threads. That way, the py array object corresponding to the memory allocated in the subroutine for the master thread can be freed. But we do not care about memory allocated in the other threads since the pyarray object has not link to these memory locations. Note that the pointer and the target are persistent between references to parallel constructs for each threads. Memory in threads is freed when thread is killed.  
+                        self.fw('!$omp parallel private(tid) copyin(pcopy__)') 
+                        self.fw('tid=omp_get_thread_num()')
+                        self.fw('if (tid.eq.0) then')
+                        self.fw('if (OMPAllocDebug.gt.0) then')
+                        self.fw("write(*,*) '#OMP::: Associating {} in master thread'".format(a.name))
+                        self.fw('endif')
+                        self.fw('  ' + a.name + ' => p__')
+                        
+                        self.fw('else')
+                        self.fw('if (OMPAllocDebug.gt.0) then')
+                        self.fw("write(*,'(a,i3)') '#OMP::: Associating {} in thread #',tid".format(a.name))
+                        self.fw('endif')
+                        self.fw('if (associated(ptop__)) then')
+                        self.fw('  ' + a.name + ' => pcopy__')
+                        # initialize
+                        #self.fw('  ' + a.name + ' =0')
+                        self.fw('else')
+                        self.fw("nullify({})".format(a.name)) 
+                        self.fw('endif')
+                        self.fw('endif')
+                        self.fw('if (OMPAllocDebug.gt.1) then')
+                        self.fw("write(*,*) '#OMP::: Thread #',tid,' : location of {}:',loc({})".format(a.name,a.name))
+                        self.fw('endif')
+                        self.fw('!$omp end parallel')
+                        self.fw('if (OMPAllocDebug.gt.1) then')
+                        self.fw("write(*,*) '#OMP: End of parallel construct for association'")
+                        self.fw('endif')
+                        #self.fw('  ' + a.name + ' => p__') 
+                        self.fw('nullify(ptop__)')
+                        self.fw('nullify(ptopcopy__)') 
+                        self.fw('if (allocated(pcopy__)) then')
+                        # if pcopy_ is not deallocated then the freearray c function cannot free the 
+                        # array pointer pya in gallot or gchange   
+                        self.fw('deallocate(pcopy__)')                    
+                        self.fw('endif')
+                    else:
+                        self.fw('  ' + a.name + ' => p__')   
                 self.fw('  return')
                 self.fw('end')
                 if re.search('fassign', a.attr):
@@ -1273,7 +1398,8 @@ class PyWrap:
 
         # --- Close fortran file
         self.ffile.close()
-
+        if self.ompactive:
+            self.fompfile.close()
         scalar_pickle_file = open(self.pkgname + '.scalars', 'wb')
         self.sdict['_module_name_'] = self.pkgname
         pickle.dump(self.sdict, scalar_pickle_file)
@@ -1285,10 +1411,12 @@ class PyWrap:
         Write the fortran90 modules
         """
         self.setffile()
+        self.setfompfile()
         if self.fcompname == 'xlf':
             save = ', save'
         else:
             save = ''
+        self.ListCommon=[] 
         for g in self.groups + self.hidden_groups:
             self.fw('module ' + g)
             # --- Check if any variables are derived types. If so, the module
@@ -1334,8 +1462,204 @@ class PyWrap:
                             # --- multiple lines.
                             dd = re.sub(r'\n', '&\n', a.data)
                             self.fw('  data ' + a.name + dd)
+# JG addition               
+            if self.ompactive:
+                for s in self.slist:
+                    if s.group == g:                    
+                        if s.dynamic:
+                            if (s.name in self.ompvarlist or self.ompforceall) and (s.name not in self.ompexcludelist):
+                                self.fw('!$omp threadprivate('+s.name+')')
+                                self.ListCommon.append(s.name)
+                        else:
+                            if (s.name in self.ompvarlist or self.ompforceall) and (s.name not in self.ompexcludelist):
+                                self.fw('!$omp threadprivate('+s.name+')')
+                                self.ListCommon.append(s.name)
+                    
+                
+                for a in self.alist:
+                    if a.group == g:
+                        if a.dynamic:
+                            if a.type == 'character':
+                                pass
+                            else:
+                                if (a.name in self.ompvarlist or self.ompforceall) and (a.name not in self.ompexcludelist):
+                                    self.fw('!$omp threadprivate('+a.name+')')
+                                    self.ListCommon.append(a.name)
+                        else:
+                            if a.type == 'character':
+                                pass
+                            else:
+                                pass
+                            if a.data:
+                                pass                
             self.fw('end module ' + g)
 
+    def writefompmodules(self):
+        """
+        Write the fomp directives
+        """
+        self.setfompfile()
+         
+        for g in self.groups + self.hidden_groups:
+            self.fompw('Use(' + g +')')
+        if len(self.ListCommon)>0:                  
+            base='      common /comomp/'+' '
+            Str=base
+            for l in self.ListCommon:
+                if Str==base:
+                    Str2=Str+' '+l
+                else:
+                    Str2=Str+','+l
+                if len(Str2)>65:
+                    self.fompw(Str)
+                    Str='     .'
+                    Str2=''
+                else:
+                    Str=Str2    
+            if Str2!='':
+                self.fompw(Str)
+                
+    def writef90ompcopyhelper(self):
+        self.fw('module OmpCopy{}'.format(self.pkgname))
+        self.fw('  use OmpOptions')
+        # First we add all the use(group) necessary to have access to the data
+        self.fw('contains' ) 
+        ompcommoncopy=[]
+        
+        for a in self.alist:
+            if (a.name in self.ompvarlist or self.ompforceall) and (a.name not in self.ompexcludelist) and a.type != 'character':
+                self.fw('subroutine OmpCopyPointer{}'.format(a.name)) 
+                
+                # Group with dimension first 
+                groupsadded=[]
+                groups = self.dimsgroups(a.dimstring)
+                for g in groups:
+                    if g not in groupsadded:
+                        self.fw('  use ' + g)
+                        groupsadded.append(g)
+                # groups to access variables                
+                if a.group not in groupsadded:
+                    self.fw('  use ' + a.group)
+                    groupsadded.append(a.group)
+                self.fw('  integer:: tid,omp_get_thread_num') 
+                # declare variable to be copied in threads:
+                S=self.prefixdimsf(re.sub('[ \t\n]', '', a.dimstring))
+                self.fw('  ' + fvars.ftof(a.type) + '::{}copy{}'.format(a.name,S))        
+                #write common block
+                ompcommoncopy.append(a.name+'copy')
+                # self.fw("/comompcopy/' {}".format(','.join(ompcommoncopy)))
+                self.fw('{}copy{}={}{}  '.format(a.name,S,a.name,S))
+                
+                self.fw('if (OMPCopyDebug.gt.0) then')
+                self.fw("write(*,*) '#OMP::: Starting parallel construct to copy variable {}'".format(a.name))
+                self.fw('endif')    
+                self.fw('!$omp parallel private(tid)')#' copyin(/comompcopy/)')
+                self.fw('tid=omp_get_thread_num()')
+                self.fw('if (tid.gt.0) then')
+                self.fw('if (OMPCopyDebug.gt.0) then')
+                self.fw("write(*,*) '#OMP::: Thread #',tid,' : copying...'")
+                self.fw('endif')
+                self.fw('{}{}={}copy{}'.format(a.name,S,a.name,S)) 
+                self.fw('endif ')         
+                self.fw('!$omp end parallel')
+                self.fw('if (OMPCopyDebug.gt.0) then')
+                self.fw("write(*,*) '#OMP::: End of parallel construct to copy variable {}'".format(a.name))
+                self.fw('endif')           
+                self.fw('  return')
+                
+                self.fw('end subroutine OmpCopyPointer{}'.format(a.name)) 
+        self.fw('subroutine OmpCopyPointer{}'.format(self.pkgname))
+        for a in self.alist:
+                if (a.name in self.ompvarlist or self.ompforceall) and (a.name not in self.ompexcludelist) and a.type != 'character':
+                    self.fw('if (OMPCopyDebug.gt.0) then')
+                    self.fw("write(*,*) '#Master::: Calling routine to copy variable {}'".format(a.name))
+                    self.fw('endif')
+                    self.fw('call OmpCopyPointer{}'.format(a.name))
+        self.fw('end subroutine OmpCopyPointer{}'.format(self.pkgname))   
+        self.fw('subroutine OmpCopyScalar{}'.format(self.pkgname))
+        ompcommonscalar=[]
+        groupsadded=[]
+        for s in self.slist: 
+            if (s.name in self.ompvarlist or self.ompforceall) and (s.name not in self.ompexcludelist) and s.type != 'character':
+                if s.group not in groupsadded:
+                    self.fw('  use ' + s.group)
+                    groupsadded.append(s.group)
+                ompcommonscalar.append(s.name)
+        self.fw('integer::tid,omp_get_thread_num')
+        if len(ompcommonscalar)>0:
+            self.fw('common /ompcommonscalar/ '+','.join(ompcommonscalar))
+            self.fw('!$omp parallel private(tid) copyin(/ompcommonscalar/)')
+            self.fw('tid=omp_get_thread_num()')
+            self.fw('if (OMPCopyDebug.gt.0) then')
+            self.fw("write(*,*) '#OMP::: Thread #',tid,' : copying scalar...'")
+            self.fw('endif')
+            self.fw('!$omp end parallel')
+        self.fw('end subroutine OmpCopyScalar{}'.format(self.pkgname))
+        self.fw('end module OmpCopy{}'.format(self.pkgname) )         
+       #  self.fw('contains' ) for a in self.alist:
+       #  self.fw('subroutine OmpCopyPointer' ) 
+       #  self.fw('  use OmpOptions')
+       #  # Group with dimension first 
+       #  groupsadded=[]
+        
+       #      if a.name in self.ompvarlist:
+       #          groups = self.dimsgroups(a.dimstring)
+       #          for g in groups:
+       #                      if g not in groupsadded:
+       #                          self.fw('  use ' + g)
+       #                          groupsadded.append(g)
+       #  # groups to access variables                
+       #  for a in self.alist:
+       #      if a.name in self.ompvarlist:
+       #          if a.group not in groupsadded:
+       #              self.fw('  use ' + a.group)
+       #              groupsadded.append(a.group)
+       #  self.fw('  integer:: tid,omp_get_thread_num') 
+       #  for a in self.alist:
+       #      if a.name in self.ompvarlist:
+       #          # declare variable to be copied in threads:
+       #          S=self.prefixdimsf(re.sub('[ \t\n]', '', a.dimstring))
+       #          #self.fw('  ' + fvars.ftof(a.type) + '::{}copy{}'.format(a.name,S))        
+       #  #write common block
+       #  ompcommoncopy=[]
+       #  for a in self.alist:
+       #      if a.name in self.ompvarlist:
+       #          ompcommoncopy.append(a.name+'copy')
+       # # self.fw("/comompcopy/' {}".format(','.join(ompcommoncopy)))
+       #  self.fw('if (OMPCopyDebug.gt.0) then')
+       #  self.fw("write(*,*) '#Master::: Starting routine to copy variable'")
+       #  self.fw('endif')
+       #  for a in self.alist:
+       #      if a.name in self.ompvarlist:
+       #          self.fw('if (OMPCopyDebug.gt.0) then')
+       #          self.fw("write(*,*) '#Master::: copying {}'".format(a.name))
+       #          self.fw('endif')
+       #          #self.fw('{}copy={}  '.format(a.name,a.name))
+        
+       #  self.fw('if (OMPCopyDebug.gt.0) then')
+       #  self.fw("write(*,*) '#OMP::: Starting parallel construct to copy variable'")
+       #  self.fw('endif')    
+       #  self.fw('!$omp parallel private(tid)')#' copyin(/comompcopy/)')
+       #  self.fw('tid=omp_get_thread_num()')
+       #  self.fw('if (tid.gt.0) then')
+       #  self.fw('if (OMPCopyDebug.gt.0) then')
+       #  self.fw("write(*,*) '#OMP::: Thread #',tid,' : copying...'")
+       #  self.fw('endif')
+       #  for a in self.alist:
+       #      if a.name in self.ompvarlist:
+       #          #self.fw('{}={}copy'.format(a.name,a.name)) 
+       #          pass
+       #  self.fw('endif ')         
+       #  self.fw('!$omp end parallel')
+       #  self.fw('if (OMPDebug.gt.0) then')
+       #  self.fw("write(*,*) '#OMP::: End of parallel construct to copy variable'")
+       #  self.fw('endif')           
+       #  self.fw('  return')
+            
+       #  self.fw('end subroutine OmpCopyPointer' ) 
+       #  self.fw('end module OmpCopy' )        
+                
+                    
 ###############################################################################
 ###############################################################################
 ###############################################################################
@@ -1363,7 +1687,7 @@ def wrappergenerator_main(argv=None, writef90modulesonly=0):
         varfile = args.remainder[0]
         otherfortranfiles = args.remainder[1:]
     except IndexError:
-        print PyWrap.__doc__
+        print(PyWrap.__doc__)
         sys.exit(1)
 
     # --- get other command line args and default actions
@@ -1374,7 +1698,10 @@ def wrappergenerator_main(argv=None, writef90modulesonly=0):
     writemodules = args.writemodules
     timeroutines = args.timeroutines
     otherinterfacefiles = args.othermacros
-
+    #JG: omp related arguments
+    ompvarlistfile=args.ompvarlistfile
+    # Transform arg omppkg into a list
+    omppkg=args.omppkg
     # --- a list of scalar dictionaries from other modules.
     other_scalar_vars = []
     for d in args.dependencies:
@@ -1382,7 +1709,7 @@ def wrappergenerator_main(argv=None, writef90modulesonly=0):
 
     cc = PyWrap(varfile, pkgname, pkgsuffix, pkgbase, initialgallot, writemodules,
                 otherinterfacefiles, other_scalar_vars, timeroutines,
-                otherfortranfiles, fcompname)
+                otherfortranfiles, fcompname,omppkg=omppkg,ompvarlistfile=ompvarlistfile)
     if writef90modulesonly:
         cc.writef90modules()
     else:
@@ -1407,4 +1734,5 @@ class PrintEval:
         return eval(key, self.globals, self.locals)
 
 if __name__ == '__main__':
+    print('**************** sys.argv[1:]:',sys.argv[1:])
     wrappergenerator_main(sys.argv[1:])

@@ -13,7 +13,7 @@ optparse is ever actually deleted.
 import sys
 import os.path
 import optparse
-from version import version
+from .version import version
 
 parser = optparse.OptionParser(
                    usage="Forthon [options] pkgname [extra Fortran or C files to be compiled or objects to link] [options for distutils]",
@@ -100,12 +100,14 @@ parser.add_option('-v', '--verbose', action='store_true', default=False, help='T
 
 parser.add_option('--writemodules', action='store_true', default=True, dest='writemodules')
 parser.add_option('--nowritemodules', action='store_false', default=True, dest='writemodules', help="Don't write out the module definitions. Useful if the modules have been written already. Note that if variables of derived type are used, the original code will need to be modified. See example2. Also note that if this option is used, no checks are made to ensure the consistency between the interface file description and the actual module.")
+# OMP related options
+parser.add_option('--omppkg',default=None, help="Activate implementation of omp declarations for the listed packages")
+parser.add_option('--ompvarlistfile', default=None, help="Path to a file containing the list of variables the omp directive threadprivate must be applied to")
 
 # --- Print help and then exit if no arguments are given
 if len(sys.argv) == 1:
     parser.print_help()
     sys.exit(0)
-
 # --- Only process the true argument list when this is called from Forthon.
 # --- Otherwise ignore the arguments. This is needed since for example this
 # --- module may be imported by the compilers module which is used by some

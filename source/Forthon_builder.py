@@ -10,13 +10,13 @@ from distutils.core import setup, Extension
 from distutils.dist import Distribution
 from distutils.command.build import build
 
-from Forthon_options import args
+from .Forthon_options import args
 from Forthon.compilers import FCompiler
 
 # --- Get the package name, which is assumed to be the first argument.
 pkg = args.pkgname
 
-print "Building package " + pkg
+print("Building package " + pkg)
 
 # --- Get any extra fortran, C or object files listed.
 # --- This scans through args until the end or until it finds an optional
@@ -72,6 +72,11 @@ verbose        = args.verbose
 with_feenableexcept = args.with_feenableexcept
 writemodules   = args.writemodules
 
+ #JG: omp related arguments
+ompvarlistfile=args.ompvarlistfile
+# Transform arg omppkg into a list
+omppkg=args.omppkg
+
 # --- These args require special handling
 
 if initialgallot:
@@ -106,7 +111,8 @@ if twounderscores: forthonargs.append('--2underscores')
 else:              forthonargs.append('--no2underscores')
 if not writemodules: forthonargs.append('--nowritemodules')
 if timeroutines: forthonargs.append('--timeroutines')
-
+forthonargs.append('--omppkg {}'.format(omppkg))
+forthonargs.append('--ompvarlistfile {}'.format(ompvarlistfile))
 # --- Get the numpy headers path
 import numpy
 if numpy.__version__ < '1.1.0':
@@ -148,7 +154,7 @@ if machine == 'win32': pathsep = r'\\'
 # --- Find place where packages are placed. This imports one of the
 # --- Forthon files and gets the path from that. It uses fvars.py since
 # --- that is a small file which doesn't have other dependencies.
-import fvars
+from . import fvars
 forthonhome = os.path.dirname(fvars.__file__)
 forthonhome = fixpath(forthonhome)
 del fvars
@@ -207,8 +213,8 @@ f90fixed = fcompiler.f90fixed
 popt = fcompiler.popt
 forthonargs = forthonargs + fcompiler.forthonargs
 if fopt is None: fopt = fcompiler.fopt
-extra_link_args = fcompiler.extra_link_args
-extra_compile_args = fcompiler.extra_compile_args
+extra_link_args = fcompiler.extra_link_args 
+extra_compile_args = fcompiler.extra_compile_args 
 define_macros = fcompiler.define_macros
 
 # --- Create path to fortran files for the Makefile since they will be
@@ -307,7 +313,7 @@ for i in includedirs:
 # --- Add in any user supplied cargs
 if cargs is not None:
     extra_compile_args.append(cargs)
-
+extra_compile_args.append('-ggdb')
 pypreproc = '%(python)s -c "from Forthon.preprocess import main;main()" %(f90)s -t%(machine)s %(forthonargs)s'%locals()
 forthon = '%(python)s -c "from Forthon.wrappergenerator import wrappergenerator_main;wrappergenerator_main()"'%locals()
 noprintdirectory = ''
@@ -473,11 +479,13 @@ if machine == 'darwin':
 # --- replacing it with rtld_lazy (which is needed if shared objects
 # --- have cross references with each other).
 # --- Is there a different way of determining that this is fedora?
-if platform.platform().find('fedora') >= 0 or platform.platform().find('centos') >= 0:
+if (platform.platform().find('fedora') >= 0
+    or platform.platform().find('centos') >= 0
+    or platform.platform().find('arch') >= 0):
     extra_link_args += ['-Wl,-z,lazy']
 
 if not verbose:
-    print "  Setup " + pkg
+    print("  Setup " + pkg)
     sys.stdout = open(os.devnull, 'w')
 
 if with_feenableexcept:

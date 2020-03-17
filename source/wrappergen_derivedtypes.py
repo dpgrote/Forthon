@@ -1,10 +1,10 @@
 """Generates the wrapper for derived types.
 """
 import sys
-import fvars
+from . import fvars
 import string
 import hashlib
-from cfinterface import *
+from .cfinterface import *
 
 
 class ForthonDerivedType:

@@ -12,8 +12,8 @@ import linecache
 
 
 def ForthonTimerdoc():
-    import ForthonTimer
-    print ForthonTimer.__doc__
+    from . import ForthonTimer
+    print(ForthonTimer.__doc__)
 
 
 #############################################################################
@@ -77,8 +77,8 @@ class ForthonTimings:
         if self.level > maxlevel:
             return
         if self.time > mintime:
-            print "%2d%s%s %d %f"%(self.level, self.level*'  ', self.name, self.ncalls, self.time)
-        for v in self.subtimers.itervalues():
+            print("%2d%s%s %d %f"%(self.level, self.level*'  ', self.name, self.ncalls, self.time))
+        for v in self.subtimers.values():
             v.out(maxlevel, mintime)
 
 
@@ -155,7 +155,7 @@ class ForthonProfiler:
                 # --- at the proper time relative to the trace.
                 sys.stdout.flush()
                 sys.stderr.flush()
-                print "%s %s %s %s %d"%(self.level*'  ', event, name, frame.f_code.co_filename, frame.f_lineno)
+                print("%s %s %s %s %d"%(self.level*'  ', event, name, frame.f_code.co_filename, frame.f_lineno))
         if event == 'call':
             self.level = self.level + 1
             self.timer = self.timer.newtimer(name)
@@ -186,7 +186,7 @@ def traceit(frame, event, arg):
             filename = filename[:-1]
         name = frame.f_globals["__name__"]
         line = linecache.getline(filename, lineno)
-        print "%s:%s: %s" % (name, lineno, line.rstrip())
+        print("%s:%s: %s" % (name, lineno, line.rstrip()))
     return traceit
 
 

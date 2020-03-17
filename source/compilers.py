@@ -8,7 +8,7 @@ import re
 import platform
 import struct
 import subprocess
-from cfinterface import realsize, intsize
+from .cfinterface import realsize, intsize
 
 
 class FCompiler:
@@ -241,7 +241,7 @@ class FCompiler:
             version = '0.0'
         vfloat = float('.'.join(version.split('.')[0:2]))
         if vfloat < 4.3:
-            print "gfortran will not be used, it's version is too old or unknown - upgrade to a newer version"
+            print("gfortran will not be used, it's version is too old or unknown - upgrade to a newer version")
             return False
         else:
             return True
