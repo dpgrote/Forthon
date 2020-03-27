@@ -39,7 +39,7 @@ def processfile(packname, filename, othermacros=[], timeroutines=0):
 
     # Check to make sure that the package name is correct
     if packname != line:
-        print("""
+        print(("""
 
     Warning: the package name in the file does not agree
     with the file name. Make sure that the first line of the
@@ -52,7 +52,7 @@ def processfile(packname, filename, othermacros=[], timeroutines=0):
     your system. (This can be done in vi by opening the file and
     typing ":set fileformat=unix" and then saving the file.)
 
-    """%(packname, line))
+    """%(packname, line)))
         return []
 
     # Remove all line continuation marks
@@ -523,7 +523,7 @@ def findmatchingparenthesis(i, text, errname):
             elif text[i] == ')':
                 p = p - 1
         except IndexError:
-            print('Error in subscript of variable '+errname)
+            print(('Error in subscript of variable '+errname))
     return i
 
 def convertdimstringtodims(dimstring):

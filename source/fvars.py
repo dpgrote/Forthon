@@ -41,10 +41,10 @@ class Ftype:
     def addvar(s, v):
         s.vlist.append(v)
     def display(s):
-        print('name = ', s.name)
+        print(('name = ', s.name))
         print('variables:')
         for v in s.vlist:
-            print('  ', v.name, '  ', v.type)
+            print(('  ', v.name, '  ', v.type))
 
 ftoc_dict = {'integer':'long', 'logical':'long',
              'real':{'8':'double', '4':'float'}[cfinterface.realsize],

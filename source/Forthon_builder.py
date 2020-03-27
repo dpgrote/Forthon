@@ -16,7 +16,7 @@ from Forthon.compilers import FCompiler
 # --- Get the package name, which is assumed to be the first argument.
 pkg = args.pkgname
 
-print("Building package " + pkg)
+print(("Building package " + pkg))
 
 # --- Get any extra fortran, C or object files listed.
 # --- This scans through args until the end or until it finds an optional
@@ -38,7 +38,7 @@ do2to3         = args.do2to3
 build_base     = args.build_base
 build_temp     = args.build_temp
 builddir       = args.builddir
-cargs          = args.cargs
+cargslist          = args.cargslist
 compile_first  = args.compile_first
 debug          = args.debug
 defines        = args.defines
@@ -90,7 +90,7 @@ else:
     f90 = '--f77'
 
 fargs = ' '.join(fargslist)
-
+cargs = ' '.join(cargslist)
 if not fortranfile:
     # --- Find the main fortran file, which should have a name like pkg.suffix
     # --- where suffix is one of the free or fixed suffices.
@@ -313,7 +313,7 @@ for i in includedirs:
 # --- Add in any user supplied cargs
 if cargs is not None:
     extra_compile_args.append(cargs)
-extra_compile_args.append('-ggdb')
+print('#################',extra_compile_args)    
 pypreproc = '%(python)s -c "from Forthon.preprocess import main;main()" %(f90)s -t%(machine)s %(forthonargs)s'%locals()
 forthon = '%(python)s -c "from Forthon.wrappergenerator import wrappergenerator_main;wrappergenerator_main()"'%locals()
 noprintdirectory = ''
@@ -485,7 +485,7 @@ if (platform.platform().find('fedora') >= 0
     extra_link_args += ['-Wl,-z,lazy']
 
 if not verbose:
-    print("  Setup " + pkg)
+    print(("  Setup " + pkg))
     sys.stdout = open(os.devnull, 'w')
 
 if with_feenableexcept:
@@ -526,8 +526,8 @@ setup(name = pkgbase,
                                library_dirs=fcompiler.libdirs+libdirs,
                                libraries=fcompiler.libs+libs,
                                define_macros=define_macros,
-                               extra_compile_args=extra_compile_args,
-                               extra_link_args=extra_link_args)],
+                               extra_compile_args=['-Og','-g']+extra_compile_args,
+                               extra_link_args=extra_link_args+['-g','-Og','-fopenmp'])],
       scripts = scripts,
       cmdclass={'build_py': build_py,
                 'build_scripts': build_scripts},

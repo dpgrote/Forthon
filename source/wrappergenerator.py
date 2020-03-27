@@ -43,13 +43,14 @@ class PyWrap:
                  otherfortranfiles=[], fcompname=None,omppkg=[],ompvarlistfile=None):
         self.varfile = varfile
         self.pkgname = pkgname
+        self.countomp=1
         self.pkgsuffix = pkgsuffix
         self.pkgbase = pkgbase
         self.initialgallot = initialgallot
         self.writemodules = writemodules
         self.timeroutines = timeroutines
         self.otherinterfacefiles = otherinterfacefiles
-        print("{color}otherinterfacefiles:{}{reset}".format(','.join(otherinterfacefiles),color=Back.CYAN,reset=Style.RESET_ALL))
+        print(("{color}otherinterfacefiles:{}{reset}".format(','.join(otherinterfacefiles),color=Back.CYAN,reset=Style.RESET_ALL)))
         self.other_scalar_vars = other_scalar_vars
         self.otherfortranfiles = otherfortranfiles
         self.fcompname = fcompname
@@ -62,15 +63,16 @@ class PyWrap:
         #JG: process ompvarlist file
         self.ompverbose=True
         self.omppkg=omppkg
+        self.ListThreadPrivateVars=[]
         if self.omppkg is not None:
             self.omppkg=[L.strip() for L in self.omppkg.split(',')]
         else:
             self.omppkg=[]
-        print('$$$$ omp packages:',self.omppkg)
+        print(('$$$$ omp packages:',self.omppkg))
         self.ompexcludelist=['yl', 'yldot00', 'ml', 'mu', 'wk','nnzmx', 'jac', 'ja', 'ia']
         if self.pkgname in omppkg:  
             self.ompactive=True
-            print('OMP implementation for package: {}'.format(self.pkgname))
+            print(('OMP implementation for package: {}'.format(self.pkgname)))
             self.processompvarlistfile()
             self.checkompflag()
         else:
@@ -324,7 +326,7 @@ class PyWrap:
                     line = line.rstrip()
                     if len(line)>0:
                         self.ompvarlist.append(line)
-            print('### ompvarlist:',self.ompvarlist)
+            print(('### ompvarlist:',self.ompvarlist))
             
     def checkompflag(self):   
         """
@@ -1395,7 +1397,9 @@ class PyWrap:
                     self.fw('end')
 
         ###########################################################################
-
+        self.fw('!!!total threadprivate variables ={}'.format(self.countomp-1))
+        for VarName in self.ListThreadPrivateVars:
+            self.fw('!!! {}'.format(VarName))
         # --- Close fortran file
         self.ffile.close()
         if self.ompactive:
@@ -1469,29 +1473,28 @@ class PyWrap:
                         if s.dynamic:
                             if (s.name in self.ompvarlist or self.ompforceall) and (s.name not in self.ompexcludelist):
                                 self.fw('!$omp threadprivate('+s.name+')')
+                                self.countomp+=1
+                                self.ListThreadPrivateVars.append(s.name)
                                 self.ListCommon.append(s.name)
                         else:
                             if (s.name in self.ompvarlist or self.ompforceall) and (s.name not in self.ompexcludelist):
                                 self.fw('!$omp threadprivate('+s.name+')')
+                                self.ListThreadPrivateVars.append(s.name)
+                                self.countomp+=1
                                 self.ListCommon.append(s.name)
                     
                 
                 for a in self.alist:
                     if a.group == g:
-                        if a.dynamic:
                             if a.type == 'character':
                                 pass
                             else:
                                 if (a.name in self.ompvarlist or self.ompforceall) and (a.name not in self.ompexcludelist):
                                     self.fw('!$omp threadprivate('+a.name+')')
+                                    self.countomp+=1
                                     self.ListCommon.append(a.name)
-                        else:
-                            if a.type == 'character':
-                                pass
-                            else:
-                                pass
-                            if a.data:
-                                pass                
+                                    self.ListThreadPrivateVars.append(a.name)
+                        
             self.fw('end module ' + g)
 
     def writefompmodules(self):
@@ -1687,7 +1690,7 @@ def wrappergenerator_main(argv=None, writef90modulesonly=0):
         varfile = args.remainder[0]
         otherfortranfiles = args.remainder[1:]
     except IndexError:
-        print(PyWrap.__doc__)
+        print((PyWrap.__doc__))
         sys.exit(1)
 
     # --- get other command line args and default actions
@@ -1734,5 +1737,5 @@ class PrintEval:
         return eval(key, self.globals, self.locals)
 
 if __name__ == '__main__':
-    print('**************** sys.argv[1:]:',sys.argv[1:])
+    print(('**************** sys.argv[1:]:',sys.argv[1:]))
     wrappergenerator_main(sys.argv[1:])
