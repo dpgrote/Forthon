@@ -2,6 +2,7 @@
 
 import sys
 import os
+import platform
 import re
 import distutils
 import distutils.sysconfig
@@ -171,11 +172,12 @@ if builddir is None:
     dummybuild = dummydist.get_command_obj('build')
     dummybuild.finalize_options()
     builddir = dummybuild.build_temp
-    bb = builddir.split(os.sep)
-    upbuilddir = len(bb)*(os.pardir + os.sep)
-    del dummydist, dummybuild, bb
-else:
-    upbuilddir = os.getcwd()
+    del dummydist, dummybuild
+
+# --- The path to the source directory from the build directory.
+# --- A relative path is used to avoid any problems in the full
+# --- source path name, such as spaces.
+upbuilddir = os.path.relpath(os.getcwd(), builddir)
 
 if dobuild:
     # --- Add the build-temp option. This is needed since distutils would otherwise
@@ -331,21 +333,6 @@ if compile_first != '':
 	%(ff)s %(fopt)s %(fargs)s -c $<
   """%locals()
 
-# --- Add build rules for fortran files with suffices other than the
-# --- basic fixed and free ones. Those first two suffices are included
-# --- explicitly in the makefile. Note that this depends on fargs.
-extrafortranrules = ''
-if len(fortransuffices) > 2:
-    for suffix in fortransuffices[2:]:
-        suffixpath = os.path.join(upbuilddir, '%%.%(suffix)s'%locals())
-        if suffix[-2:] == '90': ff = f90free
-        else:                   ff = f90fixed
-        extrafortranrules += """
-%%%(osuffix)s: %(suffixpath)s %(modulecontainer)s%(osuffix)s
-	%(ff)s %(fopt)s %(fargs)s -c $<
-    """%locals()
-        del suffix, suffixpath, ff
-
 compilerulestemplate = """
 %%%(osuffix)s: %(fixedpath)s %(modulecontainer)s%(osuffix)s
 	%(f90fixed)s %(fopt)s %(fargs)s -c $<
@@ -368,12 +355,30 @@ if not writemodules and not fortranfile == compile_first:
 else:
     compilerules = ''
 
+extrafortranrules = ''
+
 for sourcedir in sourcedirs:
     # --- Create path to fortran files for the Makefile since they will be
     # --- referenced from the build directory.
     freepath = os.path.join(os.path.join(upbuilddir, sourcedir), '%%.%(free_suffix)s'%locals())
     fixedpath = os.path.join(os.path.join(upbuilddir, sourcedir), '%%.%(fixed_suffix)s'%locals())
     compilerules += compilerulestemplate%locals()
+
+    # --- Add build rules for fortran files with suffices other than the
+    # --- basic fixed and free ones.
+    if len(fortransuffices) > 2:
+        for suffix in fortransuffices[2:]:
+            suffixpath = os.path.join(upbuilddir, sourcedir, '%%.%(suffix)s'%locals())
+            if suffix[-2:] == '90':
+                ff = f90free
+            else:
+                ff = f90fixed
+            extrafortranrules += """
+%%%(osuffix)s: %(suffixpath)s %(modulecontainer)s%(osuffix)s
+	%(ff)s %(fopt)s %(fargs)s -c $<
+"""%locals()
+            del suffix, suffixpath, ff
+
 
 # --- First, create Makefile.pkg which has all the needed definitions
 # --- Note the two rules for the pymodule file. The first specifies that the
@@ -463,6 +468,15 @@ if machine == 'darwin':
                 os.environ['ARCHFLAGS'] = '-arch i386'  # Leopard or earlier
             else:
                 os.environ['ARCHFLAGS'] = '-arch x86_64'  # Snow Leopard
+
+# --- On Fedora and centos, override the rtld_now option which is the default,
+# --- replacing it with rtld_lazy (which is needed if shared objects
+# --- have cross references with each other).
+# --- Is there a different way of determining that this is fedora?
+if (platform.platform().find('fedora') >= 0
+    or platform.platform().find('centos') >= 0
+    or platform.platform().find('arch') >= 0):
+    extra_link_args += ['-Wl,-z,lazy']
 
 if not verbose:
     print "  Setup " + pkg
