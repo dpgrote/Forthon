@@ -757,6 +757,72 @@ def pydumpforthonobject(ff, attr, objname, obj, varsuffix, writtenvars, serial, 
         # --- Write it out to the file
         ff.write(vname + varsuffix, v)
 
+def pydumppythonvariable(ff, vname, value, varsuffix, verbose):
+    """Write out the python variable to the dump file
+    """
+    import types
+    if isinstance(value, types.FunctionType):
+        # --- Write out the source of functions. Note that the source of functions
+        # --- typed in interactively is not retrieveable - inspect.getsource
+        # --- returns an IOError.
+        # --- Callable class instances do not need to be treated specially here.
+        source = None
+        try:
+            # --- Check if the source had been saved as an attribute of itself.
+            # --- This allows functions to be saved that would otherwise
+            # --- not be because inspect.getsource can't find them.
+            source = value.__source__
+        except AttributeError:
+            pass
+        if source is None:
+            try:
+                source = inspect.getsource(value)
+            except (IOError, NameError, TypeError):
+                pass
+        if source is not None:
+            if verbose:
+                print "writing python function " + vname + " as " + vname + varsuffix + '@function'
+            # --- Clean up any indentation in case the function was defined in
+            # --- an indented block of code
+            while source[0] == ' ':
+                source = source[1:]
+            # --- Now write it out
+            ff.write(vname + varsuffix + '@function', source)
+            # --- Save the source of a function as an attribute of itself to make
+            # --- retreival easier the next time.
+            setattr(value, '__source__', source)
+        else:
+            if verbose:
+                print "could not write python function " + vname
+        return
+    # --- Zero length arrays cannot by written out.
+    if isinstance(value, ndarray) and product(array(shape(value))) == 0:
+        return
+    # --- Try writing as normal variable.
+    try:
+        if verbose:
+            print "writing python variable " + vname + " as " + vname + varsuffix
+        ff.write(vname + varsuffix, value)
+        return
+    except:
+        pass
+    # --- If that didn't work, try writing as a pickled object
+    # --- This is only needed for the old pdb wrapper. The new one
+    # --- automatically pickles things as needed.
+    if ff.file_type == 'unknown':
+        try:
+            if verbose:
+                print "writing python variable " + vname + " as " + vname + varsuffix + '@pickle'
+            ff.write(vname + varsuffix + '@pickle', cPickle.dumps(value, -1))
+            doreturn = 1
+        except (cPickle.PicklingError, TypeError):
+            pass
+        if doreturn:
+            return
+    # --- All attempts failed so write warning message
+    if verbose:
+        print "cannot write python variable " + vname
+
 ##############################################################################
 # Python version of the dump routine. This uses the varlist command to
 # list of all of the variables in each package which have the
@@ -765,13 +831,13 @@ def pydumpforthonobject(ff, attr, objname, obj, varsuffix, writtenvars, serial, 
 # arrays are not written out.  Finally, the variable is written out to the
 # file with the name in the format vame@pkg.  Additionally, python
 # variables can be written to the file by passing in a list of the names
-# through vars. The '@' sign is used between the package name and the
+# through vars or varsdict. The '@' sign is used between the package name and the
 # variable name so that no python variable names can be clobbered ('@'
 # is not a valid character in python names). The 'ff.write' command is
 # used, allowing names with an '@' in them. The writing of python variables
 # is put into a 'try' command since some variables cannot be written to
 # a dump file.
-def pydump(fname=None, attr=["dump"], vars=[], serial=0, ff=None, varsuffix=None,
+def pydump(fname=None, attr=["dump"], vars=[], varsdict={}, serial=0, ff=None, varsuffix=None,
            verbose=false, hdf=0, datawriter=None):
     """
     Dump data into a pdb file
@@ -780,6 +846,7 @@ def pydump(fname=None, attr=["dump"], vars=[], serial=0, ff=None, varsuffix=None
            Any items that are not strings are skipped. To write no variables,
            use attr=None.
       - vars=[]: list of python variables to dump
+      - varsdict={}: dictionary of python variables to dump
       - serial=0: switch between parallel and serial versions
       - ff=None: Allows passing in of a file object so that pydump can be called
            multiple times to pass data into the same file. Note that
@@ -862,7 +929,6 @@ def pydump(fname=None, attr=["dump"], vars=[], serial=0, ff=None, varsuffix=None
 
     # --- Now, write out the python variables (that can be written out).
     # --- If supplied, the varsuffix is append to the names here too.
-    import types
     if varsuffix is None:
         varsuffix = ''
     for vname in vars:
@@ -874,67 +940,9 @@ def pydump(fname=None, attr=["dump"], vars=[], serial=0, ff=None, varsuffix=None
                 continue
         # --- Get the value of the variable.
         vval = __main__.__dict__[vname]
-        # --- Write out the source of functions. Note that the source of functions
-        # --- typed in interactively is not retrieveable - inspect.getsource
-        # --- returns an IOError.
-        # --- Callable class instances do not need to be treated specially here.
-        if isinstance(vval, types.FunctionType):
-            source = None
-            try:
-                # --- Check if the source had been saved as an attribute of itself.
-                # --- This allows functions to be saved that would otherwise
-                # --- not be because inspect.getsource can't find them.
-                source = vval.__source__
-            except AttributeError:
-                pass
-            if source is None:
-                try:
-                    source = inspect.getsource(vval)
-                except (IOError, NameError, TypeError):
-                    pass
-            if source is not None:
-                if verbose:
-                    print "writing python function " + vname + " as " + vname + varsuffix + '@function'
-                # --- Clean up any indentation in case the function was defined in
-                # --- an indented block of code
-                while source[0] == ' ':
-                    source = source[1:]
-                # --- Now write it out
-                ff.write(vname + varsuffix + '@function', source)
-                # --- Save the source of a function as an attribute of itself to make
-                # --- retreival easier the next time.
-                setattr(vval, '__source__', source)
-            else:
-                if verbose:
-                    print "could not write python function " + vname
-            continue
-        # --- Zero length arrays cannot by written out.
-        if isinstance(vval, ndarray) and product(array(shape(vval))) == 0:
-            continue
-        # --- Try writing as normal variable.
-        try:
-            if verbose:
-                print "writing python variable " + vname + " as " + vname + varsuffix
-            ff.write(vname + varsuffix, vval)
-            continue
-        except:
-            pass
-        # --- If that didn't work, try writing as a pickled object
-        # --- This is only needed for the old pdb wrapper. The new one
-        # --- automatically pickles things as needed.
-        if ff.file_type == 'unknown':
-            try:
-                if verbose:
-                    print "writing python variable " + vname + " as " + vname + varsuffix + '@pickle'
-                ff.write(vname + varsuffix + '@pickle', cPickle.dumps(vval, -1))
-                docontinue = 1
-            except (cPickle.PicklingError, TypeError):
-                pass
-            if docontinue:
-                continue
-        # --- All attempts failed so write warning message
-        if verbose:
-            print "cannot write python variable " + vname
+        pydumppythonvariable(ff, vname, vval, varsuffix, verbose)
+    for vname, vval in varsdict.items():
+        pydumppythonvariable(ff, vname, vval, varsuffix, verbose)
     if closefile:
         ff.close()
 
