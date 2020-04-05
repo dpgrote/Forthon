@@ -30,7 +30,7 @@ class FCompiler:
     appropriate block for the machine.
     """
 
-    def __init__(self, machine=None, debug=0, fcompname=None, fcompexec=None, implicitnone=1, twounderscores=0):
+    def __init__(self, machine=None, debug=0, fcompname=None, fcompexec=None, implicitnone=1, twounderscores=0,omp=0):
         if machine is None:
             machine = sys.platform
         self.machine = machine
@@ -54,7 +54,7 @@ class FCompiler:
         self.extra_compile_args = []
         self.define_macros = []
 
-        if self.fcompexec in ['mpif90', 'mpifort']:
+        if self.fcompexec in ['mpifort']:
             self.getmpicompilerinfo()
 
         # --- Pick the fortran compiler
@@ -67,6 +67,8 @@ class FCompiler:
                 if self.linux_g95() is not None:
                     break
                 if self.linux_gfortran() is not None:
+                    break
+                if self.linux_mpif90() is not None:
                     break
                 if self.linux_pg() is not None:
                     break
@@ -129,6 +131,8 @@ class FCompiler:
             self.popt = '-g'
             self.extra_link_args += ['-g']
             self.extra_compile_args += ['-g', '-O0']
+        if omp:
+            self.extra_compile_args += ['-fopenmp']
 
         # --- Add the compiler name to the forthon arguments
         self.forthonargs += ['-F ' + self.fcompname]
@@ -136,7 +140,7 @@ class FCompiler:
     def getmpicompilerinfo(self):
         # --- Try using mpifort -show to discover the compiler information
         try:
-            show = subprocess.check_output(['mpifort', '-show'], universal_newlines=True, stderr=subprocess.STDOUT)
+            show = subprocess.check_output([self.fcompexec, '-show'], universal_newlines=True, stderr=subprocess.STDOUT)
         except (OSError, subprocess.CalledProcessError):
             pass
         else:
@@ -204,7 +208,7 @@ class FCompiler:
         # --- Get the full name of the compiler executable.
         fcomp = os.path.join(self.findfile(fcompexec, followlinks=0), fcompexec)
         # --- Map the compiler name to the library needed.
-        flib = {'gfortran': 'gfortran', 'g95': 'f95'}[fcompname]
+        flib = {'gfortran': 'gfortran', 'g95': 'f95','mpif90':'gfortran'}[fcompname]
         # --- Run it with the appropriate option to return the library path name
         ff = os.popen(fcomp + ' -print-file-name=lib' + flib + '.a')
         gcclib = ff.readline()[:-1]
@@ -342,6 +346,40 @@ class FCompiler:
             self.libs = ['gfortran']
             self.fopt = '-O3 -ftree-vectorize -ftree-vectorizer-verbose=0'
             return 1
+        
+    def linux_mpif90(self):
+        print('Linux mpif90:',self.usecompiler('mpif90', 'mpif90'))
+        if self.usecompiler('mpif90', 'mpif90'):
+            print('mpif90 selected')
+            if not self.isgfortranversionok(self.fcompexec):
+                print('Not on the hook:')
+                return None
+            self.fcompname = 'mpif90'
+            self.f90free += ' -fPIC'
+            self.f90fixed += ' -fPIC -ffixed-line-length-132'
+            self.f90free += ' -DFPSIZE=%s'%(realsize)
+            self.f90fixed += ' -DFPSIZE=%s'%(realsize)
+            if realsize == '8':
+                self.f90free += ' -fdefault-real-8 -fdefault-double-8'
+                self.f90fixed += ' -fdefault-real-8 -fdefault-double-8'
+            self.f90free += ' -DISZ=%s'%(intsize)
+            self.f90fixed += ' -DISZ=%s'%(intsize)
+            if intsize == '8':
+                self.f90free += ' -fdefault-integer-8'
+                self.f90fixed += ' -fdefault-integer-8'
+            if self.implicitnone:
+                self.f90free += ' -fimplicit-none'
+                self.f90fixed += ' -fimplicit-none'
+            if self.twounderscores:
+                self.f90free += ' -fsecond-underscore'
+                self.f90fixed += ' -fsecond-underscore'
+            else:
+                self.f90free += ' -fno-second-underscore'
+                self.f90fixed += ' -fno-second-underscore'
+            self.libdirs = self.findgnulibdirs(self.fcompname, self.fcompexec)
+            self.libs = ['gfortran','mpich','mpichfort']
+            self.fopt = '-O3 -ftree-vectorize -ftree-vectorizer-verbose=0'
+            return 1    
 
     def linux_pg(self):
         if self.usecompiler('pg', 'pgf90'):

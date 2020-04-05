@@ -55,7 +55,7 @@ class PyWrap:
         self.otherfortranfiles = otherfortranfiles
         self.fcompname = fcompname
         self.isz = isz  # isz defined in cfinterface
-        
+        self.AddUseModule=['Output']
         self.processvariabledescriptionfile()
         #JG: omp flags
         self.ompvarlistfile=ompvarlistfile
@@ -327,7 +327,34 @@ class PyWrap:
                     if len(line)>0:
                         self.ompvarlist.append(line)
             print(('### ompvarlist:',self.ompvarlist))
-            
+    def ProcessDim(self,S):
+        if S.count('(')>0:
+            Str=S.split('(')[1].split(')')[0] 
+            Dims=Str.split(',')
+            for i in range(len(Dims)):
+                if Dims[i].count(':')<1:
+                    Dims[i]='1:'+Dims[i]
+            S='('+','.join(Dims)+')'
+        return S
+    
+    def GetSize(self,S):
+        
+        if S.count('(')>0:
+            Out=[]
+            Str=S.split('(')[1].split(')')[0] 
+            Dims=Str.split(',')
+            for i in range(len(Dims)):
+                if Dims[i].count(':')<1:
+                    if int(Dims[i])!=1:
+                        raise ValueError('Dimension not correct:{}',S)
+                    Out.append('('+Dims[i]+')')
+                else:    
+                    Out.append('('+Dims[i].split(':')[1]+'-'+Dims[i].split(':')[0]+'+1'+')')
+            Out='*'.join(Out)
+        else:            
+            Out='1'
+        return Out
+               
     def checkompflag(self):   
         """
         Check that omp flag used in the fortran file exist
@@ -1339,7 +1366,7 @@ class PyWrap:
                         self.fw('endif')
                         S=self.prefixdimsf(re.sub('[ \t\n]', '', a.dimstring))
                         self.fw('if (associated(ptop__)) then')
-                        self.fw('pcopy__'+S+'=p__'+S)
+                        self.fw('pcopy__'+self.ProcessDim(S)+'=p__'+self.ProcessDim(S))
                         self.fw('endif')
                         self.fw('if (OMPAllocDebug.gt.1) then')
                         self.fw("write(*,*) '#OMP: beginning of parallel construct for association'")
@@ -1423,6 +1450,9 @@ class PyWrap:
         self.ListCommon=[] 
         for g in self.groups + self.hidden_groups:
             self.fw('module ' + g)
+            for Mod in self.AddUseModule:
+                if Mod !=g:
+                    self.fw('  use ' + Mod)
             # --- Check if any variables are derived types. If so, the module
             # --- containing the type must be used.
             printedtypes = []
@@ -1547,16 +1577,19 @@ class PyWrap:
                 self.fw('  integer:: tid,omp_get_thread_num') 
                 # declare variable to be copied in threads:
                 S=self.prefixdimsf(re.sub('[ \t\n]', '', a.dimstring))
+                S=self.ProcessDim(S)
                 self.fw('  ' + fvars.ftof(a.type) + '::{}copy{}'.format(a.name,S))        
                 #write common block
                 ompcommoncopy.append(a.name+'copy')
                 # self.fw("/comompcopy/' {}".format(','.join(ompcommoncopy)))
+                if a.dynamic:
+                    self.fw('if ({}.le.size({})) then'.format(self.GetSize(S),a.name))
                 self.fw('{}copy{}={}{}  '.format(a.name,S,a.name,S))
                 
                 self.fw('if (OMPCopyDebug.gt.0) then')
                 self.fw("write(*,*) '#OMP::: Starting parallel construct to copy variable {}'".format(a.name))
                 self.fw('endif')    
-                self.fw('!$omp parallel private(tid)')#' copyin(/comompcopy/)')
+                self.fw('!$omp parallel private(tid) firstprivate({}copy)'.format(a.name))#' copyin(/comompcopy/)')
                 self.fw('tid=omp_get_thread_num()')
                 self.fw('if (tid.gt.0) then')
                 self.fw('if (OMPCopyDebug.gt.0) then')
@@ -1568,6 +1601,8 @@ class PyWrap:
                 self.fw('if (OMPCopyDebug.gt.0) then')
                 self.fw("write(*,*) '#OMP::: End of parallel construct to copy variable {}'".format(a.name))
                 self.fw('endif')           
+                if a.dynamic:
+                    self.fw('endif')
                 self.fw('  return')
                 
                 self.fw('end subroutine OmpCopyPointer{}'.format(a.name)) 
@@ -1588,13 +1623,29 @@ class PyWrap:
                     self.fw('  use ' + s.group)
                     groupsadded.append(s.group)
                 ompcommonscalar.append(s.name)
+                
         self.fw('integer::tid,omp_get_thread_num')
         if len(ompcommonscalar)>0:
-            self.fw('common /ompcommonscalar/ '+','.join(ompcommonscalar))
-            self.fw('!$omp parallel private(tid) copyin(/ompcommonscalar/)')
+            for s in self.slist:
+                if s.name in ompcommonscalar:
+                    self.fw('  ' + fvars.ftof(s.type) + '::{}copy'.format(s.name))
+        if len(ompcommonscalar)>0:
+            #self.fw('common /ompcommonscalar/ '+','.join(ompcommonscalar))
+            ompcommonscalarcopy=[s+'copy' for s in ompcommonscalar]
+            self.fw('common /ompcommonscalarcopy/ '+','.join(ompcommonscalarcopy))
+            for s in self.slist:
+                if s.name in ompcommonscalar:
+                    self.fw('{}copy={}'.format(s.name,s.name))
+
+            self.fw('!$omp parallel private(tid) firstprivate(/ompcommonscalarcopy/)')
             self.fw('tid=omp_get_thread_num()')
+            self.fw('if (tid.gt.0) then')
+            for s in self.slist:
+                if s.name in ompcommonscalar:
+                    self.fw('{}={}copy'.format(s.name,s.name))
             self.fw('if (OMPCopyDebug.gt.0) then')
             self.fw("write(*,*) '#OMP::: Thread #',tid,' : copying scalar...'")
+            self.fw('endif')
             self.fw('endif')
             self.fw('!$omp end parallel')
         self.fw('end subroutine OmpCopyScalar{}'.format(self.pkgname))
