@@ -158,7 +158,7 @@ class FCompiler:
             else:
                 # --- Check that the compiler that mpifort is using is based on the
                 # --- specified compiler.
-                assert fcompname.find(self.fcompname) >= 0, Exception('The compiler specified, %s, is not the same kind as the one used by mpifort, %s.'%(self.fcompname, fcompname))
+#                assert fcompname.find(self.fcompname) >= 0, Exception('The compiler specified, %s, is not the same kind as the one used by mpifort, %s.'%(self.fcompname, fcompname))
 
     def usecompiler(self, fcompname, fcompexec):
         'Check if the specified compiler is found'
