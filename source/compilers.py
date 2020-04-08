@@ -156,6 +156,7 @@ class FCompiler:
             if self.fcompname is None:
                 self.fcompname = fcompname
             else:
+                pass
                 # --- Check that the compiler that mpifort is using is based on the
                 # --- specified compiler.
 #                assert fcompname.find(self.fcompname) >= 0, Exception('The compiler specified, %s, is not the same kind as the one used by mpifort, %s.'%(self.fcompname, fcompname))
