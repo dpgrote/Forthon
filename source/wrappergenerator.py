@@ -55,7 +55,7 @@ class PyWrap:
         self.otherfortranfiles = otherfortranfiles
         self.fcompname = fcompname
         self.isz = isz  # isz defined in cfinterface
-        self.AddUseModule=[]
+        self.AddUseModule=['Output']
         self.processvariabledescriptionfile()
         #JG: omp flags
         self.ompvarlistfile=ompvarlistfile
