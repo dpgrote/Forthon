@@ -184,9 +184,13 @@ def traceit(frame, event, arg):
             filename = ''
         if (filename.endswith(".pyc") or filename.endswith(".pyo")):
             filename = filename[:-1]
-        name = frame.f_globals["__name__"]
+        try:
+            name = frame.f_globals["__name__"]
+        except KeyError:
+            name = '(unknown)'
         line = linecache.getline(filename, lineno)
-        print(("%s:%s: %s" % (name, lineno, line.rstrip())))
+        print "%s:%s: %s" % (name, lineno, line.rstrip())
+        sys.stdout.flush()
     return traceit
 
 
