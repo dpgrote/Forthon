@@ -38,7 +38,7 @@ do2to3         = args.do2to3
 build_base     = args.build_base
 build_temp     = args.build_temp
 builddir       = args.builddir
-cargslist          = args.cargslist
+cargslist      = args.cargslist
 compile_first  = args.compile_first
 debug          = args.debug
 defines        = args.defines
@@ -74,7 +74,8 @@ writemodules   = args.writemodules
 
  #JG: omp related arguments
 ompvarlistfile=args.ompvarlistfile
-# Transform arg omppkg into a list
+ompverbose=args.ompverbose
+ompforceall=args.ompforceall
 omppkg=args.omppkg
 
 # --- These args require special handling
@@ -113,6 +114,10 @@ if not writemodules: forthonargs.append('--nowritemodules')
 if timeroutines: forthonargs.append('--timeroutines')
 forthonargs.append('--omppkg {}'.format(omppkg))
 forthonargs.append('--ompvarlistfile {}'.format(ompvarlistfile))
+if ompverbose:
+    forthonargs.append('--ompverbose')
+if ompforceall:
+    forthonargs.append('--ompforceall')
 # --- Get the numpy headers path
 import numpy
 if numpy.__version__ < '1.1.0':
@@ -311,9 +316,9 @@ for i in includedirs:
     fargs = fargs + ' -I'+i+' '
 
 # --- Add in any user supplied cargs
+#print('>>>>>>>>>> Cargs:',cargs)
 if cargs is not None:
-    extra_compile_args.append(cargs)
-print('#################',extra_compile_args)    
+        extra_compile_args.append(cargs)
 pypreproc = '%(python)s -c "from Forthon.preprocess import main;main()" %(f90)s -t%(machine)s %(forthonargs)s'%locals()
 forthon = '%(python)s -c "from Forthon.wrappergenerator import wrappergenerator_main;wrappergenerator_main()"'%locals()
 noprintdirectory = ''
@@ -527,7 +532,7 @@ setup(name = pkgbase,
                                libraries=fcompiler.libs+libs,
                                define_macros=define_macros,
                                extra_compile_args=extra_compile_args,
-                               extra_link_args=extra_link_args+['-g','-fopenmp'])],
+                               extra_link_args=extra_link_args)],
       scripts = scripts,
       cmdclass={'build_py': build_py,
                 'build_scripts': build_scripts},

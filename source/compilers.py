@@ -351,9 +351,9 @@ class FCompiler:
             return 1
         
     def linux_mpif90(self):
-        print('Linux mpif90:',self.usecompiler('mpif90', 'mpif90'))
+        #print('Linux mpif90:',self.usecompiler('mpif90', 'mpif90'))
         if self.usecompiler('mpif90', 'mpif90'):
-            print('mpif90 selected')
+            #print('mpif90 selected')
             if not self.isgfortranversionok(self.fcompexec):
                 print('Not on the hook:')
                 return None
@@ -385,9 +385,9 @@ class FCompiler:
             return 1
         
     def linux_mpifort(self):
-        print('Linux mpifort:',self.usecompiler('mpifort', 'mpifort'))
+        #print('Linux mpifort:',self.usecompiler('mpifort', 'mpifort'))
         if self.usecompiler('mpifort', 'mpifort'):
-            print('mpifort selected')
+            #print('mpifort selected')
             if not self.isgfortranversionok(self.fcompexec):
                 print('Not on the hook:')
                 return None

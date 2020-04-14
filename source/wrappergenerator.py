@@ -40,7 +40,7 @@ class PyWrap:
 
     def __init__(self, varfile, pkgname, pkgsuffix, pkgbase, initialgallot=1, writemodules=1,
                  otherinterfacefiles=[], other_scalar_vars=[], timeroutines=0,
-                 otherfortranfiles=[], fcompname=None,omppkg=[],ompvarlistfile=None):
+                 otherfortranfiles=[], fcompname=None,omppkg=[],ompvarlistfile=None,ompverbose=False,ompforceall=False):
         self.varfile = varfile
         self.pkgname = pkgname
         self.countomp=1
@@ -50,29 +50,29 @@ class PyWrap:
         self.writemodules = writemodules
         self.timeroutines = timeroutines
         self.otherinterfacefiles = otherinterfacefiles
-        print(("{color}otherinterfacefiles:{}{reset}".format(','.join(otherinterfacefiles),color=Back.CYAN,reset=Style.RESET_ALL)))
         self.other_scalar_vars = other_scalar_vars
         self.otherfortranfiles = otherfortranfiles
         self.fcompname = fcompname
         self.isz = isz  # isz defined in cfinterface
         self.AddUseModule=['Output']
         self.processvariabledescriptionfile()
-        #JG: omp flags
+        # omp flags
         self.ompvarlistfile=ompvarlistfile
-        self.ompforceall=False
-        #JG: process ompvarlist file
-        self.ompverbose=True
+        self.ompforceall=ompforceall
+        self.ompverbose=ompverbose
+        # process ompvarlist file
+
         self.omppkg=omppkg
         self.ListThreadPrivateVars=[]
         if self.omppkg is not None:
             self.omppkg=[L.strip() for L in self.omppkg.split(',')]
         else:
             self.omppkg=[]
-        print(('$$$$ omp packages:',self.omppkg))
         self.ompexcludelist=['yl', 'yldot00', 'ml', 'mu', 'wk','nnzmx', 'jac', 'ja', 'ia']
         if self.pkgname in omppkg:  
             self.ompactive=True
-            print(('OMP implementation for package: {}'.format(self.pkgname)))
+            if self.ompverbose:
+                print('{color}OMP implementation for package: {}{reset}'.format(self.pkgname,color=Back.CYAN,reset=Style.RESET_ALL))
             self.processompvarlistfile()
             self.checkompflag()
         else:
@@ -318,7 +318,7 @@ class PyWrap:
                 # JG: We throw an error so the compilation will fail and the user will know that something
                 # is wrong. It is not easy to identify a simple warning during the compilation of the
                 # forthon packages.
-                raise IOError("Could not open/read the ompvarlistfile file :", {self.ompvarlistfile})
+                raise IOError("{color}Could not open/read the ompvarlistfile file :{}{reset}".format(self.ompvarlistfile,color=Back.CYAN,reset=Style.RESET_ALL))
                 
             with f:
                 for line in f:
@@ -326,7 +326,8 @@ class PyWrap:
                     line = line.rstrip()
                     if len(line)>0:
                         self.ompvarlist.append(line)
-            print(('### ompvarlist:',self.ompvarlist))
+            if self.ompverbose:
+                print('{color}### ompvarlist{reset}:{}'.format(self.ompvarlist,color=Back.CYAN,reset=Style.RESET_ALL))
     def ProcessDim(self,S):
         if S.count('(')>0:
             Str=S.split('(')[1].split(')')[0] 
@@ -1754,6 +1755,8 @@ def wrappergenerator_main(argv=None, writef90modulesonly=0):
     otherinterfacefiles = args.othermacros
     #JG: omp related arguments
     ompvarlistfile=args.ompvarlistfile
+    ompverbose=args.ompverbose
+    ompforceall=args.ompforceall
     # Transform arg omppkg into a list
     omppkg=args.omppkg
     # --- a list of scalar dictionaries from other modules.
@@ -1763,7 +1766,7 @@ def wrappergenerator_main(argv=None, writef90modulesonly=0):
 
     cc = PyWrap(varfile, pkgname, pkgsuffix, pkgbase, initialgallot, writemodules,
                 otherinterfacefiles, other_scalar_vars, timeroutines,
-                otherfortranfiles, fcompname,omppkg=omppkg,ompvarlistfile=ompvarlistfile)
+                otherfortranfiles, fcompname,omppkg=omppkg,ompvarlistfile=ompvarlistfile,ompverbose=ompverbose,ompforceall=ompforceall)
     if writef90modulesonly:
         cc.writef90modules()
     else:
