@@ -786,7 +786,7 @@ def pydumppythonvariable(ff, vname, value, varsuffix, verbose):
                 pass
         if source is not None:
             if verbose:
-                print "writing python function " + vname + " as " + vname + varsuffix + '@function'
+                print("writing python function " + vname + " as " + vname + varsuffix + '@function')
             # --- Clean up any indentation in case the function was defined in
             # --- an indented block of code
             while source[0] == ' ':
@@ -798,7 +798,7 @@ def pydumppythonvariable(ff, vname, value, varsuffix, verbose):
             setattr(value, '__source__', source)
         else:
             if verbose:
-                print "could not write python function " + vname
+                print("could not write python function " + vname)
         return
     # --- Zero length arrays cannot by written out.
     if isinstance(value, ndarray) and product(array(shape(value))) == 0:
@@ -806,7 +806,7 @@ def pydumppythonvariable(ff, vname, value, varsuffix, verbose):
     # --- Try writing as normal variable.
     try:
         if verbose:
-            print "writing python variable " + vname + " as " + vname + varsuffix
+            print("writing python variable " + vname + " as " + vname + varsuffix)
         ff.write(vname + varsuffix, value)
         return
     except:
@@ -817,7 +817,7 @@ def pydumppythonvariable(ff, vname, value, varsuffix, verbose):
     if ff.file_type == 'unknown':
         try:
             if verbose:
-                print "writing python variable " + vname + " as " + vname + varsuffix + '@pickle'
+                print("writing python variable " + vname + " as " + vname + varsuffix + '@pickle')
             ff.write(vname + varsuffix + '@pickle', cPickle.dumps(value, -1))
             doreturn = 1
         except (cPickle.PicklingError, TypeError):
@@ -826,7 +826,7 @@ def pydumppythonvariable(ff, vname, value, varsuffix, verbose):
             return
     # --- All attempts failed so write warning message
     if verbose:
-        print "cannot write python variable " + vname
+        print("cannot write python variable " + vname)
 
 ##############################################################################
 # Python version of the dump routine. This uses the varlist command to
