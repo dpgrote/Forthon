@@ -469,13 +469,12 @@ if machine == 'darwin':
             else:
                 os.environ['ARCHFLAGS'] = '-arch x86_64'  # Snow Leopard
 
-# --- On Fedora and centos, override the rtld_now option which is the default,
-# --- replacing it with rtld_lazy (which is needed if shared objects
-# --- have cross references with each other).
-# --- Is there a different way of determining that this is fedora?
-if (platform.platform().find('fedora') >= 0
-    or platform.platform().find('centos') >= 0
-    or platform.platform().find('arch') >= 0):
+# --- With several vesions of linux, including Fedora and Centos, rtld_now is explicitly set
+# --- in the Python build environment. This was apparently done to harden the OSes, but
+# --- unfortunately breaks Warp (which has cross references across its shared objects).
+# --- In all versions of linux, replace it with rtld_lazy. This fixes the ones that are
+# --- broken and is harmless in the others. (This has only been tested with gcc.)
+if sys.platform == 'linux':
     extra_link_args += ['-Wl,-z,lazy']
 
 if not verbose:
