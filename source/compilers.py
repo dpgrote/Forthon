@@ -339,7 +339,7 @@ class FCompiler:
                 self.f90free += ' -fno-second-underscore'
                 self.f90fixed += ' -fno-second-underscore'
             self.libdirs = self.findgnulibdirs(self.fcompname, self.fcompexec)
-            self.libs = ['gfortran']
+            self.libs = ['gfortran', 'mvec']
             self.fopt = '-O3 -ftree-vectorize -ftree-vectorizer-verbose=0'
             return 1
 

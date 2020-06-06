@@ -1,5 +1,9 @@
 ## Release Notes
 
+0.8.44:
+ - Always set rtld_lazy on Linux
+ - Added explicit library mvec on Linux
+
 0.8.35:
  - Made check of mpifort compiler less strict
 
