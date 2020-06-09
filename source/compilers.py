@@ -213,6 +213,18 @@ class FCompiler:
         libroot = os.path.dirname(gcclib)
         return libroot
 
+    def findmveclibroot(self, fcompexec):
+        # --- Find the lib root for the mvec library
+        # --- Get the full name of the compiler executable.
+        fcomp = os.path.join(self.findfile(fcompexec, followlinks=0), fcompexec)
+        # --- Run it with the appropriate option to return the library path name
+        ff = os.popen(fcomp + ' -print-file-name=libmvec.a')
+        mveclib = ff.readline()[:-1]
+        ff.close()
+        # --- Strip off the actual library name to get the path.
+        libroot = os.path.dirname(mveclib)
+        return libroot
+
     # --- Makes sure libdirs is not [''], because that can change the semantics
     # --- of how gcc linking works. A -L'' argument will cause global libraries
     # --- to not be found.
@@ -339,7 +351,11 @@ class FCompiler:
                 self.f90free += ' -fno-second-underscore'
                 self.f90fixed += ' -fno-second-underscore'
             self.libdirs = self.findgnulibdirs(self.fcompname, self.fcompexec)
-            self.libs = ['gfortran', 'mvec']
+            self.libs = ['gfortran']
+            mveclibroot = self.findmveclibroot(self.fcompexec)
+            if mveclibroot:
+                self.libdirs.append(mveclibroot)
+                self.libs.append('mvec')
             self.fopt = '-O3 -ftree-vectorize -ftree-vectorizer-verbose=0'
             return 1
 
