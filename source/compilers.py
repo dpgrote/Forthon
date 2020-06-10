@@ -218,7 +218,7 @@ class FCompiler:
         # --- Get the full name of the compiler executable.
         fcomp = os.path.join(self.findfile(fcompexec, followlinks=0), fcompexec)
         # --- Run it with the appropriate option to return the library path name
-        ff = os.popen(fcomp + ' -print-file-name=libmvec.a')
+        ff = os.popen(fcomp + ' -print-file-name=libmvec.so')
         mveclib = ff.readline()[:-1]
         ff.close()
         # --- Strip off the actual library name to get the path.
