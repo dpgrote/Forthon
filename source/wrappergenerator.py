@@ -1591,14 +1591,18 @@ class PyWrap:
                 self.fw('if (OMPCopyDebug.gt.0) then')
                 self.fw("write(*,*) '#OMP::: Starting parallel construct to copy variable {}'".format(a.name))
                 self.fw('endif')    
-                self.fw('!$omp parallel private(tid) firstprivate({}copy)'.format(a.name))#' copyin(/comompcopy/)')
+                self.fw('!$omp parallel private(tid) shared({}copy)'.format(a.name))#' copyin(/comompcopy/)')
                 self.fw('tid=omp_get_thread_num()')
+                self.fw('!$omp critical')
                 self.fw('if (tid.gt.0) then')
                 self.fw('if (OMPCopyDebug.gt.0) then')
                 self.fw("write(*,*) '#OMP::: Thread #',tid,' : copying...'")
                 self.fw('endif')
+                
                 self.fw('{}{}={}copy{}'.format(a.name,S,a.name,S)) 
-                self.fw('endif ')         
+                
+                self.fw('endif ')  
+                self.fw('!$omp end critical')
                 self.fw('!$omp end parallel')
                 self.fw('if (OMPCopyDebug.gt.0) then')
                 self.fw("write(*,*) '#OMP::: End of parallel construct to copy variable {}'".format(a.name))
@@ -1724,9 +1728,9 @@ class PyWrap:
                 self.fw("write(*,*) '#OMP::: Starting parallel construct to thread copy variable {}'".format(a.name))
                 self.fw('endif')  
                 self.fw('!$OMP PARALLEL DEFAULT(FIRSTPRIVATE) SHARED(OMPyindex,OMPxindex) SHARED({}copy) &'.format(a.name)) 
-                self.fw('!$OMP& num_threads(OMPPandf_Nthreads) if (OMPThreadedPandf.gt.0)'.format(a.name))
+                self.fw('!$OMP&  if (OMPThreadedPandf.gt.0)'.format(a.name))
                 self.fw('ithread=omp_get_thread_num()')
-                #self.fw('!$OMP CRITICAL')
+                
                 
                 idxxmin=S.split(',')[0].split(':')[0].replace('(','')
                 idxxmax=S.split(',')[0].split(':')[1].replace(')','')
@@ -1738,7 +1742,7 @@ class PyWrap:
                     idxymax=S.split(',')[1].split(':')[1].replace(')','')
                     self.fw('idxymin={}'.format(idxymin))
                     self.fw('idxymax={}'.format(idxymax))
-                
+                self.fw('!$OMP CRITICAL')
                 self.fw('call GetRangeIndex(idxxmin,idxxmax,idxymin,idxymax,ithread,OMPxindex,OMPyindex)')
                 
                 self.fw('if (OMPThreadedPandfDebug.gt.0) write(*,*) "{}",idxxmin,idxxmax,idxymin,idxymax,ithread'.format(a.name))
@@ -1747,12 +1751,13 @@ class PyWrap:
                 elif S.count(',')==1:
                     self.fw('{}copy(idxxmin:idxxmax,idxymin:idxymax)={}(idxxmin:idxxmax,idxymin:idxymax)'.format(a.name,a.name))
                 else:
+                    
                     Dim=S.split(',')
                     #print(Dim)
                     Dim=','.join([Dim[i].split(')')[0] for i in range(len(Dim)) if i>1])
                     #print(Dim)
                     self.fw('{}copy(idxxmin:idxxmax,idxymin:idxymax,{})={}(idxxmin:idxxmax,idxymin:idxymax,{})'.format(a.name,Dim,a.name,Dim))
-                #self.fw('!$OMP END CRITICAL')
+                self.fw('!$OMP END CRITICAL')
                 self.fw('!$OMP END PARALLEL')
                 
                 self.fw('if (OMPThreadedPandfDebug.gt.0) then')
