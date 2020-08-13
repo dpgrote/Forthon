@@ -884,11 +884,15 @@ class PyWrap:
 
         ###########################################################################
         # --- Write set pointers routine which gets all of the fortran pointers
-        self.cw('void ' + fname(self.fsub('grabscalarpointers')) + '(long *i, char *p)')
-        self.cw('{')
-        self.cw('  /* Gabs pointer for the scalar */')
-        self.cw('  ' + self.pkgname + '_fscalars[*i].data = (char *)p;')
-        self.cw('}')
+        # --- A version needs to be written out for each basic type since Fortran
+        # --- checks the consistency of the arguments for each call.
+        # --- The versions are otherwise identical.
+        for tt in ['real', 'integer', 'character', 'logical']:
+            self.cw('void ' + fname(self.fsub('grabscalarpointers_'+tt)) + '(long *i, char *p)')
+            self.cw('{')
+            self.cw('  /* Gabs pointer for the scalar */')
+            self.cw('  ' + self.pkgname + '_fscalars[*i].data = (char *)p;')
+            self.cw('}')
 
         # --- A serarate routine is needed for derived types since the cobj__
         # --- that is passed in is already a pointer, so **p is needed.
@@ -899,11 +903,15 @@ class PyWrap:
         self.cw('}')
 
         # --- Get pointer to an array. This takes an integer to specify which array
-        self.cw('void ' + fname(self.fsub('grabarraypointers')) + '(long *i, char *p)')
-        self.cw('{')
-        self.cw('  /* Grabs pointer for the array */')
-        self.cw('  ' + self.pkgname + '_farrays[*i].data.s = (char *)p;')
-        self.cw('}')
+        # --- A version needs to be written out for each basic type since Fortran
+        # --- checks the consistency of the arguments for each call.
+        # --- The versions are otherwise identical.
+        for tt in ['real', 'integer', 'character', 'logical']:
+            self.cw('void ' + fname(self.fsub('grabarraypointers_'+tt)) + '(long *i, char *p)')
+            self.cw('{')
+            self.cw('  /* Grabs pointer for the array */')
+            self.cw('  ' + self.pkgname + '_farrays[*i].data.s = (char *)p;')
+            self.cw('}')
 
         # --- This takes a Fortranarray object directly.
         self.cw('void ' + fname(self.fsub('grabarraypointersobj')) + '(Fortranarray *farray, char *p)')
@@ -1092,13 +1100,13 @@ class PyWrap:
                         s.name + '%cobj__, int(1, ' + self.isz + '), int(0, ' + self.isz + '))')
                 self.fw('  call ' + self.fsub('setderivedtypepointers') + '(int(' + repr(i) + ', ' + self.isz + '), ' + s.name + '%cobj__)')
             else:
-                self.fw('  call ' + self.fsub('grabscalarpointers') + '(int(' + repr(i) + ', ' + self.isz + '), ' + s.name + ')')
+                self.fw('  call ' + self.fsub('grabscalarpointers_' + s.type) + '(int(' + repr(i) + ', ' + self.isz + '), ' + s.name + ')')
 
         # --- Write out calls to c routine passing down pointers to arrays.
         for i in range(len(self.alist)):
             a = self.alist[i]
             if not a.dynamic:
-                self.fw('  call ' + self.fsub('grabarraypointers') + '(int(' + repr(i) + ', ' + self.isz + '), ' + a.name + ')')
+                self.fw('  call ' + self.fsub('grabarraypointers_' + a.type) + '(int(' + repr(i) + ', ' + self.isz + '), ' + a.name + ')')
 
         # --- Finish the routine
         self.fw('  return')

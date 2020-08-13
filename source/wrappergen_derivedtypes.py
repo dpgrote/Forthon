@@ -480,11 +480,12 @@ class ForthonDerivedType:
 
             #########################################################################
             # --- Write set pointers routine which gets all of the fortran pointers
-            self.cw('void ' + fname(self.fsub(t, 'grabscalarpointers')) + '(long *i, char *p, ForthonObject **obj)')
-            self.cw('{')
-            self.cw('  /* Grabs pointer for the scalar */')
-            self.cw('  (*obj)->fscalars[*i].data = (char *)p;')
-            self.cw('}')
+            for tt in ['real', 'integer', 'character', 'logical']:
+                self.cw('void ' + fname(self.fsub(t, 'grabscalarpointers_' + tt)) + '(long *i, char *p, ForthonObject **obj)')
+                self.cw('{')
+                self.cw('  /* Grabs pointer for the scalar */')
+                self.cw('  (*obj)->fscalars[*i].data = (char *)p;')
+                self.cw('}')
 
             self.cw('void ' + fname(self.fsub(t, 'setderivedtypepointers')) + '(long *i, char **p, ForthonObject **obj)')
             self.cw('{')
@@ -492,17 +493,19 @@ class ForthonDerivedType:
             self.cw('  (*obj)->fscalars[*i].data = (char *)(*p);')
             self.cw('}')
 
-            self.cw('void ' + fname(self.fsub(t, 'grabarraypointers')) + '(long *i, char *p, ForthonObject **obj)')
-            self.cw('{')
-            self.cw('  /* Grabs pointer for the array */')
-            self.cw('  (*obj)->farrays[*i].data.s = (char *)p;')
-            self.cw('}')
+            for tt in ['real', 'integer', 'character', 'logical']:
+                self.cw('void ' + fname(self.fsub(t, 'grabarraypointers_' + tt)) + '(long *i, char *p, ForthonObject **obj)')
+                self.cw('{')
+                self.cw('  /* Grabs pointer for the array */')
+                self.cw('  (*obj)->farrays[*i].data.s = (char *)p;')
+                self.cw('}')
 
-            self.cw('void ' + fname(self.fsub(t, 'grabarraypointersobj')) + '(Fortranarray *farray, char *p)')
-            self.cw('{')
-            self.cw('  /* Grabs pointer for the array */')
-            self.cw('  farray->data.s = (char *)p;')
-            self.cw('}')
+            for tt in ['real', 'integer', 'character', 'logical']:
+                self.cw('void ' + fname(self.fsub(t, 'grabarraypointersobj_' + tt)) + '(Fortranarray *farray, char *p)')
+                self.cw('{')
+                self.cw('  /* Grabs pointer for the array */')
+                self.cw('  farray->data.s = (char *)p;')
+                self.cw('}')
 
             # --- This routine gets the dimensions from an array. It is called from
             # --- fortran and the last argument should be shape(array).
@@ -617,7 +620,7 @@ class ForthonDerivedType:
                 self.fw('    type(' + t.name + '), pointer:: oldobj__')
                 self.fw('    integer:: error')
                 self.fw('    if (oldobj__%cobj__ /= 0) then')
-                self.fw('      call decref' + t.name + 'py(oldobj__)')
+                self.fw('      call decref' + t.name + 'py(oldobj__%cobj__)')
                 self.fw('    endif')
                 for s in slist:
                     if s.dynamic:
@@ -786,7 +789,7 @@ class ForthonDerivedType:
                     self.fw('  call ' + self.fsub(t, 'setderivedtypepointers') + '(' +
                             'int(' + repr(i) + ', ' + isz + '), fobj__%' + s.name + '%cobj__, fobj__%cobj__)')
                 else:
-                    self.fw('  call ' + self.fsub(t, 'grabscalarpointers') + '(' +
+                    self.fw('  call ' + self.fsub(t, 'grabscalarpointers_' + s.type) + '(' +
                             'int(' + repr(i) + ', ' + isz + '), fobj__%' + s.name + ', fobj__%cobj__)')
 
             # --- Write out calls to c routine passing down pointers to arrays
@@ -796,7 +799,7 @@ class ForthonDerivedType:
                     if not a.derivedtype:
                         # --- This assumes that a scalar is given which is broadcasted
                         # --- to fill the array.
-                        self.fw('  call ' + self.fsub(t, 'grabarraypointers') + '(' + 'int(' + repr(i) + ', ' + isz + ')' +
+                        self.fw('  call ' + self.fsub(t, 'grabarraypointers_' + a.type) + '(' + 'int(' + repr(i) + ', ' + isz + ')' +
                                 ', fobj__%' + a.name + ', fobj__%cobj__)')
 
             # --- Set the initial values only if the input flag is 1.
@@ -903,7 +906,7 @@ class ForthonDerivedType:
                         self.fw('  integer(' + isz + '):: ss(%d)'%(len(a.dims)))
                         self.fw('  type(' + t.name + '):: fobj__')
                         self.fw('  if (.not. associated(fobj__%' + a.name + ')) return ')
-                        self.fw('  call ' + self.fsub(t, 'grabarraypointersobj') + '(farray__, fobj__%' + a.name + ')')
+                        self.fw('  call ' + self.fsub(t, 'grabarraypointersobj_' + a.type) + '(farray__, fobj__%' + a.name + ')')
                         if a.type == 'character':
                             self.fw('  ss(1:%d)'%(len(a.dims)-1) + ' = shape(fobj__%' + a.name + ')')
                             self.fw('  ss(%d)'%(len(a.dims)) + ' = %s'%a.dims[0].high)
