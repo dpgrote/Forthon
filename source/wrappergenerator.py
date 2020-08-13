@@ -887,7 +887,7 @@ class PyWrap:
         # --- A version needs to be written out for each basic type since Fortran
         # --- checks the consistency of the arguments for each call.
         # --- The versions are otherwise identical.
-        for tt in ['real', 'integer', 'character', 'logical']:
+        for tt in ['real', 'float', 'double', 'integer', 'character', 'logical', 'complex']:
             self.cw('void ' + fname(self.fsub('grabscalarpointers_'+tt)) + '(long *i, char *p)')
             self.cw('{')
             self.cw('  /* Gabs pointer for the scalar */')
@@ -906,7 +906,7 @@ class PyWrap:
         # --- A version needs to be written out for each basic type since Fortran
         # --- checks the consistency of the arguments for each call.
         # --- The versions are otherwise identical.
-        for tt in ['real', 'integer', 'character', 'logical']:
+        for tt in ['real', 'float', 'double', 'integer', 'character', 'logical', 'complex']:
             self.cw('void ' + fname(self.fsub('grabarraypointers_'+tt)) + '(long *i, char *p)')
             self.cw('{')
             self.cw('  /* Grabs pointer for the array */')

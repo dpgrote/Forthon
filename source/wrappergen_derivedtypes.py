@@ -480,7 +480,7 @@ class ForthonDerivedType:
 
             #########################################################################
             # --- Write set pointers routine which gets all of the fortran pointers
-            for tt in ['real', 'integer', 'character', 'logical']:
+            for tt in ['real', 'float', 'double', 'integer', 'character', 'logical', 'complex']:
                 self.cw('void ' + fname(self.fsub(t, 'grabscalarpointers_' + tt)) + '(long *i, char *p, ForthonObject **obj)')
                 self.cw('{')
                 self.cw('  /* Grabs pointer for the scalar */')
@@ -493,14 +493,13 @@ class ForthonDerivedType:
             self.cw('  (*obj)->fscalars[*i].data = (char *)(*p);')
             self.cw('}')
 
-            for tt in ['real', 'integer', 'character', 'logical']:
+            for tt in ['real', 'float', 'double', 'integer', 'character', 'logical', 'complex']:
                 self.cw('void ' + fname(self.fsub(t, 'grabarraypointers_' + tt)) + '(long *i, char *p, ForthonObject **obj)')
                 self.cw('{')
                 self.cw('  /* Grabs pointer for the array */')
                 self.cw('  (*obj)->farrays[*i].data.s = (char *)p;')
                 self.cw('}')
 
-            for tt in ['real', 'integer', 'character', 'logical']:
                 self.cw('void ' + fname(self.fsub(t, 'grabarraypointersobj_' + tt)) + '(Fortranarray *farray, char *p)')
                 self.cw('{')
                 self.cw('  /* Grabs pointer for the array */')
