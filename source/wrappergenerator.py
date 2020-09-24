@@ -1199,7 +1199,7 @@ class PyWrap:
             self.writef90modules()
             if self.ompactive:
                 self.writef90ompcopyhelper()
-                self.writef90ompthreadcopyhelper()
+                #self.writef90ompthreadcopyhelper()
         ###########################################################################
         self.fw('subroutine ' + self.fsub('passpointers') + '()')
 
@@ -1244,7 +1244,7 @@ class PyWrap:
         for g in self.groups + self.hidden_groups:
             self.fw('  use ' + g)
         if self.ompactive:
-            self.fw('  use OmpOptions')
+            self.fw('  use OMPSettings')
             self.fw('integer::tid,omp_get_thread_num')
         for i in range(len(self.slist)):
             s = self.slist[i]
@@ -1329,7 +1329,7 @@ class PyWrap:
                         groupsprinted.append(g)
                 self.fw('  use ' + a.group)
                 if self.ompactive and (a.name in self.ompvarlist or self.ompforceall) and (a.name not in self.ompexcludelist):
-                        self.fw('  use OmpOptions')
+                        self.fw('  use OMPSettings')
                 self.fw('  integer(' + self.isz + '):: fobj__')
                 self.fw('  integer(' + self.isz + '):: dims__(' + repr(len(a.dims)) + ')')
                 if a.type == 'character':
@@ -1556,7 +1556,7 @@ class PyWrap:
                 
     def writef90ompcopyhelper(self):
         self.fw('module OmpCopy{}'.format(self.pkgname))
-        self.fw('  use OmpOptions')
+        self.fw('  use OMPSettings')
         # First we add all the use(group) necessary to have access to the data
         self.fw('contains' ) 
         ompcommoncopy=[]
@@ -1657,113 +1657,113 @@ class PyWrap:
         
         
         
-    def writef90ompthreadcopyhelper(self):
-        self.fw('module OmpThreadCopy{}'.format(self.pkgname))
-        self.fw('  use omp_lib')
-        self.fw('  use dim,only:nx,ny')
+    # def writef90ompthreadcopyhelper(self):
+    #     self.fw('module OmpThreadCopy{}'.format(self.pkgname))
+    #     self.fw('  use omp_lib')
+    #     self.fw('  use dim,only:nx,ny')
         
-        # First we add all the use(group) necessary to have access to the data
-        self.fw('contains' ) 
+    #     # First we add all the use(group) necessary to have access to the data
+    #     self.fw('contains' ) 
         
-        self.fw('subroutine GetRangeIndex(idxxmin,idxxmax,idxymin,idxymax,ithread,ompxindex,ompyindex)')
+    #     self.fw('subroutine GetRangeIndex(idxxmin,idxxmax,idxymin,idxymax,ithread,ompxindex,ompyindex)')
         
-        self.fw('integer,intent(out)::idxxmin,idxxmax,idxymin,idxymax')
-        self.fw('integer,intent(in)::ithread')
-        self.fw('integer:: i,j')
-        self.fw('integer,intent(inout)::ompxindex(0:Nx+1),ompyindex(0:Ny+1)')
-        self.fw('logical:: FindMinx,Findminy')
-        self.fw('FindMiny=.false.')
-        self.fw('do j=0,Ny+1')
-        self.fw('if (OMPyindex(j)==ithread) then')
-        self.fw('if (.not.FindMiny) then')
-        self.fw('idxymin=j')
-        self.fw('FindMiny=.True.')
-        self.fw('endif')
-        self.fw('idxymax=j')
-        self.fw('endif')
-        self.fw('enddo')
-        self.fw('FindMinx=.false.')
-        self.fw('do i=0,Nx+1')
-        self.fw('if (OMPxindex(i)==ithread) then')
-        self.fw('if (.not.FindMinx) then')
-        self.fw('idxxmin=i')
-        self.fw('FindMinx=.True.')
-        self.fw('endif')
-        self.fw('idxxmax=j')
-        self.fw('endif')
-        self.fw('enddo')
-        self.fw('return')
-        self.fw('end subroutine')
+    #     self.fw('integer,intent(out)::idxxmin,idxxmax,idxymin,idxymax')
+    #     self.fw('integer,intent(in)::ithread')
+    #     self.fw('integer:: i,j')
+    #     self.fw('integer,intent(inout)::ompxindex(0:Nx+1),ompyindex(0:Ny+1)')
+    #     self.fw('logical:: FindMinx,Findminy')
+    #     self.fw('FindMiny=.false.')
+    #     self.fw('do j=0,Ny+1')
+    #     self.fw('if (OMPyindex(j)==ithread) then')
+    #     self.fw('if (.not.FindMiny) then')
+    #     self.fw('idxymin=j')
+    #     self.fw('FindMiny=.True.')
+    #     self.fw('endif')
+    #     self.fw('idxymax=j')
+    #     self.fw('endif')
+    #     self.fw('enddo')
+    #     self.fw('FindMinx=.false.')
+    #     self.fw('do i=0,Nx+1')
+    #     self.fw('if (OMPxindex(i)==ithread) then')
+    #     self.fw('if (.not.FindMinx) then')
+    #     self.fw('idxxmin=i')
+    #     self.fw('FindMinx=.True.')
+    #     self.fw('endif')
+    #     self.fw('idxxmax=j')
+    #     self.fw('endif')
+    #     self.fw('enddo')
+    #     self.fw('return')
+    #     self.fw('end subroutine')
         
-        for a in self.alist:
-            if (a.name in self.ompvarlist or self.ompforceall) and (a.name not in self.ompexcludelist) and a.type != 'character':
-                self.fw('subroutine OmpThreadCopy{}'.format(a.name)) 
-                self.fw('  use OmpPandf')
-                # Group with dimension first 
-                groupsadded=[]
-                groups = self.dimsgroups(a.dimstring)
-                for g in groups:
-                    if g not in groupsadded:
-                        self.fw('  use ' + g)
-                        groupsadded.append(g)
-                # groups to access variables                
-                if a.group not in groupsadded:
-                    self.fw('  use ' + a.group)
-                    groupsadded.append(a.group)
-                self.fw('  integer:: ithread,idxxmin,idxxmax,idxymin,idxymax') 
+        # for a in self.alist:
+            # if (a.name in self.ompvarlist or self.ompforceall) and (a.name not in self.ompexcludelist) and a.type != 'character':
+        #         self.fw('subroutine OmpThreadCopy{}'.format(a.name)) 
+        #         self.fw('  use OmpPandf')
+        #         # Group with dimension first 
+        #         groupsadded=[]
+        #         groups = self.dimsgroups(a.dimstring)
+        #         for g in groups:
+        #             if g not in groupsadded:
+        #                 self.fw('  use ' + g)
+        #                 groupsadded.append(g)
+        #         # groups to access variables                
+        #         if a.group not in groupsadded:
+        #             self.fw('  use ' + a.group)
+        #             groupsadded.append(a.group)
+        #         self.fw('  integer:: ithread,idxxmin,idxxmax,idxymin,idxymax') 
                 
-                # declare variable to be copied in threads:
-                S=self.prefixdimsf(re.sub('[ \t\n]', '', a.dimstring))
-                S=self.ProcessDim(S)
-                self.fw('  ' + fvars.ftof(a.type) + '::{}copy{}'.format(a.name,S))        
-                #write common block
-                self.fw('if (OMPThreadedPandf.gt.0) then')
-                self.fw('{}copy{}={}{}'.format(a.name,S,a.name,S))
-                self.fw('ithread=0')
-                self.fw('if (OMPThreadedPandfDebug.gt.0) then')
-                self.fw("write(*,*) '#OMP::: Starting parallel construct to thread copy variable {}'".format(a.name))
-                self.fw('endif')  
-                self.fw('!$OMP PARALLEL DEFAULT(FIRSTPRIVATE) SHARED(OMPyindex,OMPxindex) SHARED({}copy) &'.format(a.name)) 
-                self.fw('!$OMP&  if (OMPThreadedPandf.gt.0)'.format(a.name))
-                self.fw('ithread=omp_get_thread_num()')
+        #         # declare variable to be copied in threads:
+        #         S=self.prefixdimsf(re.sub('[ \t\n]', '', a.dimstring))
+        #         S=self.ProcessDim(S)
+        #         self.fw('  ' + fvars.ftof(a.type) + '::{}copy{}'.format(a.name,S))        
+        #         #write common block
+        #         self.fw('if (OMPThreadedPandf.gt.0) then')
+        #         self.fw('{}copy{}={}{}'.format(a.name,S,a.name,S))
+        #         self.fw('ithread=0')
+        #         self.fw('if (OMPThreadedPandfDebug.gt.0) then')
+        #         self.fw("write(*,*) '#OMP::: Starting parallel construct to thread copy variable {}'".format(a.name))
+        #         self.fw('endif')  
+        #         self.fw('!$OMP PARALLEL DEFAULT(FIRSTPRIVATE) SHARED(OMPyindex,OMPxindex) SHARED({}copy) &'.format(a.name)) 
+        #         self.fw('!$OMP&  if (OMPThreadedPandf.gt.0)'.format(a.name))
+        #         self.fw('ithread=omp_get_thread_num()')
                 
                 
-                idxxmin=S.split(',')[0].split(':')[0].replace('(','')
-                idxxmax=S.split(',')[0].split(':')[1].replace(')','')
-                #print('S=',S,'::::',idxxmin,idxxmax)
-                self.fw('idxxmin={}'.format(idxxmin))
-                self.fw('idxxmax={}'.format(idxxmax))
-                if S.count(',')>0:
-                    idxymin=S.split(',')[1].split(':')[0].replace('(','')
-                    idxymax=S.split(',')[1].split(':')[1].replace(')','')
-                    self.fw('idxymin={}'.format(idxymin))
-                    self.fw('idxymax={}'.format(idxymax))
-                self.fw('!$OMP CRITICAL')
-                self.fw('call GetRangeIndex(idxxmin,idxxmax,idxymin,idxymax,ithread,OMPxindex,OMPyindex)')
+        #         idxxmin=S.split(',')[0].split(':')[0].replace('(','')
+        #         idxxmax=S.split(',')[0].split(':')[1].replace(')','')
+        #         #print('S=',S,'::::',idxxmin,idxxmax)
+        #         self.fw('idxxmin={}'.format(idxxmin))
+        #         self.fw('idxxmax={}'.format(idxxmax))
+        #         if S.count(',')>0:
+        #             idxymin=S.split(',')[1].split(':')[0].replace('(','')
+        #             idxymax=S.split(',')[1].split(':')[1].replace(')','')
+        #             self.fw('idxymin={}'.format(idxymin))
+        #             self.fw('idxymax={}'.format(idxymax))
+        #         self.fw('!$OMP CRITICAL')
+        #         self.fw('call GetRangeIndex(idxxmin,idxxmax,idxymin,idxymax,ithread,OMPxindex,OMPyindex)')
                 
-                self.fw('if (OMPThreadedPandfDebug.gt.0) write(*,*) "{}",idxxmin,idxxmax,idxymin,idxymax,ithread'.format(a.name))
-                if S.count(',')==0:
-                    self.fw('{}copy(idxxmin:idxxmax)={}(idxxmin:idxxmax)'.format(a.name,a.name))
-                elif S.count(',')==1:
-                    self.fw('{}copy(idxxmin:idxxmax,idxymin:idxymax)={}(idxxmin:idxxmax,idxymin:idxymax)'.format(a.name,a.name))
-                else:
+        #         self.fw('if (OMPThreadedPandfDebug.gt.0) write(*,*) "{}",idxxmin,idxxmax,idxymin,idxymax,ithread'.format(a.name))
+        #         if S.count(',')==0:
+        #             self.fw('{}copy(idxxmin:idxxmax)={}(idxxmin:idxxmax)'.format(a.name,a.name))
+        #         elif S.count(',')==1:
+        #             self.fw('{}copy(idxxmin:idxxmax,idxymin:idxymax)={}(idxxmin:idxxmax,idxymin:idxymax)'.format(a.name,a.name))
+        #         else:
                     
-                    Dim=S.split(',')
-                    #print(Dim)
-                    Dim=','.join([Dim[i].split(')')[0] for i in range(len(Dim)) if i>1])
-                    #print(Dim)
-                    self.fw('{}copy(idxxmin:idxxmax,idxymin:idxymax,{})={}(idxxmin:idxxmax,idxymin:idxymax,{})'.format(a.name,Dim,a.name,Dim))
-                self.fw('!$OMP END CRITICAL')
-                self.fw('!$OMP END PARALLEL')
+        #             Dim=S.split(',')
+        #             #print(Dim)
+        #             Dim=','.join([Dim[i].split(')')[0] for i in range(len(Dim)) if i>1])
+        #             #print(Dim)
+        #             self.fw('{}copy(idxxmin:idxxmax,idxymin:idxymax,{})={}(idxxmin:idxxmax,idxymin:idxymax,{})'.format(a.name,Dim,a.name,Dim))
+        #         self.fw('!$OMP END CRITICAL')
+        #         self.fw('!$OMP END PARALLEL')
                 
-                self.fw('if (OMPThreadedPandfDebug.gt.0) then')
-                self.fw("write(*,*) '#OMP::: End of parallel construct to thread copy variable {}'".format(a.name))
-                self.fw('endif')      
-                self.fw('{}{}={}copy{}'.format(a.name,S,a.name,S))
-                self.fw('endif')
-                self.fw('end subroutine OmpThreadCopy{}'.format(a.name)) 
+        #         self.fw('if (OMPThreadedPandfDebug.gt.0) then')
+        #         self.fw("write(*,*) '#OMP::: End of parallel construct to thread copy variable {}'".format(a.name))
+        #         self.fw('endif')      
+        #         self.fw('{}{}={}copy{}'.format(a.name,S,a.name,S))
+        #         self.fw('endif')
+        #         self.fw('end subroutine OmpThreadCopy{}'.format(a.name)) 
         
-        self.fw('end module OmpThreadCopy{}'.format(self.pkgname) )  
+        # self.fw('end module OmpThreadCopy{}'.format(self.pkgname) )  
        #  self.fw('contains' ) for a in self.alist:
        #  self.fw('subroutine OmpCopyPointer' ) 
        #  self.fw('  use OmpOptions')
