@@ -30,7 +30,7 @@ class FCompiler:
     appropriate block for the machine.
     """
 
-    def __init__(self, machine=None, debug=0, fcompname=None, fcompexec=None, implicitnone=1, twounderscores=0):
+    def __init__(self, machine=None, debug=0, fcompname=None, fcompexec=None, implicitnone=1, twounderscores=0,omp=False):
         if machine is None:
             machine = sys.platform
         self.machine = machine
@@ -129,7 +129,8 @@ class FCompiler:
             self.popt = '-g'
             self.extra_link_args += ['-g']
             self.extra_compile_args += ['-g', '-O0']
-
+        if omp:
+            self.extra_compile_args += ['-fopenmp']
         # --- Add the compiler name to the forthon arguments
         self.forthonargs += ['-F ' + self.fcompname]
 

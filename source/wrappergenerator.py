@@ -13,14 +13,17 @@ import pickle
 from Forthon_options import args
 from cfinterface import *
 import wrappergen_derivedtypes
+from wrappergenerator_ompextension import PyWrap_OMPExtension 
 if sys.hexversion >= 0x20501f0:
     import hashlib
 else:
     # --- hashlib was not available in python earlier than 2.5.
     import md5 as hashlib
+    
 
 
-class PyWrap:
+
+class PyWrap(PyWrap_OMPExtension):
     """
     Usage:
       -a       All groups will be allocated on initialization
@@ -39,7 +42,7 @@ class PyWrap:
 
     def __init__(self, varfile, pkgname, pkgsuffix, pkgbase, initialgallot=1, writemodules=1,
                  otherinterfacefiles=[], other_scalar_vars=[], timeroutines=0,
-                 otherfortranfiles=[], fcompname=None):
+                 otherfortranfiles=[], fcompname=None,ompvarlistfile=None,omppkg=None,ompdebug=False):
         self.varfile = varfile
         self.pkgname = pkgname
         self.pkgsuffix = pkgsuffix
@@ -54,6 +57,7 @@ class PyWrap:
         self.isz = isz  # isz defined in cfinterface
 
         self.processvariabledescriptionfile()
+        self.OMPInit(ompvarlistfile,omppkg,ompdebug)
 
     def cname(self, n):
         # --- Standard name of the C interface to a Fortran routine
@@ -1080,7 +1084,6 @@ class PyWrap:
         # --- Write out f90 modules, including any data statements
         if self.writemodules:
             self.writef90modules()
-
         ###########################################################################
         self.fw('subroutine ' + self.fsub('passpointers') + '()')
 
@@ -1119,19 +1122,26 @@ class PyWrap:
         # --- Pointers must be explicitly nullified in order to get
         # --- associated to return a false value.
         self.fw('subroutine ' + self.fsub('nullifypointers') + '()')
-
+        
         # --- Write out the Use statements
         for g in self.groups + self.hidden_groups:
             self.fw('  use ' + g)
-
+        if self.ompactive:
+            self.fw('integer::tid,omp_get_thread_num')
         for i in range(len(self.slist)):
             s = self.slist[i]
             if s.dynamic:
-                self.fw('  nullify(' + s.name + ')')
+                if self.ompactive:
+                    self.ThreadedNullify(s)
+                else:     
+                    self.fw('  nullify(' + s.name + ')')
         for i in range(len(self.alist)):
             a = self.alist[i]
             if a.dynamic:
-                self.fw('  nullify(' + a.name + ')')
+                if self.ompactive:
+                    self.ThreadedNullify(a)
+                else:     
+                    self.fw('  nullify(' + a.name + ')')
 
         self.fw('  return')
         self.fw('end')
@@ -1197,7 +1207,10 @@ class PyWrap:
                 else:
                     self.fw('  ' + fvars.ftof(a.type) + ', target:: p__' +
                             self.prefixdimsf(re.sub('[ \t\n]', '', a.dimstring)))
-                self.fw('  ' + a.name + ' => p__')
+                if self.ompactive:
+                    self.ThreadedAssociation(a)
+                else:
+                    self.fw('  ' + a.name + ' => p__') 
                 self.fw('  return')
                 self.fw('end')
                 if re.search('fassign', a.attr):
@@ -1277,7 +1290,11 @@ class PyWrap:
                             # --- multiple lines.
                             dd = re.sub(r'\n', '&\n', a.data)
                             self.fw('  data ' + a.name + dd)
+            if self.ompactive:
+                self.DeclareThreadPrivate(g)
             self.fw('end module ' + g)
+        if self.ompactive: 
+            self.writef90OMPCopyHelper()
 
 ###############################################################################
 ###############################################################################
@@ -1306,7 +1323,7 @@ def wrappergenerator_main(argv=None, writef90modulesonly=0):
         varfile = args.remainder[0]
         otherfortranfiles = args.remainder[1:]
     except IndexError:
-        print PyWrap.__doc__
+        print(PyWrap.__doc__)
         sys.exit(1)
 
     # --- get other command line args and default actions
@@ -1317,6 +1334,9 @@ def wrappergenerator_main(argv=None, writef90modulesonly=0):
     writemodules = args.writemodules
     timeroutines = args.timeroutines
     otherinterfacefiles = args.othermacros
+    ompvarlistfile=args.ompvarlistfile
+    omppkg=args.omppkg
+    ompdebug=args.ompdebug
 
     # --- a list of scalar dictionaries from other modules.
     other_scalar_vars = []
@@ -1325,7 +1345,7 @@ def wrappergenerator_main(argv=None, writef90modulesonly=0):
 
     cc = PyWrap(varfile, pkgname, pkgsuffix, pkgbase, initialgallot, writemodules,
                 otherinterfacefiles, other_scalar_vars, timeroutines,
-                otherfortranfiles, fcompname)
+                otherfortranfiles, fcompname,ompvarlistfile,omppkg,ompdebug)
     if writef90modulesonly:
         cc.writef90modules()
     else:
@@ -1333,6 +1353,10 @@ def wrappergenerator_main(argv=None, writef90modulesonly=0):
 
     # --- forthonf2c.h is imported by Forthon.h, and defines macros needed for strings.
     writeforthonf2c()
+
+
+
+
 
 
 # --- This might make some of the write statements cleaner.

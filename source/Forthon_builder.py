@@ -16,7 +16,7 @@ from Forthon.compilers import FCompiler
 # --- Get the package name, which is assumed to be the first argument.
 pkg = args.pkgname
 
-print "Building package " + pkg
+print(">>> Forthon: Building package " + pkg)
 
 # --- Get any extra fortran, C or object files listed.
 # --- This scans through args until the end or until it finds an optional
@@ -72,6 +72,10 @@ verbose        = args.verbose
 with_feenableexcept = args.with_feenableexcept
 writemodules   = args.writemodules
 
+#omp related arguments
+ompvarlistfile=args.ompvarlistfile
+omppkg=args.omppkg
+ompdebug=args.ompdebug
 # --- These args require special handling
 
 if initialgallot:
@@ -106,6 +110,8 @@ if twounderscores: forthonargs.append('--2underscores')
 else:              forthonargs.append('--no2underscores')
 if not writemodules: forthonargs.append('--nowritemodules')
 if timeroutines: forthonargs.append('--timeroutines')
+forthonargs.append('--omppkg {}'.format(omppkg))
+forthonargs.append('--ompvarlistfile {}'.format(ompvarlistfile))
 
 # --- Get the numpy headers path
 import numpy
@@ -478,7 +484,7 @@ if sys.platform == 'linux':
     extra_link_args += ['-Wl,-z,lazy']
 
 if not verbose:
-    print "  Setup " + pkg
+    print("  Setup " + pkg)
     sys.stdout = open(os.devnull, 'w')
 
 if with_feenableexcept:
