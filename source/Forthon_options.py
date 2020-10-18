@@ -102,8 +102,7 @@ parser.add_option('--writemodules', action='store_true', default=True, dest='wri
 parser.add_option('--nowritemodules', action='store_false', default=True, dest='writemodules', help="Don't write out the module definitions. Useful if the modules have been written already. Note that if variables of derived type are used, the original code will need to be modified. See example2. Also note that if this option is used, no checks are made to ensure the consistency between the interface file description and the actual module.")
 
 # OMP related options
-parser.add_option('--omppkg',default=None, help="Activate implementation of omp declarations for the listed packages")
-parser.add_option('--ompvarlistfile', default=None, help="Path to a file containing the list of variables the omp directive threadprivate must be applied to")
+parser.add_option('--omp',default=False,action='store_true', help="Activate implementation of omp declarations for the listed packages")
 parser.add_option('--ompdebug', action='store_true',default=False, help="flag to activate printing of omp debug log.")
 
 

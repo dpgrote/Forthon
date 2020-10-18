@@ -42,7 +42,7 @@ class PyWrap(PyWrap_OMPExtension):
 
     def __init__(self, varfile, pkgname, pkgsuffix, pkgbase, initialgallot=1, writemodules=1,
                  otherinterfacefiles=[], other_scalar_vars=[], timeroutines=0,
-                 otherfortranfiles=[], fcompname=None,ompvarlistfile=None,omppkg=None,ompdebug=False):
+                 otherfortranfiles=[], fcompname=None,ompactive=False,ompdebug=False):
         self.varfile = varfile
         self.pkgname = pkgname
         self.pkgsuffix = pkgsuffix
@@ -55,9 +55,8 @@ class PyWrap(PyWrap_OMPExtension):
         self.otherfortranfiles = otherfortranfiles
         self.fcompname = fcompname
         self.isz = isz  # isz defined in cfinterface
-
         self.processvariabledescriptionfile()
-        self.OMPInit(ompvarlistfile,omppkg,ompdebug)
+        self.OMPInit(ompactive,ompdebug)
 
     def cname(self, n):
         # --- Standard name of the C interface to a Fortran routine
@@ -1295,6 +1294,10 @@ class PyWrap(PyWrap_OMPExtension):
             self.fw('end module ' + g)
         if self.ompactive: 
             self.writef90OMPCopyHelper()
+            self.writef90OMPInitHelper()
+            self.PrintListThreadPrivateVars()
+        
+        
 
 ###############################################################################
 ###############################################################################
@@ -1334,9 +1337,8 @@ def wrappergenerator_main(argv=None, writef90modulesonly=0):
     writemodules = args.writemodules
     timeroutines = args.timeroutines
     otherinterfacefiles = args.othermacros
-    ompvarlistfile=args.ompvarlistfile
-    omppkg=args.omppkg
     ompdebug=args.ompdebug
+    ompactive=args.omp
 
     # --- a list of scalar dictionaries from other modules.
     other_scalar_vars = []
@@ -1345,7 +1347,7 @@ def wrappergenerator_main(argv=None, writef90modulesonly=0):
 
     cc = PyWrap(varfile, pkgname, pkgsuffix, pkgbase, initialgallot, writemodules,
                 otherinterfacefiles, other_scalar_vars, timeroutines,
-                otherfortranfiles, fcompname,ompvarlistfile,omppkg,ompdebug)
+                otherfortranfiles, fcompname,ompactive,ompdebug)
     if writef90modulesonly:
         cc.writef90modules()
     else:

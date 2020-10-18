@@ -73,8 +73,7 @@ with_feenableexcept = args.with_feenableexcept
 writemodules   = args.writemodules
 
 #omp related arguments
-ompvarlistfile=args.ompvarlistfile
-omppkg=args.omppkg
+omp=args.omp
 ompdebug=args.ompdebug
 # --- These args require special handling
 
@@ -110,9 +109,10 @@ if twounderscores: forthonargs.append('--2underscores')
 else:              forthonargs.append('--no2underscores')
 if not writemodules: forthonargs.append('--nowritemodules')
 if timeroutines: forthonargs.append('--timeroutines')
-forthonargs.append('--omppkg {}'.format(omppkg))
-forthonargs.append('--ompvarlistfile {}'.format(ompvarlistfile))
-
+if omp:
+    forthonargs.append('--omp')
+if ompdebug:
+    forthonargs.append('--ompdebug')
 # --- Get the numpy headers path
 import numpy
 if numpy.__version__ < '1.1.0':

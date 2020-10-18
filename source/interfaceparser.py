@@ -246,7 +246,10 @@ def processfile(packname, filename, othermacros=[], timeroutines=0):
                 timerv.group = group
                 timerv.attr = attributes
                 vlist.append(timerv)
-
+        # Look for private remark
+        # elif re.match('threadprivate', text):
+        #     print('text={}\n'.format(text))
+        #     v.threadprivate=1
         # Check if variable is a subroutine
         elif re.match('subroutine[\s\$#]', text):
             v.function = 'fsub'
@@ -333,9 +336,14 @@ def processfile(packname, filename, othermacros=[], timeroutines=0):
         # Look for attribute to add
         elif text[0] == '+':
             m = attribute_pat.match(text[1:])
+            print('text[1:]=',text[1:])
             i = m.end() + 1
             if i != -1:
-                v.attr = v.attr + m.group(1) + ' '
+                if m.group(1)=='threadprivate':
+                    v.threadprivate=1
+                else:
+                    v.attr = v.attr + m.group(1) + ' '
+                
             readyfortype = 0
 
         # Look for attribute to subtract
@@ -373,7 +381,7 @@ def processfile(packname, filename, othermacros=[], timeroutines=0):
         elif text[0] == '$':
             i = re.search('\n', text).start() - 1
             readyfortype = 0
-
+        
         # This only leaves a variable name or a new type
         else:
             if not readyfortype:

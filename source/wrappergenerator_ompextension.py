@@ -9,22 +9,11 @@ import re
 import fvars
 from colorama import  Back, Style
 class PyWrap_OMPExtension():
-    def OMPInit(self,ompvarlistfile=None,omppkg=None,ompdebug=False):
-        self.ompvarlistfile=ompvarlistfile
-        self.omppkg=omppkg
-        self.ompdebug=ompdebug
+    def OMPInit(self,ompactive=False,ompdebug=False):
         self.ListThreadPrivateVars=[]
-        if self.omppkg is not None:
-            self.omppkg=[L.strip() for L in self.omppkg.split(',')]
-        else:
-            self.omppkg=[]
-        
-        if self.pkgname in omppkg:  
-            self.ompactive=True
-            print('{color} Adding OPENMP variables and routines for package: {}{reset}'.format(self.pkgname,color=Back.CYAN,reset=Style.RESET_ALL))
-            self.ProcessOMPVarList()
-        else:
-            self.ompactive=False
+        self.ompactive=ompactive
+        self.ompdebug=ompdebug
+        print('{color} Adding OPENMP variables and routines for package: {}{reset}'.format(self.pkgname,color=Back.CYAN,reset=Style.RESET_ALL))
     def ProcessOMPVarList(self):
         """
         Author: Jerome Guterl (JG)
@@ -87,7 +76,7 @@ class PyWrap_OMPExtension():
         ompcommoncopy=[]
         
         for a in self.alist:
-            if a.name in self.ompvarlist and a.type != 'character':
+            if a.threadprivate and a.type != 'character':
                 self.fw('subroutine OmpCopyPointer{}'.format(a.name)) 
                 
                 # Group with dimension first 
@@ -137,7 +126,7 @@ class PyWrap_OMPExtension():
                 self.fw('end subroutine OmpCopyPointer{}'.format(a.name)) 
         self.fw('subroutine OmpCopyPointer{}'.format(self.pkgname))
         for a in self.alist:
-                if a.name in self.ompvarlist and a.type != 'character':
+                if a.threadprivate and a.type != 'character':
                     # self.fw('if (OMPCopyDebug.gt.0) then')
                     # self.fw("write(*,*) '#Master::: Calling routine to copy variable {}'".format(a.name))
                     # self.fw('endif')
@@ -147,7 +136,7 @@ class PyWrap_OMPExtension():
         ompcommonscalar=[]
         groupsadded=[]
         for s in self.slist: 
-            if s.name in self.ompvarlist and s.type != 'character':
+            if s.threadprivate and s.type != 'character':
                 if s.group not in groupsadded:
                     self.fw('  use ' + s.group)
                     groupsadded.append(s.group)
@@ -182,7 +171,7 @@ class PyWrap_OMPExtension():
                  
                 
     def ThreadedNullify(self,a):
-            if a.name in self.ompvarlist:
+            if a.threadprivate:
                 self.fw('!$omp parallel private(tid)') 
                 self.fw('tid=omp_get_thread_num()')
                 # self.fw('if (OMPAllocDebug.gt.0) then')
@@ -196,7 +185,7 @@ class PyWrap_OMPExtension():
             
                 
     def ThreadedAssociation(self,a):
-            if a.name in self.ompvarlist:
+            if a.threadprivate:
                 self.fw('  integer:: tid,omp_get_thread_num')
                 Dim=a.dimstring.count(',')+1
                 L=[':' for i in range(Dim)]
@@ -206,7 +195,7 @@ class PyWrap_OMPExtension():
                     Str=','.join(L)
                 self.fw('  ' + fvars.ftof(a.type) + ', target,allocatable,save:: pcopy__({})'.format(Str))
                 self.fw('  ' + fvars.ftof(a.type) + ', pointer::ptop__('+Str+'),ptopcopy__('+Str+')')
-            if a.name in self.ompvarlist:
+            if a.threadprivate:
                 self.fw('!$omp threadprivate(pcopy__)')
                 # self.fw('if (OMPAllocDebug.gt.1) then')
                 if self.ompdebug:
@@ -274,11 +263,11 @@ class PyWrap_OMPExtension():
         for s in self.slist:
             if s.group == g:                    
                 if s.dynamic:
-                    if s.name in self.ompvarlist:
+                    if s.threadprivate==1:
                         self.fw('!$omp threadprivate('+s.name+')')
                         self.ListThreadPrivateVars.append(s.name)
                 else:
-                    if s.name in self.ompvarlist:
+                    if s.threadprivate==1:
                         self.fw('!$omp threadprivate('+s.name+')')
                         self.ListThreadPrivateVars.append(s.name)
             
@@ -287,6 +276,39 @@ class PyWrap_OMPExtension():
                     if a.type == 'character':
                         pass
                     else:
-                        if a.name in self.ompvarlist:
+                        if a.threadprivate:
                             self.fw('!$omp threadprivate('+a.name+')')
                             self.ListThreadPrivateVars.append(a.name)
+    def PrintListThreadPrivateVars(self):
+        with open('ListThreadPrivateVariables_{}.txt'.format(self.pkgname),'w') as f:
+            for v in self.ListThreadPrivateVars:
+                f.write(v+'\n')
+            f.write('total={}\n'.format(len(self.ListThreadPrivateVars)))
+    
+                            
+    def writef90OMPInitHelper(self):
+        groupslist=[]
+        self.fw('subroutine OmpInitZero{}'.format(self.pkgname))
+        for a in self.alist:
+            if a.threadprivate and a.type != 'character': 
+                # groups to access variables                
+                if a.group not in groupslist:
+                    groupslist.append(a.group)
+                    
+        for s in self.slist: 
+            if s.threadprivate and s.type != 'character':
+                if s.group not in groupslist:
+                    groupslist.append(s.group)
+                
+        for g in groupslist:
+            self.fw('  use ' + g)
+        self.fw('!$omp parallel')    
+        for a in self.alist:
+            if a.threadprivate and a.type != 'character':
+                self.fw('{}=0'.format(a.name))
+        for s in self.slist:
+            if s.threadprivate and s.type != 'character':
+                self.fw('{}=0'.format(s.name))
+        self.fw('!$omp end parallel')        
+                
+        self.fw('end subroutine OmpInitZero{}'.format(self.pkgname) )
