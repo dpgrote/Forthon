@@ -205,7 +205,7 @@ fcompiler = FCompiler(machine=machine,
                       fcompname=fcomp,
                       fcompexec=fcompexec,
                       implicitnone=implicitnone,
-                      twounderscores=twounderscores)
+                      twounderscores=twounderscores,omp=omp)
 
 # --- Create some locals which are needed for strings below.
 f90free = fcompiler.f90free

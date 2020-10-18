@@ -338,7 +338,6 @@ def processfile(packname, filename, othermacros=[], timeroutines=0):
         # Look for attribute to add
         elif text[0] == '+':
             m = attribute_pat.match(text[1:])
-            print('text[1:]=',text[1:])
             i = m.end() + 1
             if i != -1:
                 if m.group(1)=='threadprivate':

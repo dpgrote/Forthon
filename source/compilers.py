@@ -53,6 +53,7 @@ class FCompiler:
         self.extra_link_args = []
         self.extra_compile_args = []
         self.define_macros = []
+        self.omp=omp
 
         if self.fcompexec in ['mpif90', 'mpifort']:
             self.getmpicompilerinfo()
@@ -129,8 +130,7 @@ class FCompiler:
             self.popt = '-g'
             self.extra_link_args += ['-g']
             self.extra_compile_args += ['-g', '-O0']
-        if omp:
-            self.extra_compile_args += ['-fopenmp']
+        
         # --- Add the compiler name to the forthon arguments
         self.forthonargs += ['-F ' + self.fcompname]
 
@@ -291,6 +291,8 @@ class FCompiler:
                 self.fopt = '-O3 -ip -unroll'
             else:
                 self.fopt = '-O3 -ip -unroll'
+            if self.omp:
+                self.fopt+=' -qopenmp'
             return 1
 
     def linux_g95(self):
@@ -358,6 +360,8 @@ class FCompiler:
                 self.libdirs.append(mveclibroot)
                 self.libs.append('mvec')
             self.fopt = '-O3 -ftree-vectorize -ftree-vectorizer-verbose=0'
+            if self.omp:
+                self.fopt+=' -fopenmp'
             return 1
 
     def linux_pg(self):
@@ -616,6 +620,8 @@ class FCompiler:
             # self.extra_link_args += ['-flat_namespace']  # This flag is no longer needed
             self.libdirs = self.findgnulibdirs(self.fcompname, self.fcompexec)
             self.libs = ['gfortran']
+            if omp:
+                self.fopt+=' -fopenmp'
             return 1
 
     def macosx_xlf(self):
@@ -685,6 +691,8 @@ class FCompiler:
             self.libdirs = [flibroot + '/lib']
             self.libs = ['???']
             self.fopts = '-O3'
+            if self.omp:
+                self.fopt+=' -fopenmp'
             return 1
 
     # -----------------------------------------------------------------------------
