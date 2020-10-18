@@ -311,6 +311,8 @@ def processfile(packname, filename, othermacros=[], timeroutines=0):
             elif text[i] == "'": i = re.search("'", text[2:]).start() + 2
             i = re.search('/', text[i:]).start() + i
             data = text[0:i+1]
+            # parse expression for size of data block with brackets
+            #Example: 'var(1:N-1) /(N-1)*0/
             if data.count('(')==1 and data.count(')')==1:
                  arg=str(eval(data.split('(')[1].split(')')[0]))
                  data=data.split('(')[0]+arg+data.split(')')[1]
