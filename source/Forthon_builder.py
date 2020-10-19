@@ -59,6 +59,8 @@ interfacefile  = args.interfacefile or (pkg + '.v')
 libdirs        = args.libdirs
 libs           = args.libs
 machine        = args.machine
+omp            = args.omp
+ompdebug       = args.ompdebug
 othermacros    = args.othermacros
 pkgbase        = args.pkgbase
 pkgdir         = args.pkgdir
@@ -72,9 +74,7 @@ verbose        = args.verbose
 with_feenableexcept = args.with_feenableexcept
 writemodules   = args.writemodules
 
-#omp related arguments
-omp=args.omp
-ompdebug=args.ompdebug
+
 # --- These args require special handling
 
 if initialgallot:

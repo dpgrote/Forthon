@@ -340,8 +340,8 @@ def processfile(packname, filename, othermacros=[], timeroutines=0):
             m = attribute_pat.match(text[1:])
             i = m.end() + 1
             if i != -1:
-                if m.group(1)=='threadprivate':
-                    v.threadprivate=1
+                if m.group(1) =='threadprivate':
+                    v.threadprivate = 1
                 else:
                     v.attr = v.attr + m.group(1) + ' '
                 

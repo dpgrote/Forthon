@@ -153,7 +153,7 @@ class FCompiler:
             else:
                 # --- Check that the compiler that mpifort is using is based on the
                 # --- specified compiler.
-                assert fcompname.find(self.fcompname) >= 0, Exception('The compiler specified, %s, is not the same kind as the one used by mpifort, %s.'%(self.fcompname, fcompname))
+                assert fcompname.find(self.fcompname) >= 0, Exception('The compiler specified, %s, is not the same kind as the one used by mpifort, %s.' % (self.fcompname, fcompname))
 
     def usecompiler(self, fcompname, fcompexec):
         'Check if the specified compiler is found'
@@ -254,7 +254,7 @@ class FCompiler:
             version = '0.0'
         vfloat = float('.'.join(version.split('.')[0:2]))
         if vfloat < 4.3:
-            print "gfortran will not be used, it's version is too old or unknown - upgrade to a newer version"
+            print("gfortran will not be used, it's version is too old or unknown - upgrade to a newer version")
             return False
         else:
             return True
@@ -266,10 +266,10 @@ class FCompiler:
             self.fcompname = 'ifort'
             self.f90free += ' -nofor_main -free -DIFC -fpp -fPIC'
             self.f90fixed += ' -nofor_main -132 -DIFC -fpp -fPIC'
-            self.f90free += ' -DFPSIZE=%s -r%s -Zp%s'%(realsize, realsize, realsize)
-            self.f90fixed += ' -DFPSIZE=%s -r%s -Zp%s'%(realsize, realsize, realsize)
-            self.f90free += ' -DISZ=%s -i%s'%(intsize, intsize)
-            self.f90fixed += ' -DISZ=%s -i%s'%(intsize, intsize)
+            self.f90free += ' -DFPSIZE=%s -r%s -Zp%s' % (realsize, realsize, realsize)
+            self.f90fixed += ' -DFPSIZE=%s -r%s -Zp%s' % (realsize, realsize, realsize)
+            self.f90free += ' -DISZ=%s -i%s' % (intsize, intsize)
+            self.f90fixed += ' -DISZ=%s -i%s' % (intsize, intsize)
             if self.implicitnone:
                 self.f90free += ' -implicitnone'
                 self.f90fixed += ' -implicitnone'
@@ -292,7 +292,7 @@ class FCompiler:
             else:
                 self.fopt = '-O3 -ip -unroll'
             if self.omp:
-                self.fopt+=' -qopenmp'
+                self.fopt += ' -qopenmp'
             return 1
 
     def linux_g95(self):
@@ -300,10 +300,10 @@ class FCompiler:
             self.fcompname = 'g95'
             self.f90free += ' -ffree-form -fPIC -Wno=155 -fshort-circuit'
             self.f90fixed += ' -ffixed-line-length-132 -fPIC -fshort-circuit'
-            self.f90free += ' -DFPSIZE=%s -r%s'%(realsize, realsize)
-            self.f90fixed += ' -DFPSIZE=%s -r%s'%(realsize, realsize)
-            self.f90free += ' -DISZ=%s -i%s'%(intsize, intsize)
-            self.f90fixed += ' -DISZ=%s -i%s'%(intsize, intsize)
+            self.f90free += ' -DFPSIZE=%s -r%s' % (realsize, realsize)
+            self.f90fixed += ' -DFPSIZE=%s -r%s' % (realsize, realsize)
+            self.f90free += ' -DISZ=%s -i%s' % (intsize, intsize)
+            self.f90fixed += ' -DISZ=%s -i%s' % (intsize, intsize)
             if self.implicitnone:
                 self.f90free += ' -fimplicit-none'
                 self.f90fixed += ' -fimplicit-none'
@@ -325,6 +325,8 @@ class FCompiler:
                 self.fopt = '-O3 -mfpmath=sse -ftree-vectorize -ftree-vectorizer-verbose=0 -funroll-loops -fstrict-aliasing -fsched-interblock -falign-loops=16 -falign-jumps=16 -falign-functions=16 -ffast-math -fstrict-aliasing'
             else:
                 self.fopt = '-O3'
+            if self.omp:
+                self.fopt += ' -fopenmp'
             return 1
 
     def linux_gfortran(self):
@@ -334,13 +336,13 @@ class FCompiler:
             self.fcompname = 'gfortran'
             self.f90free += ' -fPIC'
             self.f90fixed += ' -fPIC -ffixed-line-length-132'
-            self.f90free += ' -DFPSIZE=%s'%(realsize)
-            self.f90fixed += ' -DFPSIZE=%s'%(realsize)
+            self.f90free += ' -DFPSIZE=%s' % (realsize)
+            self.f90fixed += ' -DFPSIZE=%s' % (realsize)
             if realsize == '8':
                 self.f90free += ' -fdefault-real-8 -fdefault-double-8'
                 self.f90fixed += ' -fdefault-real-8 -fdefault-double-8'
-            self.f90free += ' -DISZ=%s'%(intsize)
-            self.f90fixed += ' -DISZ=%s'%(intsize)
+            self.f90free += ' -DISZ=%s' % (intsize)
+            self.f90fixed += ' -DISZ=%s' % (intsize)
             if intsize == '8':
                 self.f90free += ' -fdefault-integer-8'
                 self.f90fixed += ' -fdefault-integer-8'
@@ -361,7 +363,7 @@ class FCompiler:
                 self.libs.append('mvec')
             self.fopt = '-O3 -ftree-vectorize -ftree-vectorizer-verbose=0'
             if self.omp:
-                self.fopt+=' -fopenmp'
+                self.fopt += ' -fopenmp'
             return 1
 
     def linux_pg(self):
@@ -377,8 +379,8 @@ class FCompiler:
                 f90opts += ' -Msecond_underscore'
             else:
                 f90opts += ' -Mnosecond_underscore'
-            f90opts += ' -DFPSIZE=%s -r%s'%(realsize, realsize)
-            f90opts += ' -DISZ=%s -i%s'%(intsize, intsize)
+            f90opts += ' -DFPSIZE=%s -r%s' % (realsize, realsize)
+            f90opts += ' -DISZ=%s -i%s' % (intsize, intsize)
             self.f90free += f90opts
             self.f90fixed += f90opts
             self.popt = '-Mcache_align'
@@ -390,6 +392,8 @@ class FCompiler:
                 # --- When using pgcc for linking, this includes the needed fortran libraries.
                 self.extra_link_args += ['-pgf90libs']
             self.fopt = '-fast -Mcache_align'
+            if self.omp:
+                self.fopt += ' -fopenmp'
             return 1
 
     def linux_absoft(self):
@@ -398,16 +402,18 @@ class FCompiler:
             # --- Absoft
             self.f90free += ' -B108 -N113 -W132 -YCFRL=1 -YEXT_NAMES=ASIS'
             self.f90fixed += ' -B108 -N113 -W132 -YCFRL=1 -YEXT_NAMES=ASIS'
-            self.f90free += ' -DFPSIZE=%s'%(realsize)  # ???
-            self.f90fixed += ' -DFPSIZE=%s'%(realsize)  # ???
-            self.f90free += ' -DISZ=%s -i%s'%(intsize, intsize)
-            self.f90fixed += ' -DISZ=%s -i%s'%(intsize, intsize)
+            self.f90free += ' -DFPSIZE=%s' % (realsize)  # ???
+            self.f90fixed += ' -DFPSIZE=%s' % (realsize)  # ???
+            self.f90free += ' -DISZ=%s -i%s' % (intsize, intsize)
+            self.f90fixed += ' -DISZ=%s -i%s' % (intsize, intsize)
             self.popt = '-Mcache_align'
             self.forthonargs = ['--2underscores']  # --- This needs to be fixed XXX
             flibroot, b = os.path.split(self.findfile(self.fcompexec))
             self.libdirs = [flibroot + '/lib']
             self.libs = ['U77', 'V77', 'f77math', 'f90math', 'fio']
             self.fopt = '-O'
+            if self.omp:
+                self.fopt += ' -fopenmp'
             return 1
 
     def linux_lahey(self):
@@ -421,10 +427,10 @@ class FCompiler:
             # ap = preserve arithmetic precision
             self.f90free += ' --nfix --dbl --mlcdecl'
             self.f90fixed += ' --fix --wide --dbl --mlcdecl'
-            self.f90free += ' -DFPSIZE=%s'%(realsize)  # ???
-            self.f90fixed += ' -DFPSIZE=%s'%(realsize)  # ???
-            self.f90free += ' -DISZ=%s -i%s'%(intsize, intsize)
-            self.f90fixed += ' -DISZ=%s -i%s'%(intsize, intsize)
+            self.f90free += ' -DFPSIZE=%s' % (realsize)  # ???
+            self.f90fixed += ' -DFPSIZE=%s' % (realsize)  # ???
+            self.f90free += ' -DISZ=%s -i%s' % (intsize, intsize)
+            self.f90fixed += ' -DISZ=%s -i%s' % (intsize, intsize)
             self.popt = '-Mcache_align'
             if self.implicitnone:
                 self.f90free += ' --in'
@@ -440,16 +446,18 @@ class FCompiler:
                 self.fopt = '--O2 --unroll --prefetch --nap --npca --ntrace --nsav'
             else:
                 self.fopt = '--O2 --unroll --prefetch --nap --npca --ntrace --nsav'
+            if self.omp:
+                self.fopt += ' -fopenmp'
             return 1
 
     def linux_pathscale(self):
         if self.usecompiler('pathscale', 'pathf95'):
             self.f90free += ' -freeform -DPATHF90 -ftpp -fPIC -woff1615'
             self.f90fixed += ' -fixedform -extend_source -DPATHF90 -ftpp -fPIC -woff1615'
-            self.f90free += ' -DFPSIZE=%s -r%s'%(realsize, realsize)
-            self.f90fixed += ' -DFPSIZE=%s -r%s'%(realsize, realsize)
-            self.f90free += ' -DISZ=%s -i%s'%(intsize, intsize)
-            self.f90fixed += ' -DISZ=%s -i%s'%(intsize, intsize)
+            self.f90free += ' -DFPSIZE=%s -r%s' % (realsize, realsize)
+            self.f90fixed += ' -DFPSIZE=%s -r%s' % (realsize, realsize)
+            self.f90free += ' -DISZ=%s -i%s' % (intsize, intsize)
+            self.f90fixed += ' -DISZ=%s -i%s' % (intsize, intsize)
             if self.twounderscores:
                 self.f90free += ' -fsecond-underscore'
                 self.f90fixed += ' -fsecond-underscore'
@@ -471,30 +479,33 @@ class FCompiler:
                 self.fopt = '-O3 -OPT:Ofast -fno-math-errno'
             else:
                 self.fopt = '-Ofast'
+            if self.omp:
+                self.fopt += ' -fopenmp'
             return 1
 
     def linux_xlf_r(self):
         if self.usecompiler('xlf_r', 'xlf95_r'):
             self.fcompname = 'xlf'
             intsize = struct.calcsize('l')
-            f90 = ' -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qsave=defaultinit -WF,-DESSL'%locals()
+            f90 = ' -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qsave=defaultinit -WF,-DESSL' % locals()
             self.f90free += f90 + ' -qsuffix=f=f90:cpp=F90 -qfree=f90'
             self.f90fixed += f90 + ' -qfixed=132'
-            self.f90free += ' -WF,-DFPSIZE=%s'%(realsize)  # ???
-            self.f90fixed += ' -WF,-DFPSIZE=%s'%(realsize)  # ???
-            self.f90free += ' -WF,-DISZ=%s -qintsize%s'%(intsize, intsize)
-            self.f90fixed += ' -WF,-DISZ=%s -qintsize%s'%(intsize, intsize)
-            self.ld = 'xlf95_r -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp'%locals()
+            self.f90free += ' -WF,-DFPSIZE=%s' % (realsize)  # ???
+            self.f90fixed += ' -WF,-DFPSIZE=%s' % (realsize)  # ???
+            self.f90free += ' -WF,-DISZ=%s -qintsize%s' % (intsize, intsize)
+            self.f90fixed += ' -WF,-DISZ=%s -qintsize%s' % (intsize, intsize)
+            self.ld = 'xlf95_r -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp' % locals()
             if self.implicitnone:
                 self.f90free += ' -u'
                 self.f90fixed += ' -u'
             self.popt = '-O'
-            #self.extra_link_args = []
             self.extra_compile_args = []
             # --- Note that these are specific the machine intrepid at Argonne.
             self.libdirs = ['/gpfs/software/linux-sles10-ppc64/apps/V1R3M0/ibmcmp-sep2008/opt/xlf/bg/11.1/lib', '/gpfs/software/linux-sles10-ppc64/apps/V1R3M0/ibmcmp-sep2008/opt/xlsmp/bg/1.7/lib']
             self.libs = ['xlf90_r', 'xlsmp']
             self.fopt = '-O3 -qstrict -qarch=auto -qtune=auto -qsmp=omp'
+            if self.omp:
+                self.fopt += ' -fopenmp'
             return 1
 
     def linux_cray(self):
@@ -502,13 +513,13 @@ class FCompiler:
             self.fcompname = 'crayftn'
             self.f90free += ' -f free'
             self.f90fixed += ' -f fixed -N 132'
-            self.f90free += ' -DFPSIZE=%s'%(realsize)
-            self.f90fixed += ' -DFPSIZE=%s'%(realsize)
+            self.f90free += ' -DFPSIZE=%s' % (realsize)
+            self.f90fixed += ' -DFPSIZE=%s' % (realsize)
             if realsize == '8':
                 self.f90free += ' -s real64'
                 self.f90fixed += ' -s real64'
-            self.f90free += ' -DISZ=%s'%(intsize)
-            self.f90fixed += ' -DISZ=%s'%(intsize)
+            self.f90free += ' -DISZ=%s' % (intsize)
+            self.f90fixed += ' -DISZ=%s' % (intsize)
             if intsize == '8':
                 self.f90free += ' -s integer64'
                 self.f90fixed += ' -s integer64'
@@ -524,6 +535,8 @@ class FCompiler:
             self.libdirs = []
             self.libs = []
             self.fopt = '-O3'
+            if self.omp:
+                self.fopt += ' -fopenmp'
             return 1
 
     # -----------------------------------------------------------------------------
@@ -532,10 +545,10 @@ class FCompiler:
         if self.usecompiler('g95', 'g95'):
             self.fcompname = 'g95'
             self.f90fixed += ' -ffixed-line-length-132'
-            self.f90free += ' -DFPSIZE=%s -r%s'%(realsize, realsize)
-            self.f90fixed += ' -DFPSIZE=%s -r%s'%(realsize, realsize)
-            self.f90free += ' -DISZ=%s -i%s'%(intsize, intsize)
-            self.f90fixed += ' -DISZ=%s -i%s'%(intsize, intsize)
+            self.f90free += ' -DFPSIZE=%s -r%s' % (realsize, realsize)
+            self.f90fixed += ' -DFPSIZE=%s -r%s' % (realsize, realsize)
+            self.f90free += ' -DISZ=%s -i%s' % (intsize, intsize)
+            self.f90fixed += ' -DISZ=%s -i%s' % (intsize, intsize)
             if self.twounderscores:
                 self.f90free += ' -fsecond-underscore'
                 self.f90fixed += ' -fsecond-underscore'
@@ -553,6 +566,8 @@ class FCompiler:
             self.libdirs = self.findgnulibdirs(self.fcompname, self.fcompexec)
             self.libdirs.append('/lib/w32api')
             self.libs = ['f95']
+            if self.omp:
+                self.fopt += ' -fopenmp'
             return 1
 
     # -----------------------------------------------------------------------------
@@ -562,10 +577,10 @@ class FCompiler:
             self.fcompname = 'g95'
             self.f90free += ' -fzero -ffree-form -Wno=155'
             self.f90fixed += ' -fzero -ffixed-line-length-132'
-            self.f90free += ' -DFPSIZE=%s -r%s'%(realsize, realsize)
-            self.f90fixed += ' -DFPSIZE=%s -r%s'%(realsize, realsize)
-            self.f90free += ' -DISZ=%s -i%s'%(intsize, intsize)
-            self.f90fixed += ' -DISZ=%s -i%s'%(intsize, intsize)
+            self.f90free += ' -DFPSIZE=%s -r%s' % (realsize, realsize)
+            self.f90fixed += ' -DFPSIZE=%s -r%s' % (realsize, realsize)
+            self.f90free += ' -DISZ=%s -i%s' % (intsize, intsize)
+            self.f90fixed += ' -DISZ=%s -i%s' % (intsize, intsize)
             if self.implicitnone:
                 self.f90free += ' -fimplicit-none'
                 self.f90fixed += ' -fimplicit-none'
@@ -583,6 +598,8 @@ class FCompiler:
             self.extra_link_args += ['-flat_namespace']
             self.libdirs = self.findgnulibdirs(self.fcompname, self.fcompexec)
             self.libs = ['f95']
+            if self.omp:
+                self.fopt += ' -fopenmp'
             return 1
 
     def macosx_gfortran(self):
@@ -591,13 +608,13 @@ class FCompiler:
                 return None
             self.fcompname = 'gfortran'
             self.f90fixed += ' -ffixed-line-length-132'
-            self.f90free += ' -DFPSIZE=%s'%(realsize)
-            self.f90fixed += ' -DFPSIZE=%s'%(realsize)
+            self.f90free += ' -DFPSIZE=%s' % (realsize)
+            self.f90fixed += ' -DFPSIZE=%s' % (realsize)
             if realsize == '8':
                 self.f90free += ' -fdefault-real-8 -fdefault-double-8'
                 self.f90fixed += ' -fdefault-real-8 -fdefault-double-8'
-            self.f90free += ' -DISZ=%s'%(intsize)
-            self.f90fixed += ' -DISZ=%s'%(intsize)
+            self.f90free += ' -DISZ=%s' % (intsize)
+            self.f90fixed += ' -DISZ=%s' % (intsize)
             if intsize == '8':
                 self.f90free += ' -fdefault-integer-8'
                 self.f90fixed += ' -fdefault-integer-8'
@@ -621,7 +638,7 @@ class FCompiler:
             self.libdirs = self.findgnulibdirs(self.fcompname, self.fcompexec)
             self.libs = ['gfortran']
             if omp:
-                self.fopt+=' -fopenmp'
+                self.fopt += ' -fopenmp'
             return 1
 
     def macosx_xlf(self):
@@ -629,10 +646,10 @@ class FCompiler:
             self.fcompname = 'xlf'
             self.f90free += ' -WF,-DXLF -qsuffix=f=f90:cpp=F90 -qextname -qautodbl=dbl4 -qdpc=e -bmaxdata:0x70000000 -bmaxstack:0x10000000 -qinitauto'
             self.f90fixed += ' -WF,-DXLF -qextname -qfixed=132 -qautodbl=dbl4 -qdpc=e -bmaxdata:0x70000000 -bmaxstack:0x10000000 -qinitauto'
-            self.f90free += ' -WF,-DFPSIZE=%s'%(realsize)  # ???
-            self.f90fixed += ' -WF,-DFPSIZE=%s'%(realsize)  # ???
-            self.f90free += ' -WF,-DISZ=%s -qintsize%s'%(intsize, intsize)
-            self.f90fixed += ' -WF,-DISZ=%s -qintsize%s'%(intsize, intsize)
+            self.f90free += ' -WF,-DFPSIZE=%s' % (realsize)  # ???
+            self.f90fixed += ' -WF,-DFPSIZE=%s' % (realsize)  # ???
+            self.f90free += ' -WF,-DISZ=%s -qintsize%s' % (intsize, intsize)
+            self.f90fixed += ' -WF,-DISZ=%s -qintsize%s' % (intsize, intsize)
             if self.implicitnone:
                 self.f90free += ' -u'
                 self.f90fixed += ' -u'
@@ -641,6 +658,8 @@ class FCompiler:
             flibroot, b = os.path.split(self.findfile(self.fcompexec))
             self.libdirs = [flibroot + '/lib']
             self.libs = ['xlf90', 'xl', 'xlfmath']
+            if self.omp:
+                self.fopt += ' -fopenmp'
             return 1
 
     def macosx_absoft(self):
@@ -648,15 +667,17 @@ class FCompiler:
             self.fcompname = 'absoft'
             self.f90free += ' -N11 -N113 -YEXT_NAMES=LCS -YEXT_SFX=_'
             self.f90fixed += ' -f fixed -W 132 -N11 -N113 -YEXT_NAMES=LCS -YEXT_SFX=_'
-            self.f90free += ' -DFPSIZE=%s'%(realsize)  # ???
-            self.f90fixed += ' -DFPSIZE=%s'%(realsize)  # ???
-            self.f90free += ' -DISZ=%s -i%s'%(intsize, intsize)
-            self.f90fixed += ' -DISZ=%s -i%s'%(intsize, intsize)
+            self.f90free += ' -DFPSIZE=%s' % (realsize)  # ???
+            self.f90fixed += ' -DFPSIZE=%s' % (realsize)  # ???
+            self.f90free += ' -DISZ=%s -i%s' % (intsize, intsize)
+            self.f90fixed += ' -DISZ=%s -i%s' % (intsize, intsize)
             flibroot, b = os.path.split(self.findfile(self.fcompexec))
             self.libdirs = [flibroot + '/lib']
             self.extra_link_args += ['-flat_namespace', '-Wl,-undefined, suppress']
             self.libs = ['fio', 'f77math', 'f90math', 'f90math_altivec', 'lapack', 'blas']
             self.fopt = '-O3'
+            if self.omp:
+                self.fopt += ' -fopenmp'
             return 1
 
     def macosx_nag(self):
@@ -666,10 +687,10 @@ class FCompiler:
             # self.f90fixed += ' -132 -fpp -u -Wp,-macro=no_com -Wp,-fixed -fixed -Wc,-O3 -Wc,-funroll-loops -PIC -w -mismatch_all -kind=byte'
             self.f90free += ' -132 -fpp -Wp,-macro=no_com -free -PIC -u -w -mismatch_all -kind=byte -Oassumed=contig'
             self.f90fixed += ' -132 -fpp -Wp,-macro=no_com -Wp,-fixed -fixed -PIC -u -w -mismatch_all -kind=byte -Oassumed=contig'
-            self.f90free += ' -DFPSIZE=%s -r%s'%(realsize, realsize)
-            self.f90fixed += ' -DFPSIZE=%s -r%s'%(realsize, realsize)
-            self.f90free += ' -DISZ=%s -i%s'%(intsize, intsize)
-            self.f90fixed += ' -DISZ=%s -i%s'%(intsize, intsize)
+            self.f90free += ' -DFPSIZE=%s -r%s' % (realsize, realsize)
+            self.f90fixed += ' -DFPSIZE=%s -r%s' % (realsize, realsize)
+            self.f90free += ' -DISZ=%s -i%s' % (intsize, intsize)
+            self.f90fixed += ' -DISZ=%s -i%s' % (intsize, intsize)
             flibroot, b = os.path.split(self.findfile(self.fcompexec))
             self.extra_link_args += ['-flat_namespace', '-framework vecLib', '/usr/local/lib/NAGWare/quickfit.o', '/usr/local/lib/NAGWare/libf96.a']
             self.libs = ['m']
@@ -677,22 +698,24 @@ class FCompiler:
             self.fopt = '-O4 -Wc,-fast'
             self.fopt = '-O3 '  # -Wc,-fast'
             self.define_macros.append(('NAG', '1'))
+            if self.omp:
+                self.fopt += ' -fopenmp'
             return 1
 
     def macosx_gnu(self):
         if self.usecompiler('gnu', 'g95'):
             self.fcompname = 'gnu'
             self.f90fixed += ' -ffixed-form -ffixed-line-length-132'
-            self.f90free += ' -DFPSIZE=%s -r%s'%(realsize, realsize)
-            self.f90fixed += ' -DFPSIZE=%s -r%s'%(realsize, realsize)
-            self.f90free += ' -DISZ=%s -i%s'%(intsize, intsize)
-            self.f90fixed += ' -DISZ=%s -i%s'%(intsize, intsize)
+            self.f90free += ' -DFPSIZE=%s -r%s' % (realsize, realsize)
+            self.f90fixed += ' -DFPSIZE=%s -r%s' % (realsize, realsize)
+            self.f90free += ' -DISZ=%s -i%s' % (intsize, intsize)
+            self.f90fixed += ' -DISZ=%s -i%s' % (intsize, intsize)
             flibroot, b = os.path.split(self.findfile(self.fcompexec))
             self.libdirs = [flibroot + '/lib']
             self.libs = ['???']
             self.fopts = '-O3'
             if self.omp:
-                self.fopt+=' -fopenmp'
+                self.fopt += ' -fopenmp'
             return 1
 
     # -----------------------------------------------------------------------------
@@ -703,15 +726,17 @@ class FCompiler:
             self.fcompname = 'pgi'
             self.f90free += ' -Mextend -Mdclchk'
             self.f90fixed += ' -Mextend -Mdclchk'
-            self.f90free += ' -DFPSIZE=%s -r%s'%(realsize, realsize)
-            self.f90fixed += ' -DFPSIZE=%s -r%s'%(realsize, realsize)
-            self.f90free += ' -DISZ=%s -i%s'%(intsize, intsize)
-            self.f90fixed += ' -DISZ=%s -i%s'%(intsize, intsize)
+            self.f90free += ' -DFPSIZE=%s -r%s' % (realsize, realsize)
+            self.f90fixed += ' -DFPSIZE=%s -r%s' % (realsize, realsize)
+            self.f90free += ' -DISZ=%s -i%s' % (intsize, intsize)
+            self.f90fixed += ' -DISZ=%s -i%s' % (intsize, intsize)
             self.popt = '-Mcache_align'
             flibroot, b = os.path.split(self.findfile(self.fcompexec))
             self.libdirs = [flibroot + '/Lib']
             self.libs = ['???']
             self.fopt = '-fast -Mcache_align'
+            if self.omp:
+                self.fopt += ' -fopenmp'
             return 1
 
     def win32_intel(self):
@@ -719,14 +744,16 @@ class FCompiler:
             self.fcompname = 'ifl'
             self.f90free += ' -Qextend_source -Qautodouble -DIFC -FR -Qfpp -4Yd -C90 -Zp8 -Qlowercase -us -MT -Zl -static'
             self.f90fixed += ' -Qextend_source -Qautodouble -DIFC -FI -Qfpp -4Yd -C90 -Zp8 -Qlowercase -us -MT -Zl -static'
-            self.f90free += ' -DFPSIZE=%s'%(realsize)  # ???
-            self.f90fixed += ' -DFPSIZE=%s'%(realsize)  # ???
-            self.f90free += ' -DISZ=%s -i%s'%(intsize, intsize)
-            self.f90fixed += ' -DISZ=%s -i%s'%(intsize, intsize)
+            self.f90free += ' -DFPSIZE=%s' % (realsize)  # ???
+            self.f90fixed += ' -DFPSIZE=%s' % (realsize)  # ???
+            self.f90free += ' -DISZ=%s -i%s' % (intsize, intsize)
+            self.f90fixed += ' -DISZ=%s -i%s' % (intsize, intsize)
             flibroot, b = os.path.split(self.findfile(self.fcompexec))
             self.libdirs = [flibroot + '/Lib']
             self.libs = ['CEPCF90MD', 'F90MD', 'intrinsMD']
             self.fopt = '-O3'
+            if self.omp:
+                self.fopt += ' -fopenmp'
             return 1
 
     # -----------------------------------------------------------------------------
@@ -739,14 +766,14 @@ class FCompiler:
                 bmax = '-bmaxdata:0x70000000 -bmaxstack:0x10000000'
             else:
                 bmax = '-q64'
-            f90 = ' -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qsave=defaultinit -WF,-DESSL %(bmax)s'%locals()
+            f90 = ' -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qsave=defaultinit -WF,-DESSL  % (bmax)s' % locals()
             self.f90free += f90 + ' -qsuffix=f=f90:cpp=F90 -qfree=f90'
             self.f90fixed += f90 + ' -qfixed=132'
-            self.f90free += ' -WF,-DFPSIZE=%s'%(realsize)  # ???
-            self.f90fixed += ' -WF,-DFPSIZE=%s'%(realsize)  # ???
-            self.f90free += ' -WF,-DISZ=%s -qintsize%s'%(intsize, intsize)
-            self.f90fixed += ' -WF,-DISZ=%s -qintsize%s'%(intsize, intsize)
-            self.ld = 'xlf -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp %(bmax)s'%locals()
+            self.f90free += ' -WF,-DFPSIZE=%s' % (realsize)  # ???
+            self.f90fixed += ' -WF,-DFPSIZE=%s' % (realsize)  # ???
+            self.f90free += ' -WF,-DISZ=%s -qintsize%s' % (intsize, intsize)
+            self.f90fixed += ' -WF,-DISZ=%s -qintsize%s' % (intsize, intsize)
+            self.ld = 'xlf -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp  % (bmax)s' % locals()
             self.popt = '-O'
             self.extra_link_args += [bmax]
             self.extra_compile_args = [bmax]
@@ -755,6 +782,8 @@ class FCompiler:
                 self.f90fixed += ' -u'
             self.libs = ['xlf90', 'xlopt', 'xlf', 'xlomp_ser', 'pthread', 'essl']
             self.fopt = '-O3 -qstrict -qarch=auto -qtune=auto'
+            if self.omp:
+                self.fopt += ' -fopenmp'
             return 1
 
     def aix_mpxlf(self):
@@ -765,14 +794,14 @@ class FCompiler:
                 bmax = '-bmaxdata:0x70000000 -bmaxstack:0x10000000'
             else:
                 bmax = '-q64'
-            f90 = ' -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qsave=defaultinit -WF,-DMPIPARALLEL -WF,-DESSL %(bmax)s'%locals()
+            f90 = ' -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qsave=defaultinit -WF,-DMPIPARALLEL -WF,-DESSL  % (bmax)s' % locals()
             self.f90free += f90 + ' -qsuffix=f=f90:cpp=F90 -qfree=f90'
             self.f90fixed += f90 + ' -qfixed=132'
-            self.f90free += ' -WF,-DFPSIZE=%s'%(realsize)  # ???
-            self.f90fixed += ' -WF,-DFPSIZE=%s'%(realsize)  # ???
-            self.f90free += ' -WF,-DISZ=%s -qintsize%s'%(intsize, intsize)
-            self.f90fixed += ' -WF,-DISZ=%s -qintsize%s'%(intsize, intsize)
-            self.ld = 'mpxlf_r -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp %(bmax)s'%locals()
+            self.f90free += ' -WF,-DFPSIZE=%s' % (realsize)  # ???
+            self.f90fixed += ' -WF,-DFPSIZE=%s' % (realsize)  # ???
+            self.f90free += ' -WF,-DISZ=%s -qintsize%s' % (intsize, intsize)
+            self.f90fixed += ' -WF,-DISZ=%s -qintsize%s' % (intsize, intsize)
+            self.ld = 'mpxlf_r -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp  % (bmax)s' % locals()
             if self.implicitnone:
                 self.f90free += ' -u'
                 self.f90fixed += ' -u'
@@ -782,6 +811,8 @@ class FCompiler:
             self.libs = ['xlf90', 'xlopt', 'xlf', 'xlomp_ser', 'pthread', 'essl']
             self.defines = ['PYMPI=/usr/common/homes/g/grote/pyMPI']
             self.fopt = '-O3 -qstrict -qarch=auto -qtune=auto'
+            if self.omp:
+                self.fopt += ' -fopenmp'
             return 1
 
     def aix_xlf_r(self):
@@ -793,14 +824,14 @@ class FCompiler:
                 bmax = '-bmaxdata:0x70000000 -bmaxstack:0x10000000'
             else:
                 bmax = '-q64'
-            f90 = ' -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qsave=defaultinit -WF,-DESSL %(bmax)s'%locals()
+            f90 = ' -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qsave=defaultinit -WF,-DESSL  % (bmax)s' % locals()
             self.f90free += f90 + ' -qsuffix=f=f90:cpp=F90 -qfree=f90'
             self.f90fixed += f90 + ' -qfixed=132'
-            self.f90free += ' -WF,-DFPSIZE=%s'%(realsize)  # ???
-            self.f90fixed += ' -WF,-DFPSIZE=%s'%(realsize)  # ???
-            self.f90free += ' -WF,-DISZ=%s -qintsize%s'%(intsize, intsize)
-            self.f90fixed += ' -WF,-DISZ=%s -qintsize%s'%(intsize, intsize)
-            self.ld = 'xlf95_r -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp %(bmax)s'%locals()
+            self.f90free += ' -WF,-DFPSIZE=%s' % (realsize)  # ???
+            self.f90fixed += ' -WF,-DFPSIZE=%s' % (realsize)  # ???
+            self.f90free += ' -WF,-DISZ=%s -qintsize%s' % (intsize, intsize)
+            self.f90fixed += ' -WF,-DISZ=%s -qintsize%s' % (intsize, intsize)
+            self.ld = 'xlf95_r -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp  % (bmax)s' % locals()
             if self.implicitnone:
                 self.f90free += ' -u'
                 self.f90fixed += ' -u'
@@ -809,6 +840,8 @@ class FCompiler:
             self.extra_compile_args = [bmax]
             self.libs = ['xlf90', 'xlopt', 'xlf', 'xlsmp', 'pthreads', 'essl']
             self.fopt = '-O3 -qstrict -qarch=auto -qtune=auto -qsmp=omp'
+            if self.omp:
+                self.fopt += ' -fopenmp'
             return 1
 
     def aix_mpxlf64(self):
@@ -820,14 +853,14 @@ class FCompiler:
                 bmax = '-bmaxdata:0x70000000 -bmaxstack:0x10000000'
             else:
                 bmax = '-q64'
-            f90 = ' -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qsave=defaultinit -WF,-DMPIPARALLEL -WF,-DESSL %(bmax)s'%locals()
+            f90 = ' -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qsave=defaultinit -WF,-DMPIPARALLEL -WF,-DESSL  % (bmax)s' % locals()
             self.f90free += f90 + ' -qsuffix=f=f90:cpp=F90 -qfree=f90'
             self.f90fixed += f90 + ' -qfixed=132'
-            self.f90free += ' -WF,-DFPSIZE=%s'%(realsize)  # ???
-            self.f90fixed += ' -WF,-DFPSIZE=%s'%(realsize)  # ???
-            self.f90free += ' -WF,-DISZ=%s -qintsize%s'%(intsize, intsize)
-            self.f90fixed += ' -WF,-DISZ=%s -qintsize%s'%(intsize, intsize)
-            self.ld = 'mpxlf95_r -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp %(bmax)s'%locals()
+            self.f90free += ' -WF,-DFPSIZE=%s' % (realsize)  # ???
+            self.f90fixed += ' -WF,-DFPSIZE=%s' % (realsize)  # ???
+            self.f90free += ' -WF,-DISZ=%s -qintsize%s' % (intsize, intsize)
+            self.f90fixed += ' -WF,-DISZ=%s -qintsize%s' % (intsize, intsize)
+            self.ld = 'mpxlf95_r -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp  % (bmax)s' % locals()
             if self.implicitnone:
                 self.f90free += ' -u'
                 self.f90fixed += ' -u'
@@ -837,6 +870,8 @@ class FCompiler:
             self.libs = ['xlf90', 'xlopt', 'xlf', 'xlomp_ser', 'pthread', 'essl']
             self.defines = ['PYMPI=/usr/common/homes/g/grote/pyMPI']
             self.fopt = '-O3 -qstrict -qarch=auto -qtune=auto'
+            if self.omp:
+                self.fopt += ' -fopenmp'
             return 1
 
     def aix_pghpf(self):
@@ -845,13 +880,15 @@ class FCompiler:
             self.fcompname = 'pghpf'
             self.f90free += ' -Mextend -Mdclchk'
             self.f90fixed += ' -Mextend -Mdclchk'
-            self.f90free += ' -DFPSIZE=%s -r%s'%(realsize, realsize)
-            self.f90fixed += ' -DFPSIZE=%s -r%s'%(realsize, realsize)
-            self.f90free += ' -DISZ=%s -i%s'%(intsize, intsize)
-            self.f90fixed += ' -DISZ=%s -i%s'%(intsize, intsize)
+            self.f90free += ' -DFPSIZE=%s -r%s' % (realsize, realsize)
+            self.f90fixed += ' -DFPSIZE=%s -r%s' % (realsize, realsize)
+            self.f90free += ' -DISZ=%s -i%s' % (intsize, intsize)
+            self.f90fixed += ' -DISZ=%s -i%s' % (intsize, intsize)
             self.popt = '-Mcache_align'
             flibroot, b = os.path.split(self.findfile(self.fcompexec))
             self.libdirs = [flibroot + '/lib']
             self.libs = ['pghpf']  # ???
             self.fopt = '-fast -Mcache_align'
+            if self.omp:
+                self.fopt += ' -fopenmp'
             return 1
