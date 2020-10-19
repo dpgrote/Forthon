@@ -272,6 +272,12 @@ class PyWrap_OMPExtension():
         self.fw('subroutine OmpInitZero{}'.format(self.pkgname))
         for a in self.alist:
             if a.threadprivate and a.type != 'character':
+                groupsdim = self.dimsgroups(a.dimstring)
+                for g in groupsdim:
+                    if g not in groupslist:
+                        groupslist.append(g)
+        for a in self.alist:
+            if a.threadprivate and a.type != 'character':
                 # groups to access variables
                 if a.group not in groupslist:
                     groupslist.append(a.group)
