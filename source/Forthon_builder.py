@@ -313,6 +313,10 @@ for i in includedirs:
 # --- Add in any user supplied cargs
 if cargs is not None:
     extra_compile_args.append(cargs)
+# This is for the c compiler. How to autodetect c compiler and set corresponding openmp flag?       
+# Flag from setup.py better?
+#if omp:
+#    extra_compile_args.append('-fopenmp')
 
 pypreproc = '%(python)s -c "from Forthon.preprocess import main;main()" %(f90)s -t%(machine)s %(forthonargs)s'%locals()
 forthon = '%(python)s -c "from Forthon.wrappergenerator import wrappergenerator_main;wrappergenerator_main()"'%locals()
