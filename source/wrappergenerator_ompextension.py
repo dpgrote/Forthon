@@ -286,7 +286,9 @@ class PyWrap_OMPExtension():
         self.fw('!$omp parallel')
         for a in self.alist:
             if a.threadprivate and a.type != 'character':
-                self.fw('{}=0'.format(a.name))
+                S = self.prefixdimsf(re.sub('[ \t\n]', '', a.dimstring))
+                S = self.ProcessDim(S)
+                self.fw('{}{}=0'.format(a.name, S))
         for s in self.slist:
             if s.threadprivate and s.type != 'character':
                 self.fw('{}=0'.format(s.name))
