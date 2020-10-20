@@ -200,12 +200,13 @@ interfacefile = fixpath(os.path.join(upbuilddir, interfacefile))
 upfortranfile = os.path.join(upbuilddir, fortranfile)
 
 # --- Pick the fortran compiler
+print('****************** F compiler omp:,', omp)
 fcompiler = FCompiler(machine=machine,
                       debug=debug,
                       fcompname=fcomp,
                       fcompexec=fcompexec,
                       implicitnone=implicitnone,
-                      twounderscores=twounderscores,omp=omp)
+                      twounderscores=twounderscores, omp=omp)
 
 # --- Create some locals which are needed for strings below.
 f90free = fcompiler.f90free
