@@ -42,7 +42,7 @@ except (subprocess.CalledProcessError, OSError):
     # --- This version was obtained from a non-git distrobution. Use the
     # --- saved commit hash from the release.
     # --- This is automatically updated by version.py.
-    commithash = '9a3e730'
+    commithash = '5c19d86'
 
 with open('source/version.py','w') as ff:
     ff.write("version = '%s'\n"%version)
