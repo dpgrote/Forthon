@@ -79,6 +79,9 @@ parser.add_option('-L', '--libdirs', action='append', default=[], help='Addition
 parser.add_option('-t', '--machine', default=sys.platform, help='Machine type. Will automatically be determined if not supplied. Can be one of linux2, linux3, aix4, aix5, darwin, win32.')
 parser.add_option('--macros', action='append', dest='othermacros', default=[], metavar="MACROS", help='Other interface files whose macros are needed')
 
+parser.add_option('--omp',default=False,action='store_true', help="Activate OpenMP features")
+parser.add_option('--ompdebug', action='store_true',default=False, help="flag to activate printing of omp debug log during execution of target program (not Forthon itself).")
+
 parser.add_option('--pkgbase', default=None, help='Base name of code, when installed. This is use when the package is installed as part of a larger code, when the installed package name is different than the package name of the comiled module.')
 parser.add_option('--pkgdir', default=None, help='Directory where files are that are to be installed with the wrapper')
 parser.add_option('--pkgsuffix', default='', help='Suffix added to the name of the package when installed')
@@ -100,6 +103,9 @@ parser.add_option('-v', '--verbose', action='store_true', default=False, help='T
 
 parser.add_option('--writemodules', action='store_true', default=True, dest='writemodules')
 parser.add_option('--nowritemodules', action='store_false', default=True, dest='writemodules', help="Don't write out the module definitions. Useful if the modules have been written already. Note that if variables of derived type are used, the original code will need to be modified. See example2. Also note that if this option is used, no checks are made to ensure the consistency between the interface file description and the actual module.")
+
+
+
 
 # --- Print help and then exit if no arguments are given
 if len(sys.argv) == 1:

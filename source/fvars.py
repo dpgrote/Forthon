@@ -22,6 +22,7 @@ class Fvars:
     parameter = 0
     setaction = None
     getaction = None
+    threadprivate=0
 
 class Fargs:
     name = ''

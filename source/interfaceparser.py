@@ -39,7 +39,7 @@ def processfile(packname, filename, othermacros=[], timeroutines=0):
 
     # Check to make sure that the package name is correct
     if packname != line:
-        print """
+        print("""
 
     Warning: the package name in the file does not agree
     with the file name. Make sure that the first line of the
@@ -52,7 +52,7 @@ def processfile(packname, filename, othermacros=[], timeroutines=0):
     your system. (This can be done in vi by opening the file and
     typing ":set fileformat=unix" and then saving the file.)
 
-    """%(packname, line)
+    """%(packname, line))
         return []
 
     # Remove all line continuation marks
@@ -246,7 +246,10 @@ def processfile(packname, filename, othermacros=[], timeroutines=0):
                 timerv.group = group
                 timerv.attr = attributes
                 vlist.append(timerv)
-
+        # Look for private remark
+        # elif re.match('threadprivate', text):
+        #     print('text={}\n'.format(text))
+        #     v.threadprivate=1
         # Check if variable is a subroutine
         elif re.match('subroutine[\s\$#]', text):
             v.function = 'fsub'
@@ -308,6 +311,11 @@ def processfile(packname, filename, othermacros=[], timeroutines=0):
             elif text[i] == "'": i = re.search("'", text[2:]).start() + 2
             i = re.search('/', text[i:]).start() + i
             data = text[0:i+1]
+            # parse expression for size of data block with brackets
+            #Example: 'var(1:N-1) /(N-1)*0/
+            if data.count('(')==1 and data.count(')')==1:
+                 arg=str(eval(data.split('(')[1].split(')')[0]))
+                 data=data.split('(')[0]+arg+data.split(')')[1]
             # Handle the old Basis syntax for initial logical values.
             if data[1:-1] == 'FALSE': data = '/.false./'
             if data[1:-1] == 'TRUE': data = '/.true./'
@@ -332,7 +340,11 @@ def processfile(packname, filename, othermacros=[], timeroutines=0):
             m = attribute_pat.match(text[1:])
             i = m.end() + 1
             if i != -1:
-                v.attr = v.attr + m.group(1) + ' '
+                if m.group(1) =='threadprivate':
+                    v.threadprivate = 1
+                else:
+                    v.attr = v.attr + m.group(1) + ' '
+                
             readyfortype = 0
 
         # Look for attribute to subtract
@@ -370,7 +382,7 @@ def processfile(packname, filename, othermacros=[], timeroutines=0):
         elif text[0] == '$':
             i = re.search('\n', text).start() - 1
             readyfortype = 0
-
+        
         # This only leaves a variable name or a new type
         else:
             if not readyfortype:
@@ -520,7 +532,7 @@ def findmatchingparenthesis(i, text, errname):
             elif text[i] == ')':
                 p = p - 1
         except IndexError:
-            print 'Error in subscript of variable '+errname
+            print('Error in subscript of variable '+errname)
     return i
 
 def convertdimstringtodims(dimstring):

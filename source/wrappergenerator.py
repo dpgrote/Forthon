@@ -13,14 +13,17 @@ import pickle
 from Forthon_options import args
 from cfinterface import *
 import wrappergen_derivedtypes
+from wrappergenerator_ompextension import PyWrap_OMPExtension 
 if sys.hexversion >= 0x20501f0:
     import hashlib
 else:
     # --- hashlib was not available in python earlier than 2.5.
     import md5 as hashlib
+    
 
 
-class PyWrap:
+
+class PyWrap(PyWrap_OMPExtension):
     """
     Usage:
       -a       All groups will be allocated on initialization
@@ -39,7 +42,7 @@ class PyWrap:
 
     def __init__(self, varfile, pkgname, pkgsuffix, pkgbase, initialgallot=1, writemodules=1,
                  otherinterfacefiles=[], other_scalar_vars=[], timeroutines=0,
-                 otherfortranfiles=[], fcompname=None):
+                 otherfortranfiles=[], fcompname=None, ompactive=False, ompdebug=False):
         self.varfile = varfile
         self.pkgname = pkgname
         self.pkgsuffix = pkgsuffix
@@ -52,15 +55,15 @@ class PyWrap:
         self.otherfortranfiles = otherfortranfiles
         self.fcompname = fcompname
         self.isz = isz  # isz defined in cfinterface
-
         self.processvariabledescriptionfile()
+        self.OMPInit(ompactive, ompdebug)
 
     def cname(self, n):
         # --- Standard name of the C interface to a Fortran routine
         # --- pkg_varname
         return self.pkgname + '_' + n
 
-    transtable = (10*string.ascii_lowercase)[:256]
+    transtable = (10 * string.ascii_lowercase)[:256]
 
     def fsub(self, prefix, suffix=''):
         """
@@ -122,7 +125,7 @@ class PyWrap:
         sl = re.split(',', dim[1:-1])
         for i in range(len(sl)):
             if sl[i] == ':':
-                sl[i] = 'dims__(%d)'%(i + 1)
+                sl[i] = 'dims__(%d)' % (i + 1)
         dim = '(' + ','.join(sl) + ')'
         return dim.lower()
 
@@ -165,9 +168,9 @@ class PyWrap:
             # --- continuation marks in between any variable names.
             # --- This is the same as \W, but also skips %, since PG compilers
             # --- don't seem to like a line continuation mark just before a %.
-            ss = re.search('[^a-zA-Z0-9_%]', text[i+130::-1])
+            ss = re.search('[^a-zA-Z0-9_%]', text[i + 130::-1])
             assert ss is not None, "Forthon can't find a place to break up this line:\n" + text
-            text = text[:i+130-ss.start()] + '&\n' + text[i+130-ss.start():]
+            text = text[:i + 130-ss.start()] + '&\n' + text[i+130-ss.start():]
             i += 130 - ss.start() + 1
         if noreturn:
             self.ffile.write(text)
@@ -351,16 +354,16 @@ class PyWrap:
             self.cw('Fortranscalar ' + self.pkgname + '_fscalars[' + repr(len(self.slist)) + ']={')
             for i in range(len(self.slist)):
                 s = self.slist[i]
-                self.cw('{NPY_%s,'%fvars.ftop(s.type) +
-                        '"%s",'%s.type +
-                        '"%s",'%s.name +
+                self.cw('{NPY_%s,' % fvars.ftop(s.type) +
+                        '"%s",' % s.type +
+                        '"%s",' % s.name +
                         'NULL,' +
-                        '"%s",'%s.group +
-                        '"%s",'%s.attr +
-                        '"%s",'%repr(s.comment)[1:-1].replace('"', '\\"') +
-                        '"%s",'%repr(s.unit)[1:-1] +
-                        '%i,'%s.dynamic +
-                        '%i,'%s.parameter +
+                        '"%s",' % s.group +
+                        '"%s",' % s.attr +
+                        '"%s",' % repr(s.comment)[1:-1].replace('"', '\\"') +
+                        '"%s",' % repr(s.unit)[1:-1] +
+                        '%i,' % s.dynamic +
+                        '%i,' % s.parameter +
                         'NULL,' +  # setscalarpointer
                         'NULL,' +  # getscalarpointer
                         'NULL,' +  # setaction
@@ -383,23 +386,23 @@ class PyWrap:
                     initvalue = a.data[1:-1]
                 else:
                     initvalue = '0'
-                self.cw('{NPY_%s,'%fvars.ftop(a.type) +
-                        '%d,'%a.dynamic +
-                        '%d,'%len(a.dims) +
+                self.cw('{NPY_%s,' % fvars.ftop(a.type) +
+                        '%d,' % a.dynamic +
+                        '%d,'% len(a.dims) +
                         'NULL,' +
-                        '"%s",'%a.name +
+                        '"%s",' % a.name +
                         '{NULL},' +
                         'NULL,' +  # setarraypointer
                         'NULL,' +  # getarraypointer
                         'NULL,' +  # setaction
                         'NULL,' +  # getaction
-                        '%s,'%initvalue +
+                        '%s,' % initvalue +
                         'NULL,' +
-                        '"%s",'%a.group +
-                        '"%s",'%a.attr +
-                        '"%s",'%repr(a.comment)[1:-1].replace('"', '\\"') +
-                        '"%s",'%repr(a.unit)[1:-1] +
-                        '"%s"}'%repr(a.dimstring)[1:-1], noreturn=1)
+                        '"%s",' % a.group +
+                        '"%s",' % a.attr +
+                        '"%s",' % repr(a.comment)[1:-1].replace('"', '\\"') +
+                        '"%s",' % repr(a.unit)[1:-1] +
+                        '"%s"}' % repr(a.dimstring)[1:-1], noreturn=1)
                 if i < len(self.alist) - 1:
                     self.cw(',')
             self.cw('};')
@@ -415,32 +418,32 @@ class PyWrap:
             s = self.slist[i]
             if (s.dynamic or s.derivedtype) and not s.parameter:
                 setscalarpointer = '*' + fname(self.fsub('setscalarpointer', s.name))
-                self.cw('obj->fscalars[%d].setscalarpointer = %s;'%(i, setscalarpointer))
+                self.cw('obj->fscalars[%d].setscalarpointer = %s;' % (i, setscalarpointer))
                 if s.dynamic:
                     getscalarpointer = '*' + fname(self.fsub('getscalarpointer', s.name))
-                    self.cw('obj->fscalars[%d].getscalarpointer = %s;'%(i, getscalarpointer))
+                    self.cw('obj->fscalars[%d].getscalarpointer = %s;' % (i, getscalarpointer))
             if s.setaction is not None:
                 setaction = '*' + fname(self.fsub('setaction', s.name))
-                self.cw('obj->fscalars[%d].setaction = %s;'%(i, setaction))
+                self.cw('obj->fscalars[%d].setaction = %s;' % (i, setaction))
             if s.getaction is not None:
                 getaction = '*' + fname(self.fsub('getaction', s.name))
-                self.cw('obj->fscalars[%d].getaction = %s;'%(i, getaction))
+                self.cw('obj->fscalars[%d].getaction = %s;' % (i, getaction))
 
         # --- Arrays
         for i in range(len(self.alist)):
             a = self.alist[i]
             if a.dynamic:
                 setarraypointer = '*' + fname(self.fsub('setarraypointer', a.name))
-                self.cw('obj->farrays[%d].setarraypointer = %s;'%(i, setarraypointer))
+                self.cw('obj->farrays[%d].setarraypointer = %s;' % (i, setarraypointer))
             if re.search('fassign', a.attr):
                 getarraypointer = '*' + fname(self.fsub('getarraypointer', a.name))
-                self.cw('obj->farrays[%d].getarraypointer = %s;'%(i, getarraypointer))
+                self.cw('obj->farrays[%d].getarraypointer = %s;' % (i, getarraypointer))
             if a.setaction is not None:
                 setaction = '*' + fname(self.fsub('setaction', a.name))
-                self.cw('obj->farrays[%d].setaction = %s;'%(i, setaction))
+                self.cw('obj->farrays[%d].setaction = %s;' % (i, setaction))
             if a.getaction is not None:
                 getaction = '*' + fname(self.fsub('getaction', a.name))
-                self.cw('obj->farrays[%d].getaction = %s;'%(i, getaction))
+                self.cw('obj->farrays[%d].getaction = %s;' % (i, getaction))
 
         self.cw('}')
 
@@ -540,7 +543,7 @@ class PyWrap:
                 self.cw('  for (i=0;i<' + repr(len(f.args)) + ';i++) ax[i] = NULL;')
 
             # --- Parse incoming arguments into a list of PyObjects
-            self.cw('  if (!PyArg_ParseTuple(args, "' + 'O'*len(f.args) + '"', noreturn=1)
+            self.cw('  if (!PyArg_ParseTuple(args, "' + 'O' * len(f.args) + '"', noreturn=1)
             for i in range(len(f.args)):
                 self.cw(', &pyobj[' + repr(i) + ']', noreturn=1)
             self.cw(')) return NULL;')
@@ -569,7 +572,7 @@ class PyWrap:
                     self.cw('    PyErr_SetString(ErrorObject, e);')
                     self.cw('    goto err;}')
                     if f.args[i].type == 'string' or f.args[i].type == 'character':
-                        self.cw(' FSETSTRING(fstr[%d], PyArray_BYTES(ax[%d]), PyArray_ITEMSIZE(ax[%d]));'%(istr, i, i))
+                        self.cw(' FSETSTRING(fstr[%d], PyArray_BYTES(ax[%d]), PyArray_ITEMSIZE(ax[%d]));' % (istr, i, i))
                         istr = istr + 1
                 else:
                     self.cw('  {')
@@ -612,7 +615,7 @@ class PyWrap:
                     for d in arraydimvarnames:
                         i = 0
                         while True:
-                            m = re.search(r'\b'+d+r'\b', dim[i:])
+                            m = re.search(r'\b' + d + r'\b', dim[i:])
                             if m is None:
                                 break
                             else:
@@ -628,7 +631,7 @@ class PyWrap:
                                     elif dim[p2] == ')':
                                         nn -= 1
                                 # --- Do the replacement
-                                dim = dim[:p1] + '[' + dim[p1:p2+1] + '-1]' + dim[p2+1:]
+                                dim = dim[:p1] + '[' + dim[p1:p2 + 1] + '-1]' + dim[p2 + 1:]
                                 i = p2 + 1
                     return dim
 
@@ -654,12 +657,12 @@ class PyWrap:
                         # --- Check the number of dimensions of the input argument
                         # --- For a 1-D argument, allow a scaler to be passed, which has
                         # --- a number of dimensions (nd) == 0.
-                        self.cw('  if (!(PyArray_NDIM(ax[%d]) == %d'%(i, len(arg.dims)), noreturn=1)
+                        self.cw('  if (!(PyArray_NDIM(ax[%d]) == %d' % (i, len(arg.dims)), noreturn=1)
                         if len(arg.dims) == 1:
                             self.cw('      ||PyArray_NDIM(ax[%d]) == 0)) {'%i)
                         else:
                             self.cw('      )) {')
-                        self.cw('    sprintf(e, "Argument %s in %s '%(arg.name, f.name) +
+                        self.cw('    sprintf(e, "Argument %s in %s ' % (arg.name, f.name) +
                                 'has the wrong number of dimensions");')
                         self.cw('    PyErr_SetString(ErrorObject, e);')
                         self.cw('    goto err;}')
@@ -709,7 +712,7 @@ class PyWrap:
                 self.cw('  ')
             else:
                 self.cw('  r = ')
-            self.cw(fname(f.name) + '(', noreturn=1)
+            self.cw(fname(f.name) + '(', noreturn = 1)
             i = 0
             istr = 0
             for a in f.args:
@@ -718,7 +721,7 @@ class PyWrap:
                 if fvars.isderivedtype(a):
                     self.cw('((ForthonObject *)(pyobj[' + repr(i) + ']))->fobj', noreturn=1)
                 elif a.type == 'string' or a.type == 'character':
-                    self.cw('fstr[%d]'%(istr), noreturn=1)
+                    self.cw('fstr[%d]'%(istr), noreturn = 1)
                     istr = istr + 1
                 else:
                     self.cw('(' + fvars.ftoc(a.type) + ' *)(PyArray_BYTES(ax[' + repr(i) + ']))', noreturn=1)
@@ -809,13 +812,13 @@ class PyWrap:
                         self.cw('(' + d.high + ') - ', noreturn=1)
                     else:
                         if not self.dimisparameter(d.high):
-                            raise SyntaxError('%s: static dims must be constants or parameters'%a.name)
+                            raise SyntaxError('%s: static dims must be constants or parameters' % a.name)
                         self.cw('(' + self.prefixdimsc(d.high) + ') - ', noreturn=1)
                     if re.search('[a-zA-Z]', d.low) is None:
                         self.cw('(' + d.low + ') + 1);')
                     else:
                         if not self.dimisparameter(d.low):
-                            raise SyntaxError('%s: static dims must be constants or parameters'%a.name)
+                            raise SyntaxError('%s: static dims must be constants or parameters' % a.name)
                         self.cw('(' + self.prefixdimsc(d.low) + ') + 1);')
 
         self.cw('}')
@@ -850,7 +853,7 @@ class PyWrap:
             vname = self.pkgname + '_farrays[' + repr(i) + ']'
             if a.dynamic == 1 or a.dynamic == 2:
                 j = 0
-                self.cw('  if (i == -1 || i == %d) {'%i)
+                self.cw('  if (i == -1 || i == %d) {' % i)
                 # --- create lines of the form dims[1] = high - low + 1
                 for d in a.dims:
                     if d.high == '':
@@ -876,7 +879,7 @@ class PyWrap:
         self.cw('void ' + self.pkgname + 'setdims(char *name, ForthonObject *obj, long i)')
         self.cw('{')
         for groupinfo in dyngroups:
-            self.cw('  if (i == -1 || (%d <= i && i <= %d))'%tuple(groupinfo[1:]), noreturn=1)
+            self.cw('  if (i == -1 || (%d <= i && i <= %d))' % tuple(groupinfo[1:]), noreturn=1)
             self.cw('  ' + self.pkgname + 'setdims' + groupinfo[0] + '(name, i);')
         self.cw('}')
 
@@ -888,7 +891,7 @@ class PyWrap:
         # --- checks the consistency of the arguments for each call.
         # --- The versions are otherwise identical.
         for tt in ['real', 'float', 'double', 'integer', 'character', 'logical', 'complex']:
-            self.cw('void ' + fname(self.fsub('grabscalarpointers_'+tt)) + '(long *i, char *p)')
+            self.cw('void ' + fname(self.fsub('grabscalarpointers_' + tt)) + '(long *i, char *p)')
             self.cw('{')
             self.cw('  /* Gabs pointer for the scalar */')
             self.cw('  ' + self.pkgname + '_fscalars[*i].data = (char *)p;')
@@ -907,7 +910,7 @@ class PyWrap:
         # --- checks the consistency of the arguments for each call.
         # --- The versions are otherwise identical.
         for tt in ['real', 'float', 'double', 'integer', 'character', 'logical', 'complex']:
-            self.cw('void ' + fname(self.fsub('grabarraypointers_'+tt)) + '(long *i, char *p)')
+            self.cw('void ' + fname(self.fsub('grabarraypointers_' + tt)) + '(long *i, char *p)')
             self.cw('{')
             self.cw('  /* Grabs pointer for the array */')
             self.cw('  ' + self.pkgname + '_farrays[*i].data.s = (char *)p;')
@@ -1035,9 +1038,9 @@ class PyWrap:
         self.cw('  PyModule_AddObject(m, "' + self.pkgname + 'error", ErrorObject);')
         self.cw('  PyModule_AddObject(m, "fcompname", ' + 'PyUnicode_FromString("' + self.fcompname + '"));')
         if sys.hexversion >= 0x03000000:
-            self.cw('  PyModule_AddObject(m, "realsize", ' + 'PyLong_FromLong((long)%s'%realsize + '));')
+            self.cw('  PyModule_AddObject(m, "realsize", ' + 'PyLong_FromLong((long)%s' % realsize + '));')
         else:
-            self.cw('  PyModule_AddObject(m, "realsize", ' + 'PyInt_FromLong((long)%s'%realsize + '));')
+            self.cw('  PyModule_AddObject(m, "realsize", ' + 'PyInt_FromLong((long)%s' % realsize + '));')
         self.cw('  if (PyErr_Occurred()) {')
         self.cw('    PyErr_Print();')
         self.cw('    Py_FatalError("can not initialize module ' + self.pkgname + '");')
@@ -1080,7 +1083,6 @@ class PyWrap:
         # --- Write out f90 modules, including any data statements
         if self.writemodules:
             self.writef90modules()
-
         ###########################################################################
         self.fw('subroutine ' + self.fsub('passpointers') + '()')
 
@@ -1119,19 +1121,25 @@ class PyWrap:
         # --- Pointers must be explicitly nullified in order to get
         # --- associated to return a false value.
         self.fw('subroutine ' + self.fsub('nullifypointers') + '()')
-
         # --- Write out the Use statements
         for g in self.groups + self.hidden_groups:
             self.fw('  use ' + g)
-
+        if self.ompactive:
+            self.fw('integer::tid,omp_get_thread_num')
         for i in range(len(self.slist)):
             s = self.slist[i]
             if s.dynamic:
-                self.fw('  nullify(' + s.name + ')')
+                if self.ompactive:
+                    self.ThreadedNullify(s)
+                else:
+                    self.fw('  nullify(' + s.name + ')')
         for i in range(len(self.alist)):
             a = self.alist[i]
             if a.dynamic:
-                self.fw('  nullify(' + a.name + ')')
+                if self.ompactive:
+                    self.ThreadedNullify(a)
+                else: 
+                    self.fw('  nullify(' + a.name + ')')
 
         self.fw('  return')
         self.fw('end')
@@ -1197,14 +1205,17 @@ class PyWrap:
                 else:
                     self.fw('  ' + fvars.ftof(a.type) + ', target:: p__' +
                             self.prefixdimsf(re.sub('[ \t\n]', '', a.dimstring)))
-                self.fw('  ' + a.name + ' => p__')
+                if self.ompactive:
+                    self.ThreadedAssociation(a)
+                else:
+                    self.fw('  ' + a.name + ' => p__')
                 self.fw('  return')
                 self.fw('end')
                 if re.search('fassign', a.attr):
                     self.fw('subroutine ' + self.fsub('getarraypointer', a.name) + '(farray__, fobj__)')
                     self.fw('  use ' + a.group)
                     self.fw('  integer(' + self.isz + '):: farray__, fobj__')
-                    self.fw('  integer(' + self.isz + '):: ss(%d)'%(len(a.dims)))
+                    self.fw('  integer(' + self.isz + '):: ss(%d)' % (len(a.dims)))
                     self.fw('  if (.not. associated(' + a.name + ')) return')
                     self.fw('  call ' + self.fsub('grabarraypointersobj') + '(farray__, ' + a.name + ')')
                     self.fw('  ss = shape(' + a.name + ')')
@@ -1224,9 +1235,7 @@ class PyWrap:
         scalar_pickle_file.close()
 
     def writef90modules(self):
-        """
-        Write the fortran90 modules
-        """
+        """Write the fortran90 modules."""
         self.setffile()
         if self.fcompname == 'xlf':
             save = ', save'
@@ -1263,7 +1272,7 @@ class PyWrap:
                             self.fw('  ' + fvars.ftof(a.type) + ', pointer' + save + ':: ' + a.name, noreturn=1)
                             ndims = len(a.dims)
                         if ndims > 0:
-                            self.fw('(' + (ndims*':,')[:-1] + ')', noreturn=1)
+                            self.fw('(' + (ndims * ':,')[:-1] + ')', noreturn=1)
                         self.fw('')
                     else:
                         if a.type == 'character':
@@ -1277,12 +1286,18 @@ class PyWrap:
                             # --- multiple lines.
                             dd = re.sub(r'\n', '&\n', a.data)
                             self.fw('  data ' + a.name + dd)
+            if self.ompactive:
+                self.DeclareThreadPrivate(g)
             self.fw('end module ' + g)
+        if self.ompactive: 
+            self.writef90OMPCopyHelper()
+            self.writef90OMPInitHelper()
+            self.PrintListThreadPrivateVars()
 
 ###############################################################################
 ###############################################################################
 ###############################################################################
-###############################################################################
+
 
 module_prefix_pat = re.compile('([a-zA-Z_][a-zA-Z0-9_]*)\.scalars')
 
@@ -1306,7 +1321,7 @@ def wrappergenerator_main(argv=None, writef90modulesonly=0):
         varfile = args.remainder[0]
         otherfortranfiles = args.remainder[1:]
     except IndexError:
-        print PyWrap.__doc__
+        print(PyWrap.__doc__)
         sys.exit(1)
 
     # --- get other command line args and default actions
@@ -1316,7 +1331,9 @@ def wrappergenerator_main(argv=None, writef90modulesonly=0):
     fcompname = args.fcomp
     writemodules = args.writemodules
     timeroutines = args.timeroutines
+    ompactive = args.omp
     otherinterfacefiles = args.othermacros
+    ompdebug = args.ompdebug
 
     # --- a list of scalar dictionaries from other modules.
     other_scalar_vars = []
@@ -1325,7 +1342,7 @@ def wrappergenerator_main(argv=None, writef90modulesonly=0):
 
     cc = PyWrap(varfile, pkgname, pkgsuffix, pkgbase, initialgallot, writemodules,
                 otherinterfacefiles, other_scalar_vars, timeroutines,
-                otherfortranfiles, fcompname)
+                otherfortranfiles, fcompname, ompactive, ompdebug)
     if writef90modulesonly:
         cc.writef90modules()
     else:

@@ -16,7 +16,7 @@ from Forthon.compilers import FCompiler
 # --- Get the package name, which is assumed to be the first argument.
 pkg = args.pkgname
 
-print "Building package " + pkg
+print(">>> Forthon: Building package " + pkg)
 
 # --- Get any extra fortran, C or object files listed.
 # --- This scans through args until the end or until it finds an optional
@@ -59,6 +59,8 @@ interfacefile  = args.interfacefile or (pkg + '.v')
 libdirs        = args.libdirs
 libs           = args.libs
 machine        = args.machine
+omp            = args.omp
+ompdebug       = args.ompdebug
 othermacros    = args.othermacros
 pkgbase        = args.pkgbase
 pkgdir         = args.pkgdir
@@ -71,6 +73,7 @@ underscoring   = args.underscoring
 verbose        = args.verbose
 with_feenableexcept = args.with_feenableexcept
 writemodules   = args.writemodules
+
 
 # --- These args require special handling
 
@@ -106,7 +109,10 @@ if twounderscores: forthonargs.append('--2underscores')
 else:              forthonargs.append('--no2underscores')
 if not writemodules: forthonargs.append('--nowritemodules')
 if timeroutines: forthonargs.append('--timeroutines')
-
+if omp:
+    forthonargs.append('--omp')
+if ompdebug:
+    forthonargs.append('--ompdebug')
 # --- Get the numpy headers path
 import numpy
 if numpy.__version__ < '1.1.0':
@@ -194,12 +200,13 @@ interfacefile = fixpath(os.path.join(upbuilddir, interfacefile))
 upfortranfile = os.path.join(upbuilddir, fortranfile)
 
 # --- Pick the fortran compiler
+print('****************** F compiler omp:,', omp)
 fcompiler = FCompiler(machine=machine,
                       debug=debug,
                       fcompname=fcomp,
                       fcompexec=fcompexec,
                       implicitnone=implicitnone,
-                      twounderscores=twounderscores)
+                      twounderscores=twounderscores, omp=omp)
 
 # --- Create some locals which are needed for strings below.
 f90free = fcompiler.f90free
@@ -307,6 +314,10 @@ for i in includedirs:
 # --- Add in any user supplied cargs
 if cargs is not None:
     extra_compile_args.append(cargs)
+# This is for the c compiler. How to autodetect c compiler and set corresponding openmp flag?       
+# Flag from setup.py better?
+#if omp:
+#    extra_compile_args.append('-fopenmp')
 
 pypreproc = '%(python)s -c "from Forthon.preprocess import main;main()" %(f90)s -t%(machine)s %(forthonargs)s'%locals()
 forthon = '%(python)s -c "from Forthon.wrappergenerator import wrappergenerator_main;wrappergenerator_main()"'%locals()
@@ -478,7 +489,7 @@ if sys.platform == 'linux':
     extra_link_args += ['-Wl,-z,lazy']
 
 if not verbose:
-    print "  Setup " + pkg
+    print("  Setup " + pkg)
     sys.stdout = open(os.devnull, 'w')
 
 if with_feenableexcept:
