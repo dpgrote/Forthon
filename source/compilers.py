@@ -30,7 +30,7 @@ class FCompiler:
     appropriate block for the machine.
     """
 
-    def __init__(self, machine=None, debug=0, fcompname=None, fcompexec=None, implicitnone=1, twounderscores=0,omp=False):
+    def __init__(self, machine=None, debug=0, fcompname=None, fcompexec=None, implicitnone=1, twounderscores=0, omp=False):
         if machine is None:
             machine = sys.platform
         self.machine = machine
@@ -53,7 +53,7 @@ class FCompiler:
         self.extra_link_args = []
         self.extra_compile_args = []
         self.define_macros = []
-        self.omp=omp
+        self.omp = omp
 
         if self.fcompexec in ['mpif90', 'mpifort']:
             self.getmpicompilerinfo()
@@ -637,7 +637,7 @@ class FCompiler:
             # self.extra_link_args += ['-flat_namespace']  # This flag is no longer needed
             self.libdirs = self.findgnulibdirs(self.fcompname, self.fcompexec)
             self.libs = ['gfortran']
-            if omp:
+            if self.omp:
                 self.fopt += ' -fopenmp'
             return 1
 
@@ -766,14 +766,14 @@ class FCompiler:
                 bmax = '-bmaxdata:0x70000000 -bmaxstack:0x10000000'
             else:
                 bmax = '-q64'
-            f90 = ' -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qsave=defaultinit -WF,-DESSL  % (bmax)s' % locals()
+            f90 = ' -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qsave=defaultinit -WF,-DESSL %(bmax)s' % locals()
             self.f90free += f90 + ' -qsuffix=f=f90:cpp=F90 -qfree=f90'
             self.f90fixed += f90 + ' -qfixed=132'
             self.f90free += ' -WF,-DFPSIZE=%s' % (realsize)  # ???
             self.f90fixed += ' -WF,-DFPSIZE=%s' % (realsize)  # ???
             self.f90free += ' -WF,-DISZ=%s -qintsize%s' % (intsize, intsize)
             self.f90fixed += ' -WF,-DISZ=%s -qintsize%s' % (intsize, intsize)
-            self.ld = 'xlf -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp  % (bmax)s' % locals()
+            self.ld = 'xlf -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp %(bmax)s' % locals()
             self.popt = '-O'
             self.extra_link_args += [bmax]
             self.extra_compile_args = [bmax]
@@ -794,14 +794,14 @@ class FCompiler:
                 bmax = '-bmaxdata:0x70000000 -bmaxstack:0x10000000'
             else:
                 bmax = '-q64'
-            f90 = ' -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qsave=defaultinit -WF,-DMPIPARALLEL -WF,-DESSL  % (bmax)s' % locals()
+            f90 = ' -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qsave=defaultinit -WF,-DMPIPARALLEL -WF,-DESSL %(bmax)s' % locals()
             self.f90free += f90 + ' -qsuffix=f=f90:cpp=F90 -qfree=f90'
             self.f90fixed += f90 + ' -qfixed=132'
             self.f90free += ' -WF,-DFPSIZE=%s' % (realsize)  # ???
             self.f90fixed += ' -WF,-DFPSIZE=%s' % (realsize)  # ???
             self.f90free += ' -WF,-DISZ=%s -qintsize%s' % (intsize, intsize)
             self.f90fixed += ' -WF,-DISZ=%s -qintsize%s' % (intsize, intsize)
-            self.ld = 'mpxlf_r -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp  % (bmax)s' % locals()
+            self.ld = 'mpxlf_r -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp %(bmax)s' % locals()
             if self.implicitnone:
                 self.f90free += ' -u'
                 self.f90fixed += ' -u'
@@ -824,14 +824,14 @@ class FCompiler:
                 bmax = '-bmaxdata:0x70000000 -bmaxstack:0x10000000'
             else:
                 bmax = '-q64'
-            f90 = ' -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qsave=defaultinit -WF,-DESSL  % (bmax)s' % locals()
+            f90 = ' -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qsave=defaultinit -WF,-DESSL %(bmax)s' % locals()
             self.f90free += f90 + ' -qsuffix=f=f90:cpp=F90 -qfree=f90'
             self.f90fixed += f90 + ' -qfixed=132'
             self.f90free += ' -WF,-DFPSIZE=%s' % (realsize)  # ???
             self.f90fixed += ' -WF,-DFPSIZE=%s' % (realsize)  # ???
             self.f90free += ' -WF,-DISZ=%s -qintsize%s' % (intsize, intsize)
             self.f90fixed += ' -WF,-DISZ=%s -qintsize%s' % (intsize, intsize)
-            self.ld = 'xlf95_r -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp  % (bmax)s' % locals()
+            self.ld = 'xlf95_r -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp %(bmax)s' % locals()
             if self.implicitnone:
                 self.f90free += ' -u'
                 self.f90fixed += ' -u'
@@ -853,14 +853,14 @@ class FCompiler:
                 bmax = '-bmaxdata:0x70000000 -bmaxstack:0x10000000'
             else:
                 bmax = '-q64'
-            f90 = ' -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qsave=defaultinit -WF,-DMPIPARALLEL -WF,-DESSL  % (bmax)s' % locals()
+            f90 = ' -c -WF,-DXLF -qmaxmem=8192 -qdpc=e -qautodbl=dbl4 -qsave=defaultinit -WF,-DMPIPARALLEL -WF,-DESSL %(bmax)s' % locals()
             self.f90free += f90 + ' -qsuffix=f=f90:cpp=F90 -qfree=f90'
             self.f90fixed += f90 + ' -qfixed=132'
             self.f90free += ' -WF,-DFPSIZE=%s' % (realsize)  # ???
             self.f90fixed += ' -WF,-DFPSIZE=%s' % (realsize)  # ???
             self.f90free += ' -WF,-DISZ=%s -qintsize%s' % (intsize, intsize)
             self.f90fixed += ' -WF,-DISZ=%s -qintsize%s' % (intsize, intsize)
-            self.ld = 'mpxlf95_r -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp  % (bmax)s' % locals()
+            self.ld = 'mpxlf95_r -bE:$(PYTHON)/lib/python$(PYVERS)/config/python.exp %(bmax)s' % locals()
             if self.implicitnone:
                 self.f90free += ' -u'
                 self.f90fixed += ' -u'

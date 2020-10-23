@@ -79,8 +79,8 @@ parser.add_option('-L', '--libdirs', action='append', default=[], help='Addition
 parser.add_option('-t', '--machine', default=sys.platform, help='Machine type. Will automatically be determined if not supplied. Can be one of linux2, linux3, aix4, aix5, darwin, win32.')
 parser.add_option('--macros', action='append', dest='othermacros', default=[], metavar="MACROS", help='Other interface files whose macros are needed')
 
-parser.add_option('--omp',default=False,action='store_true', help="Activate OpenMP features")
-parser.add_option('--ompdebug', action='store_true',default=False, help="flag to activate printing of omp debug log during execution of target program (not Forthon itself).")
+parser.add_option('--omp', default=False, action='store_true', help="Activate OpenMP features")
+parser.add_option('--ompdebug', action='store_true', default=False, help="flag to activate printing of omp debug log during execution of target program (not Forthon itself).")
 
 parser.add_option('--pkgbase', default=None, help='Base name of code, when installed. This is use when the package is installed as part of a larger code, when the installed package name is different than the package name of the comiled module.')
 parser.add_option('--pkgdir', default=None, help='Directory where files are that are to be installed with the wrapper')

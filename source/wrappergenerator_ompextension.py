@@ -7,18 +7,22 @@ Created on Sat Oct  3 13:06:47 2020
 """
 import re
 import fvars
-from colorama import Back, Style
 
+try:
+    from colorama import Back, Style
+    CYAN = Back.CYAN
+    RESET_ALL = Style.RESET_ALL
+except ImportError:
+    CYAN = ''
+    RESET_ALL = ''
 
-import re
-import fvars
-from colorama import  Back, Style
 class PyWrap_OMPExtension():
     def OMPInit(self,ompactive=False,ompdebug=False):
         self.ListThreadPrivateVars=[]
         self.ompactive=ompactive
         self.ompdebug=ompdebug
-        print('{color} Adding OPENMP variables and routines for package: {}{reset}'.format(self.pkgname,color=Back.CYAN,reset=Style.RESET_ALL))
+        if self.ompactive or self.ompdebug:
+            print('{color} Adding OPENMP variables and routines for package: {}{reset}'.format(self.pkgname,color=CYAN,reset=RESET_ALL))
     def ProcessOMPVarList(self):
         """
         Author: Jerome Guterl (JG)
@@ -33,7 +37,7 @@ class PyWrap_OMPExtension():
                 # JG: We throw an error so the compilation will fail and the user will know that something
                 # is wrong. It is not easy to identify a simple warning during the compilation of the
                 # forthon packages.
-                raise IOError("{color}Could not open/read the ompvarlistfile file :{}{reset}".format(self.ompvarlistfile,color=Back.CYAN,reset=Style.RESET_ALL))
+                raise IOError("{color}Could not open/read the ompvarlistfile file :{}{reset}".format(self.ompvarlistfile,color=CYAN,reset=RESET_ALL))
                 
             with f:
                 for line in f:
@@ -42,7 +46,7 @@ class PyWrap_OMPExtension():
                     if len(line)>0:
                         self.ompvarlist.append(line)
             
-            print('{color} List of variables requested to be threaded {reset}:{}'.format(self.ompvarlist,color=Back.CYAN,reset=Style.RESET_ALL))
+            print('{color} List of variables requested to be threaded {reset}:{}'.format(self.ompvarlist,color=CYAN,reset=RESET_ALL))
     
     def ProcessDim(self,S):
         if S.count('(')>0:

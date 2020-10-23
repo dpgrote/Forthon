@@ -16,7 +16,7 @@ from Forthon.compilers import FCompiler
 # --- Get the package name, which is assumed to be the first argument.
 pkg = args.pkgname
 
-print(">>> Forthon: Building package " + pkg)
+print("--- Forthon: Building package " + pkg)
 
 # --- Get any extra fortran, C or object files listed.
 # --- This scans through args until the end or until it finds an optional
@@ -113,6 +113,7 @@ if omp:
     forthonargs.append('--omp')
 if ompdebug:
     forthonargs.append('--ompdebug')
+
 # --- Get the numpy headers path
 import numpy
 if numpy.__version__ < '1.1.0':
@@ -200,13 +201,13 @@ interfacefile = fixpath(os.path.join(upbuilddir, interfacefile))
 upfortranfile = os.path.join(upbuilddir, fortranfile)
 
 # --- Pick the fortran compiler
-print('****************** F compiler omp:,', omp)
-fcompiler = FCompiler(machine=machine,
-                      debug=debug,
-                      fcompname=fcomp,
-                      fcompexec=fcompexec,
-                      implicitnone=implicitnone,
-                      twounderscores=twounderscores, omp=omp)
+fcompiler = FCompiler(machine = machine,
+                      debug = debug,
+                      fcompname = fcomp,
+                      fcompexec = fcompexec,
+                      implicitnone = implicitnone,
+                      twounderscores = twounderscores,
+                      omp = omp)
 
 # --- Create some locals which are needed for strings below.
 f90free = fcompiler.f90free
