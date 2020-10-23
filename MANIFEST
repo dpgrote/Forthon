@@ -16,5 +16,6 @@ source/interfaceparser.py
 source/preprocess.py
 source/wrappergen_derivedtypes.py
 source/wrappergenerator.py
+source/wrappergenerator_ompextension.py
 source/Forthon.c
 source/Forthon.h
