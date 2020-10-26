@@ -7,7 +7,7 @@ List of files:
   example.F:       fortran90 source file containing python callable subroutines
   example.py:      python script which tests the example
   example.v:       interface description file
-  example_extra.f: extra fortran90 source file that is part of the example
+  example_extra.F: extra fortran90 source file that is part of the example
   Makefile:        builds the example and test it
   README:          this file
 
