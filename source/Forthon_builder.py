@@ -59,6 +59,7 @@ interfacefile  = args.interfacefile or (pkg + '.v')
 libdirs        = args.libdirs
 libs           = args.libs
 machine        = args.machine
+mpifort_compiler = args.mpifort_compiler
 omp            = args.omp
 ompdebug       = args.ompdebug
 othermacros    = args.othermacros
@@ -205,6 +206,7 @@ fcompiler = FCompiler(machine = machine,
                       debug = debug,
                       fcompname = fcomp,
                       fcompexec = fcompexec,
+                      mpifort_compiler = mpifort_compiler,
                       implicitnone = implicitnone,
                       twounderscores = twounderscores,
                       omp = omp)

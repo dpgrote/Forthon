@@ -30,7 +30,8 @@ class FCompiler:
     appropriate block for the machine.
     """
 
-    def __init__(self, machine=None, debug=0, fcompname=None, fcompexec=None, implicitnone=1, twounderscores=0, omp=False):
+    def __init__(self, machine=None, debug=0, fcompname=None, fcompexec=None, mpifort_compiler=None,
+                 implicitnone=1, twounderscores=0, omp=False):
         if machine is None:
             machine = sys.platform
         self.machine = machine
@@ -42,6 +43,7 @@ class FCompiler:
 
         self.fcompname = fcompname
         self.fcompexec = fcompexec
+        self.mpifort_compiler = mpifort_compiler
         self.implicitnone = implicitnone
         self.twounderscores = twounderscores
         self.defines = []
@@ -151,9 +153,11 @@ class FCompiler:
             if self.fcompname is None:
                 self.fcompname = fcompname
             else:
+                if self.mpifort_compiler is None:
+                    self.mpifort_compiler = self.fcompname
                 # --- Check that the compiler that mpifort is using is based on the
                 # --- specified compiler.
-                assert fcompname.find(self.fcompname) >= 0, Exception('The compiler specified, %s, is not the same kind as the one used by mpifort, %s.' % (self.fcompname, fcompname))
+                assert fcompname.find(self.mpifort_compiler) >= 0, Exception('The compiler specified, %s, is not the same kind as the one used by mpifort, %s.' % (self.mpifort_compiler, fcompname))
 
     def usecompiler(self, fcompname, fcompexec):
         'Check if the specified compiler is found'

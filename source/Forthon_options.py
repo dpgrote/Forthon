@@ -66,6 +66,7 @@ parser.add_option('--fopt', help='Optimization option for the fortran compiler. 
 parser.add_option('--free_suffix', default='F90', help='Suffix to use for fortran files in free format. Defaults to F90')
 
 parser.add_option('--implicitnone', action='store_true', default=True, dest='implicitnone')
+parser.add_option('--mpifort_compiler', help='Specifies the name of the compiler used by mpifort. This is normally the same as fcomp, but in some special cases the name can be different.')
 parser.add_option('--noimplicitnone', action='store_false', default=True, dest='implicitnone', help='Specifies whether implicitnone is enforced. The default is --implicitnone.')
 parser.add_option('-I', '--includedirs', action='append', default=[], help='Additional include paths')
 parser.add_option('-a', '--initialgallot', action='store_true', default=False)
