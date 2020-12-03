@@ -5,17 +5,9 @@
 import os, sys, stat
 import subprocess
 
-try:
-    import distutils
-    from distutils.core import setup
-    from distutils.command.install import INSTALL_SCHEMES
-except:
-    raise SystemExit("Distutils problem")
-
-try:
-    from distutils.command.build_py import build_py_2to3 as build_py
-except ImportError:
-    from distutils.command.build_py import build_py
+from setuptools import setup
+import distutils
+from distutils.command.install import INSTALL_SCHEMES
 
 try:
     perm644 = stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH | stat.S_IWUSR
@@ -85,7 +77,7 @@ else:
 # --- done every time. This is needed since otherwise, after the first install,
 # --- each subsequent install would use the same Forthon script and not update
 # --- the python path in it appropriately.
-os.system("rm -rf build")
+os.system("rm -rf build dist")
 
 setup (name = "Forthon",
        version = version,
@@ -122,7 +114,7 @@ Numpy are available.""",
        package_dir = {'Forthon': 'source'},
        package_data = {'Forthon': ['License.txt','Forthon.h','Forthon.c']},
        scripts = [Forthon],
-       cmdclass = {'build_py':build_py}
+       use_2to3 = True
        )
 
 # --- Clean up the extra file created on win32.
