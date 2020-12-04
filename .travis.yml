@@ -1,7 +1,6 @@
 language: python
 
 python:
- - "3.6"
  - "3.7"
  - "3.8"
  - "3.9"
@@ -34,7 +33,7 @@ script:
   # note: since this is executed in a virtualenv
   #       we can not add "--user"
   - if [ "$USE_PIP" == "ON" ]; then
-      pip install Forthon;
+      pip3 install Forthon;
     else
       python3 setup.py install;
     fi
