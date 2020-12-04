@@ -6,7 +6,7 @@ Created on Sat Oct  3 13:06:47 2020
 @author: jguterl
 """
 import re
-import fvars
+from . import fvars
 
 try:
     from colorama import Back, Style

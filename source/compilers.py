@@ -8,7 +8,7 @@ import re
 import platform
 import struct
 import subprocess
-from cfinterface import realsize, intsize
+from .cfinterface import realsize, intsize
 
 
 class FCompiler:
@@ -139,7 +139,7 @@ class FCompiler:
     def getmpicompilerinfo(self):
         # --- Try using mpifort -show to discover the compiler information
         try:
-            show = subprocess.check_output(['mpifort', '-show'], universal_newlines=True, stderr=subprocess.STDOUT)
+            show = subprocess.check_output(['mpifort', '-show'], text=True, stderr=subprocess.STDOUT)
         except (OSError, subprocess.CalledProcessError):
             pass
         else:

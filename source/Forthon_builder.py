@@ -10,7 +10,7 @@ from distutils.core import setup, Extension
 from distutils.dist import Distribution
 from distutils.command.build import build
 
-from Forthon_options import args
+from .Forthon_options import args
 from Forthon.compilers import FCompiler
 
 # --- Get the package name, which is assumed to be the first argument.
@@ -156,7 +156,7 @@ if machine == 'win32': pathsep = r'\\'
 # --- Find place where packages are placed. This imports one of the
 # --- Forthon files and gets the path from that. It uses fvars.py since
 # --- that is a small file which doesn't have other dependencies.
-import fvars
+from . import fvars
 forthonhome = os.path.dirname(fvars.__file__)
 forthonhome = fixpath(forthonhome)
 del fvars

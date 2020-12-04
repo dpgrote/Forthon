@@ -20,12 +20,7 @@ except:
 # --- Write out version information to the version.py file.
 version = '0.9.4'
 try:
-    # --- In python3, check_output or Popen returns a byte string that needs to be decoded to get the string.
-    # --- The decode method is mostly harmless in python2.
-    #bcommithash = subprocess.check_output(['git', 'log', '-n', '1', '--pretty=%h'], stderr=subprocess.STDOUT).strip()
-    # --- Needed for Py2.6 (which doesn't have subprocess.check_output)
-    bcommithash = subprocess.Popen(['git', 'log', '-n', '1', '--pretty=%h'], stderr=subprocess.PIPE, stdout=subprocess.PIPE).communicate()[0].strip()
-    commithash = bcommithash.decode()
+    commithash = subprocess.check_output(['git', 'log', '-n', '1', '--pretty=%h'], stderr=subprocess.STDOUT, text=True).strip()
     if not commithash:
         # --- If git is not available, commithash will be an empty string.
         raise OSError('git commit hash not found')
@@ -44,13 +39,10 @@ with open('source/version.py','w') as ff:
 # --- extension to be installed, distutils will put the scripts in
 # --- /usr/lib/... instead of /usr/lib64.
 if distutils.sysconfig.get_config_vars()["LIBDEST"].find('lib64') != -1:
-    for scheme in INSTALL_SCHEMES.values():
+    for scheme in list(INSTALL_SCHEMES.values()):
         scheme['purelib'] = scheme['platlib']
 
-if sys.hexversion < 0x03000000:
-    Forthonroot = 'Forthon'
-elif sys.hexversion >= 0x03000000:
-    Forthonroot = 'Forthon3'
+Forthonroot = 'Forthon3'
 
 # --- Normally, the package building script is called Forthon, but on Windows,
 # --- it works better if it is called Forthon.py.
@@ -114,7 +106,6 @@ Numpy are available.""",
        package_dir = {'Forthon': 'source'},
        package_data = {'Forthon': ['License.txt','Forthon.h','Forthon.c']},
        scripts = [Forthon],
-       use_2to3 = True
        )
 
 # --- Clean up the extra file created on win32.

@@ -5,20 +5,16 @@
 
 import sys
 import os.path
-from interfaceparser import processfile
+import hashlib
+from .interfaceparser import processfile
 import string
 import re
-import fvars
+from . import fvars
 import pickle
-from Forthon_options import args
-from cfinterface import *
-import wrappergen_derivedtypes
-from wrappergenerator_ompextension import PyWrap_OMPExtension 
-if sys.hexversion >= 0x20501f0:
-    import hashlib
-else:
-    # --- hashlib was not available in python earlier than 2.5.
-    import md5 as hashlib
+from .Forthon_options import args
+from .cfinterface import *
+from . import wrappergen_derivedtypes
+from .wrappergenerator_ompextension import PyWrap_OMPExtension 
     
 
 
@@ -77,11 +73,8 @@ class PyWrap(PyWrap_OMPExtension):
         if len(name) < 32:
             return name
         transtable = PyWrap.transtable
-        if sys.hexversion >= 0x03000000:
-            hashbytes = hashlib.md5(name.encode()).digest()
-            hash = ''.join([transtable[d] for d in hashbytes])
-        else:
-            hash = hashlib.md5(name).digest().translate(transtable)
+        hashbytes = hashlib.md5(name.encode()).digest()
+        hash = ''.join([transtable[d] for d in hashbytes])
         return name[:15] + hash
 
     def dimisparameter(self, dim):
@@ -994,24 +987,20 @@ class PyWrap(PyWrap_OMPExtension):
 
         ###########################################################################
         # --- And finally, the initialization function
-        if sys.hexversion >= 0x03000000:
-            self.cw('static struct PyModuleDef moduledef = {')
-            self.cw('  PyModuleDef_HEAD_INIT,')
-            self.cw('  "{0}py", /* m_name */'.format(self.pkgname + self.pkgsuffix))
-            self.cw('  "{0}", /* m_doc */'.format(self.pkgname))
-            self.cw('  -1,                  /* m_size */')
-            self.cw('  {0}_methods,    /* m_methods */'.format(self.pkgname))
-            self.cw('  NULL,                /* m_reload */')
-            self.cw('  NULL,                /* m_traverse */')
-            self.cw('  NULL,                /* m_clear */')
-            self.cw('  NULL,                /* m_free */')
-            self.cw('  };')
+        self.cw('static struct PyModuleDef moduledef = {')
+        self.cw('  PyModuleDef_HEAD_INIT,')
+        self.cw('  "{0}py", /* m_name */'.format(self.pkgname + self.pkgsuffix))
+        self.cw('  "{0}", /* m_doc */'.format(self.pkgname))
+        self.cw('  -1,                  /* m_size */')
+        self.cw('  {0}_methods,    /* m_methods */'.format(self.pkgname))
+        self.cw('  NULL,                /* m_reload */')
+        self.cw('  NULL,                /* m_traverse */')
+        self.cw('  NULL,                /* m_clear */')
+        self.cw('  NULL,                /* m_free */')
+        self.cw('  };')
 
         self.cw('PyMODINIT_FUNC')
-        if sys.hexversion >= 0x03000000:
-            self.cw('PyInit_' + self.pkgname + self.pkgsuffix + 'py(void)')
-        else:
-            self.cw('init' + self.pkgname + self.pkgsuffix + 'py(void)')
+        self.cw('PyInit_' + self.pkgname + self.pkgsuffix + 'py(void)')
         self.cw('{')
 
         self.cw('  PyObject *m;')
@@ -1022,25 +1011,16 @@ class PyWrap(PyWrap_OMPExtension):
         # self.cw('  ForthonType.tp_getset = ' + self.pkgname + '_getseters;')
         # self.cw('  ForthonType.tp_methods = ' + self.pkgname + '_methods;')
         self.cw('  if (PyType_Ready(&ForthonType) < 0)')
-        if sys.hexversion >= 0x03000000:
-            self.cw('    return NULL;')
-        else:
-            self.cw('    return;')
+        self.cw('    return NULL;')
 
-        if sys.hexversion >= 0x03000000:
-            self.cw('  m = PyModule_Create(&moduledef);')
-        else:
-            self.cw('  m = Py_InitModule("' + self.pkgname + self.pkgsuffix + 'py", ' + self.pkgname + '_methods);')
+        self.cw('  m = PyModule_Create(&moduledef);')
 
         self.cw('  import_array();')
         self.cw('  init' + self.pkgname + 'object' + '(m);')
         self.cw('  ErrorObject = PyErr_NewException("' + self.pkgname + self.pkgsuffix + 'py.error", NULL, NULL);')
         self.cw('  PyModule_AddObject(m, "' + self.pkgname + 'error", ErrorObject);')
         self.cw('  PyModule_AddObject(m, "fcompname", ' + 'PyUnicode_FromString("' + self.fcompname + '"));')
-        if sys.hexversion >= 0x03000000:
-            self.cw('  PyModule_AddObject(m, "realsize", ' + 'PyLong_FromLong((long)%s' % realsize + '));')
-        else:
-            self.cw('  PyModule_AddObject(m, "realsize", ' + 'PyInt_FromLong((long)%s' % realsize + '));')
+        self.cw('  PyModule_AddObject(m, "realsize", ' + 'PyLong_FromLong((long)%s' % realsize + '));')
         self.cw('  if (PyErr_Occurred()) {')
         self.cw('    PyErr_Print();')
         self.cw('    Py_FatalError("can not initialize module ' + self.pkgname + '");')
@@ -1050,8 +1030,7 @@ class PyWrap(PyWrap_OMPExtension):
             self.cw('  /* Initialize FORTRAN on CYGWIN */')
             self.cw(' initPGfortran();')
 
-        if sys.hexversion >= 0x03000000:
-            self.cw('  return m;')
+        self.cw('  return m;')
 
         self.cw('}')
         self.cw('')

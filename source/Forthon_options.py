@@ -13,7 +13,7 @@ optparse is ever actually deleted.
 import sys
 import os.path
 import optparse
-from version import version
+from .version import version
 
 parser = optparse.OptionParser(
                    usage="Forthon [options] pkgname [extra Fortran or C files to be compiled or objects to link] [options for distutils]",

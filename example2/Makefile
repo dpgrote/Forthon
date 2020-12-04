@@ -1,5 +1,5 @@
-FORTHON=Forthon
-PYTHON=python
+FORTHON=Forthon3
+PYTHON=python3
 
 example2: example2.F example2.v
 	$(FORTHON) --nowritemodules example2

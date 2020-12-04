@@ -1,11 +1,13 @@
 
-Requires python versions 2.6 or higher and the numpy package, which can be
-obtained from http://numpy.scipy.org. It is compatible with python version 3.
+Requires python versions 3.6 or higher and the numpy package, which can be
+obtained from http://numpy.scipy.org.
 
 To install,
 
 python setup.py install
 
 Write permission is required for the python library site-packages directory.
+
+Alternatively, it can be installed from pip, as in "pip install Forthon".
 
 See the examples, which act as the documentation.

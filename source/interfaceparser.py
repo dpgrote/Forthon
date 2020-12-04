@@ -7,7 +7,7 @@
 # to python (or other scripting language).
 
 import sys
-import fvars
+from . import fvars
 import re
 if sys.version[0] == '1':
     import regsub

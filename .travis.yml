@@ -1,10 +1,10 @@
 language: python
 
 python:
- - "2.7"
- - "3.4"
- - "3.5"
  - "3.6"
+ - "3.7"
+ - "3.8"
+ - "3.9"
  - "nightly"
  - "pypy"
  - "pypy3"
@@ -13,7 +13,6 @@ matrix:
   allow_failures:
     # those "upcoming" python versions are informational
     - python: nightly
-    - python: "pypy"
     - python: "pypy3"
 
 sudo: false
@@ -40,25 +39,14 @@ script:
     else
       python setup.py install;
     fi
-  # Python3 ###################################################################
-  #
-  - if [[ $TRAVIS_PYTHON_VERSION == 3* ]] ||
-       [[ $TRAVIS_PYTHON_VERSION == nightly ]] ||
-       [[ $TRAVIS_PYTHON_VERSION == pypy3 ]]; then
-      echo "Python 3 - overwriting Forthon executable with Forthon3";
-      export FORTHON_CMD=Forthon3;
-    else
-      export FORTHON_CMD=Forthon;
-    fi
-  - which $FORTHON_CMD
   # now build some examples ###################################################
   #
   - cd example
-  - make FORTHON=$FORTHON_CMD
+  - make
   # broken legacy example:
   # - cd ../example2
-  # - make FORTHON=$FORTHON_CMD
+  # - make FORTHON=Forthon3
   - cd ../simpleexample
-  - make FORTHON=$FORTHON_CMD
+  - make
   - python run_forthon_example.py
   - cd ..

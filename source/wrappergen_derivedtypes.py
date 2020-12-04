@@ -1,10 +1,10 @@
 """Generates the wrapper for derived types.
 """
 import sys
-import fvars
+from . import fvars
 import string
 import hashlib
-from cfinterface import *
+from .cfinterface import *
 
 
 class ForthonDerivedType:
@@ -36,11 +36,8 @@ class ForthonDerivedType:
         if len(name) < 32 or not dohash:
             return name
         transtable = ForthonDerivedType.transtable
-        if sys.hexversion >= 0x03000000:
-            hashbytes = hashlib.md5(name.encode()).digest()
-            hash = ''.join([transtable[d] for d in hashbytes])
-        else:
-            hash = hashlib.md5(name).digest().translate(transtable)
+        hashbytes = hashlib.md5(name.encode()).digest()
+        hash = ''.join([transtable[d] for d in hashbytes])
         return name[:15] + hash
 
     def dimisparameter(self, dim):

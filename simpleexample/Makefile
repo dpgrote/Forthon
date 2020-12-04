@@ -1,4 +1,4 @@
-FORTHON = Forthon
+FORTHON = Forthon3
 
 install:
 	(cd forthon_example_source ; $(FORTHON) --install --pkgdir . forthon_example)

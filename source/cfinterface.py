@@ -5,7 +5,7 @@ import sys
 import re
 import struct
 
-from Forthon_options import args
+from .Forthon_options import args
 
 # Set default values of inputs
 machine = args.machine

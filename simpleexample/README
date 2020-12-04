@@ -25,6 +25,3 @@ Running:
   Before setsqrt, x = 0.0
   After setsqrt, x = 3.1622776601683795
 
-Notes:
-
-  This example will work with both python2 and python3.
