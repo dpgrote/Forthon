@@ -6,7 +6,6 @@ python:
  - "3.8"
  - "3.9"
  - "nightly"
- - "pypy"
  - "pypy3"
 
 matrix:
@@ -37,7 +36,7 @@ script:
   - if [ "$USE_PIP" == "ON" ]; then
       pip install Forthon;
     else
-      python setup.py install;
+      python3 setup.py install;
     fi
   # now build some examples ###################################################
   #
@@ -48,5 +47,5 @@ script:
   # - make FORTHON=Forthon3
   - cd ../simpleexample
   - make
-  - python run_forthon_example.py
+  - python3 run_forthon_example.py
   - cd ..
