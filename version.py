@@ -15,10 +15,19 @@ def updatefile(filename, vvold, vvnew):
     ff.write(text)
     ff.close()
 
-def update():
+def update(major=False, relase=False):
     vvold = version.__doc__
     vv = vvold.split('.')
-    vv[2] = str(int(vv[2])+1)
+    if release:
+        vv[0] = str(int(vv[0])+1)
+        vv[1] = '0'
+        vv[2] = '0'
+    elif major:
+        vv[1] = str(int(vv[1])+1)
+        vv[2] = '0'
+    else:
+        vv[2] = str(int(vv[2])+1)
+
     vvnew = '.'.join(vv)
 
     # --- Update the version number in the files.
