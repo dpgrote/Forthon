@@ -15,7 +15,7 @@ def updatefile(filename, vvold, vvnew):
     ff.write(text)
     ff.close()
 
-def update(major=False, relase=False):
+def update(major=False, release=False):
     vvold = version.__doc__
     vv = vvold.split('.')
     if release:
