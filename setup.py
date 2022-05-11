@@ -18,7 +18,7 @@ except:
     print('Permissions on License.txt and Src files needs to be set by hand')
 
 # --- Write out version information to the version.py file.
-version = '0.9.4'
+version = '0.10.0'
 try:
     commithash = subprocess.check_output(['git', 'log', '-n', '1', '--pretty=%h'], stderr=subprocess.STDOUT, text=True).strip()
     if not commithash:
@@ -29,7 +29,7 @@ except (subprocess.CalledProcessError, OSError):
     # --- This version was obtained from a non-git distrobution. Use the
     # --- saved commit hash from the release.
     # --- This is automatically updated by version.py.
-    commithash = '29e53d5'
+    commithash = '9f48ac4'
 
 with open('source/version.py','w') as ff:
     ff.write("version = '%s'\n"%version)
