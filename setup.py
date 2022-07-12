@@ -6,8 +6,6 @@ import os, sys, stat
 import subprocess
 
 from setuptools import setup
-import distutils
-from distutils.command.install import INSTALL_SCHEMES
 
 try:
     perm644 = stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH | stat.S_IWUSR
@@ -34,13 +32,6 @@ except (subprocess.CalledProcessError, OSError):
 with open('source/version.py','w') as ff:
     ff.write("version = '%s'\n"%version)
     ff.write("gitversion = '%s'\n"%commithash)
-
-# --- Get around a "bug" in disutils on 64 bit systems. When there is no
-# --- extension to be installed, distutils will put the scripts in
-# --- /usr/lib/... instead of /usr/lib64.
-if distutils.sysconfig.get_config_vars()["LIBDEST"].find('lib64') != -1:
-    for scheme in list(INSTALL_SCHEMES.values()):
-        scheme['purelib'] = scheme['platlib']
 
 Forthonroot = 'Forthon3'
 

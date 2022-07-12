@@ -4,11 +4,7 @@ import sys
 import os
 import platform
 import re
-import distutils
-import distutils.sysconfig
-from distutils.core import setup, Extension
-from distutils.dist import Distribution
-from distutils.command.build import build
+import setuptools
 
 from .Forthon_options import args
 from Forthon.compilers import FCompiler
@@ -21,20 +17,17 @@ print("--- Forthon: Building package " + pkg)
 # --- Get any extra fortran, C or object files listed.
 # --- This scans through args until the end or until it finds an optional
 # --- argument (that begins with a '-'). Any remaining optional arguments
-# --- are passed to distutils.
-remainder = args.remainder
+# --- are passed to setuptools.
+remainder_args = args.remainder
 extrafiles = []
-while remainder:
-    if not remainder[0].startswith('-'):
-        extrafiles.append(remainder[0])
-        del remainder[0]
+while remainder_args:
+    if not remainder_args[0].startswith('-'):
+        extrafiles.append(remainder_args[0])
+        del remainder_args[0]
     else:
         break
 
-distutil_args = remainder
-
 # --- Default values for command line args
-do2to3         = args.do2to3
 build_base     = args.build_base
 build_temp     = args.build_temp
 builddir       = args.builddir
@@ -117,22 +110,7 @@ if ompdebug:
 
 # --- Get the numpy headers path
 import numpy
-if numpy.__version__ < '1.1.0':
-    # --- Older versions of numpy hacked into distutils, changing things
-    # --- in such a way to mangle things like object file names. To avoid
-    # --- this, the code from get_include is included here explicitly,
-    # --- avoiding the importing of numpy.distutils.
-    import os
-    if numpy.show_config is None:
-        # running from numpy source directory
-        d = os.path.join(os.path.dirname(numpy.__file__), 'core', 'include')
-    else:
-        # using installed numpy core headers
-        import numpy.core as core
-        d = os.path.join(os.path.dirname(core.__file__), 'include')
-    includedirs.append(d)
-else:
-    includedirs.append(numpy.get_include())
+includedirs.append(numpy.get_include())
 
 # --- Fix path - needed for Cygwin
 def fixpath(path, dos=1):
@@ -162,20 +140,20 @@ forthonhome = fixpath(forthonhome)
 del fvars
 
 # --- Reset sys.argv removing the Forthon options and appending any extra
-# --- distutils options remaining in the argument list.
-# --- This needs to be done for generating builddir since the distutils
+# --- options remaining in the argument list.
+# --- This needs to be done for generating builddir since the
 # --- options may affect its value.
 sys.argv = ['Forthon', 'build']
 if build_base:
     sys.argv += ['--build-base', build_base]
 if not dobuild:
     sys.argv += ['install']
-sys.argv += distutil_args
+sys.argv += remainder_args
 
 # --- Find the location of the build directory. There must be a better way
 # --- of doing this.
 if builddir is None:
-    dummydist = Distribution()
+    dummydist = setuptools.Distribution()
     dummydist.parse_command_line()
     dummybuild = dummydist.get_command_obj('build')
     dummybuild.finalize_options()
@@ -188,7 +166,7 @@ if builddir is None:
 upbuilddir = os.path.relpath(os.getcwd(), builddir)
 
 if dobuild:
-    # --- Add the build-temp option. This is needed since distutils would otherwise
+    # --- Add the build-temp option. This is needed since setuptools would otherwise
     # --- put the object files from compiling the pkgnamepy.c file in a temp
     # --- directory relative to the file. build_temp defaults to an empty string,
     # --- so the .o files are put in the same place as the .c files.
@@ -398,7 +376,7 @@ for sourcedir in sourcedirs:
 # --- Note the two rules for the pymodule file. The first specifies that the
 # --- pymodule.c file should be recreated if the .v file was updatd.
 # --- The second changes the timestamp of the pymodule.c to force a rebuild
-# --- of the .so during the distutils setup if any of the source files have
+# --- of the .so during the setuptools setup if any of the source files have
 # --- been updated.
 makefiletext = """
 %(definesstr)s
@@ -441,7 +419,7 @@ if m != 0:
 os.chdir(upbuilddir)
 
 # --- Make sure that the shared object is deleted. This is needed since
-# --- distutils doesn't seem to check if objects passed in are newer
+# --- setuptools doesn't seem to check if objects passed in are newer
 # --- than the shared object. The 'try' is used in case the file doesn't
 # --- exist (like when the code is built the first time).
 try:
@@ -512,31 +490,18 @@ if not dobuild:
         package_dir = {pkgbase:pkgdir}
         packages = [pkgbase]
 
-if do2to3:
-    try:
-        from distutils.command.build_py import build_py_2to3 as build_py
-        from distutils.command.build_scripts import build_scripts_2to3 as build_scripts
-    except ImportError:
-        from distutils.command.build_py import build_py
-        from distutils.command.build_scripts import build_scripts
-else:
-    from distutils.command.build_py import build_py
-    from distutils.command.build_scripts import build_scripts
-
-setup(name = pkgbase,
-      packages = packages,
-      package_dir = package_dir,
-      ext_modules = [Extension('.'.join([pkgbase, pkg+pkgsuffix+'py']),
-                               cfiles+extracfiles,
-                               include_dirs=[forthonhome]+includedirs,
-                               extra_objects=ofiles,
-                               library_dirs=fcompiler.libdirs+libdirs,
-                               libraries=fcompiler.libs+libs,
-                               define_macros=define_macros,
-                               extra_compile_args=extra_compile_args,
-                               extra_link_args=extra_link_args)],
-      scripts = scripts,
-      cmdclass={'build_py': build_py,
-                'build_scripts': build_scripts},
-     )
+setuptools.setup(name = pkgbase,
+                 packages = packages,
+                 package_dir = package_dir,
+                 ext_modules = [setuptools.Extension('.'.join([pkgbase, pkg+pkgsuffix+'py']),
+                                                     cfiles+extracfiles,
+                                                     include_dirs=[forthonhome]+includedirs,
+                                                     extra_objects=ofiles,
+                                                     library_dirs=fcompiler.libdirs+libdirs,
+                                                     libraries=fcompiler.libs+libs,
+                                                     define_macros=define_macros,
+                                                     extra_compile_args=extra_compile_args,
+                                                     extra_link_args=extra_link_args)],
+                 scripts = scripts,
+                )
 
