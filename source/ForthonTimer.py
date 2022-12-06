@@ -45,7 +45,7 @@ class ForthonTimings:
         This restarts the timing clock and increments the number of calls made to
         this function.
         """
-        self.starttime = time.clock()
+        self.starttime = time.time()
         self.ncalls += 1
 
     def newtimer(self, name):
@@ -66,7 +66,7 @@ class ForthonTimings:
         called on a function return, so it returns the timer instance of the caller
         (the parent).
         """
-        self.endtime = time.clock()
+        self.endtime = time.time()
         self.time = self.time + self.endtime - self.starttime
         return self.parent
 
