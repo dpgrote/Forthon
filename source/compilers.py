@@ -638,7 +638,7 @@ class FCompiler:
                  -ffast-math -mpowerpc-gpopt -force_cpusubtype_ALL \
                  -fstrict-aliasing -mtune=G5 -mcpu=G5 -mpowerpc64'
             self.fopt = '-O3 -ftree-vectorize -ftree-vectorizer-verbose=0'
-            # self.extra_link_args += ['-flat_namespace']  # This flag is no longer needed
+            self.extra_link_args += ['-flat_namespace']
             self.libdirs = self.findgnulibdirs(self.fcompname, self.fcompexec)
             self.libs = ['gfortran']
             if self.omp:
