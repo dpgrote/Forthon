@@ -1,6 +1,5 @@
 # Forthon
 
-[![Build Status](https://travis-ci.org/dpgrote/Forthon.svg?branch=master)](https://travis-ci.org/dpgrote/Forthon)
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/Forthon.svg)](https://pypi.python.org/pypi/Forthon)
 [![PyPI version](https://img.shields.io/pypi/v/Forthon.svg)](https://pypi.python.org/pypi/Forthon)
 [![PyPI downloads](https://img.shields.io/pypi/dm/Forthon.svg)](https://pypi.python.org/pypi/Forthon)
