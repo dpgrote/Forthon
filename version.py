@@ -1,5 +1,5 @@
-"0.10.2"
-commithash = "b167eff"
+"0.10.3"
+commithash = "fc2844b"
 
 import sys
 import version
