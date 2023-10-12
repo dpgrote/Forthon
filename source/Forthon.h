@@ -1477,6 +1477,7 @@ static PyObject *ForthonPackage_getgroup(PyObject *_self_,PyObject *args)
 /* # the same thing as getattr except that for unallocated objects, it       */
 /* # returns None                                                            */
 static char getpyobject_doc[] = "Returns the python object associated with a name, returns None is object is unallocated";
+static char setpyobject_doc[] = "Set the value to the python object associated with a name, returns None";
 static PyObject *ForthonPackage_getpyobject(PyObject *_self_,PyObject *args)
 {
   ForthonObject *self = (ForthonObject *)_self_;
@@ -1494,7 +1495,23 @@ static PyObject *ForthonPackage_getpyobject(PyObject *_self_,PyObject *args)
     return obj;
     }
 }
+static PyObject *ForthonPackage_setpyobject(PyObject *_self_,PyObject *args)
+{
+  ForthonObject *self = (ForthonObject *)_self_;
+  int e;
+  PyObject *name,*pyobj;
+  if (!PyArg_ParseTuple(args,"OO",&name,&pyobj)) {
+PyErr_SetString(ErrorObject,"No such variable");
+return NULL;
+}
 
+  e = Forthon_setattro(self,name,pyobj);
+  if (e !=0) 
+    {PyErr_SetString(ErrorObject,"No such variable....");
+    return NULL;}
+
+returnnone;
+}
 /* ######################################################################### */
 static char gettypename_doc[] = "Returns name of type of object.";
 static PyObject *ForthonPackage_gettypename(PyObject *_self_,PyObject *args)
@@ -2273,6 +2290,7 @@ static struct PyMethodDef ForthonPackage_methods[] = {
   {"getfunctions",(PyCFunction)ForthonPackage_getfunctions,1,getfunctions_doc},
   {"getgroup"    ,(PyCFunction)ForthonPackage_getgroup,1,getgroup_doc},
   {"getpyobject" ,(PyCFunction)ForthonPackage_getpyobject,1,getpyobject_doc},
+  {"setpyobject" ,(PyCFunction)ForthonPackage_setpyobject,1,setpyobject_doc},
   {"gettypename" ,(PyCFunction)ForthonPackage_gettypename,1,gettypename_doc},
   {"getvarattr"  ,(PyCFunction)ForthonPackage_getvarattr,1,getvarattr_doc},
   {"setvarattr"  ,(PyCFunction)ForthonPackage_setvarattr,1,setvarattr_doc},
