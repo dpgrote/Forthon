@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "Forthon"
+version = "0.10.4"
+license = {file = "Forthon/License.txt"}
+dependencies = ["numpy"]
+authors = [ {name = "David P. Grote", email = "grote1@llnl.gov"}, ]
+description = "Fortran95 wrapper/code development package"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+        "Programming Language :: Python :: 3",
+        "Development Status :: 5 - Production/Stable",
+        "Natural Language :: English",
+        "Environment :: Console",
+        "Intended Audience :: Science/Research",
+        "License :: Free To Use But Restricted",
+        "Operating System :: OS Independent",
+        "Topic :: Software Development :: Build Tools",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        ]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["Forthon"]
+
+[tool.setuptools.package-data]
+Forthon = ["License.txt","Forthon.h","Forthon.c"]
+
+[project.scripts]
+Forthon3 = "Forthon.Forthon_builder:call_setup"
+

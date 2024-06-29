@@ -490,18 +490,21 @@ if not dobuild:
         package_dir = {pkgbase:pkgdir}
         packages = [pkgbase]
 
-setuptools.setup(name = pkgbase,
-                 packages = packages,
-                 package_dir = package_dir,
-                 ext_modules = [setuptools.Extension('.'.join([pkgbase, pkg + pkgsuffix + 'py']),
-                                                     cfiles + extracfiles,
-                                                     include_dirs = [forthonhome] + includedirs,
-                                                     extra_objects = ofiles,
-                                                     library_dirs = fcompiler.libdirs + libdirs,
-                                                     libraries = fcompiler.libs + libs,
-                                                     define_macros = define_macros,
-                                                     extra_compile_args = extra_compile_args,
-                                                     extra_link_args = extra_link_args)],
-                 scripts = scripts,
-                )
+def call_setup():
+    setuptools.setup(name = pkgbase,
+                     packages = packages,
+                     package_dir = package_dir,
+                     ext_modules = [setuptools.Extension('.'.join([pkgbase, pkg + pkgsuffix + 'py']),
+                                                         cfiles + extracfiles,
+                                                         include_dirs = [forthonhome] + includedirs,
+                                                         extra_objects = ofiles,
+                                                         library_dirs = fcompiler.libdirs + libdirs,
+                                                         libraries = fcompiler.libs + libs,
+                                                         define_macros = define_macros,
+                                                         extra_compile_args = extra_compile_args,
+                                                         extra_link_args = extra_link_args)],
+                     scripts = scripts,
+                    )
 
+if __name__ == "__main__":
+    call_setup()

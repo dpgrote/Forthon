@@ -14,6 +14,20 @@ where the computationally intensive parts of a code can be written in
 efficient Fortran, and the high level controlling code can be written in the
 much more versatile Python language.
 
+## Installing
+
+Requires python versions 3.8 or higher and the numpy package.
+
+To install from the source,
+
+python -m pip install .
+
+Write permission is required for the python library site-packages directory.
+
+Alternatively, it can be installed from PyPI, as in "pip install Forthon".
+
+See the examples, which act as the documentation.
+
 ## Example
 
 An example of how to use Forthon can be found in the simpleexample subdirectory. Go into
