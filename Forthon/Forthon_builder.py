@@ -4,6 +4,7 @@ import sys
 import os
 import platform
 import re
+import subprocess
 import setuptools
 
 from .Forthon_options import args
@@ -491,20 +492,42 @@ if not dobuild:
         packages = [pkgbase]
 
 def call_setup():
-    setuptools.setup(name = pkgbase,
-                     packages = packages,
-                     package_dir = package_dir,
-                     ext_modules = [setuptools.Extension('.'.join([pkgbase, pkg + pkgsuffix + 'py']),
-                                                         cfiles + extracfiles,
-                                                         include_dirs = [forthonhome] + includedirs,
-                                                         extra_objects = ofiles,
-                                                         library_dirs = fcompiler.libdirs + libdirs,
-                                                         libraries = fcompiler.libs + libs,
-                                                         define_macros = define_macros,
-                                                         extra_compile_args = extra_compile_args,
-                                                         extra_link_args = extra_link_args)],
-                     scripts = scripts,
-                    )
+    if dobuild:
+        # If building, call setup directly
+        setuptools.setup(name = pkgbase,
+                         packages = packages,
+                         package_dir = package_dir,
+                         ext_modules = [setuptools.Extension('.'.join([pkgbase, pkg + pkgsuffix + 'py']),
+                                                             cfiles + extracfiles,
+                                                             include_dirs = [forthonhome] + includedirs,
+                                                             extra_objects = ofiles,
+                                                             library_dirs = fcompiler.libdirs + libdirs,
+                                                             libraries = fcompiler.libs + libs,
+                                                             define_macros = define_macros,
+                                                             extra_compile_args = extra_compile_args,
+                                                             extra_link_args = extra_link_args)],
+                         scripts = scripts,
+                        )
+    else:
+        # If installing, write the setup.py file and activate using pip
+        with open('setup.py', 'w') as ff:
+            ff.write(f"""import setuptools
+setuptools.setup(name = '{pkgbase}',
+                 packages = {packages},
+                 package_dir = {package_dir},
+                 ext_modules = [setuptools.Extension('.'.join(['{pkgbase}', '{pkg+pkgsuffix}py']),
+                                                     {cfiles} + {extracfiles},
+                                                     include_dirs = ['{forthonhome}'] + {includedirs},
+                                                     extra_objects = {ofiles},
+                                                     library_dirs = {fcompiler.libdirs} + {libdirs},
+                                                     libraries = {fcompiler.libs} + {libs},
+                                                     define_macros = {define_macros},
+                                                     extra_compile_args = {extra_compile_args},
+                                                     extra_link_args = {extra_link_args})],
+                 scripts = {scripts}
+                )""")
+        python = sys.executable or 'python'
+        retcode = subprocess.call(f"{python} -m pip install .", shell=True)
 
 if __name__ == "__main__":
     call_setup()
