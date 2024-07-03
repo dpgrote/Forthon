@@ -96,8 +96,8 @@ if not fortranfile:
 
 # --- Set arguments to Forthon, based on defaults and any inputs.
 forthonargs = []
-if pkgbase is not None: forthonargs.append('--pkgbase %s'%pkgbase)
-if pkgsuffix: forthonargs.append('--pkgsuffix %s'%pkgsuffix)
+if pkgbase is not None: forthonargs.append(f'--pkgbase {pkgbase}')
+if pkgsuffix: forthonargs.append(f'--pkgsuffix {pkgsuffix}')
 if underscoring: forthonargs.append('--underscoring')
 else:            forthonargs.append('--nounderscoring')
 if twounderscores: forthonargs.append('--2underscores')
@@ -202,8 +202,8 @@ define_macros = fcompiler.define_macros
 
 # --- Create path to fortran files for the Makefile since they will be
 # --- referenced from the build directory.
-freepath = os.path.join(upbuilddir, '%%.%(free_suffix)s'%locals())
-fixedpath = os.path.join(upbuilddir, '%%.%(fixed_suffix)s'%locals())
+freepath = os.path.join(upbuilddir, f'%.{free_suffix}')
+fixedpath = os.path.join(upbuilddir, f'%.{fixed_suffix}')
 
 # --- Find location of the python libraries and executable.
 python = fixpath(sys.executable, dos=0)
@@ -211,7 +211,7 @@ python = fixpath(sys.executable, dos=0)
 # --- Generate list of package dependencies
 dep = ''
 for d in dependencies:
-    dep = dep + ' -d %s.scalars'%d
+    dep = dep + f' -d {d}.scalars'
 
 sourcedirs = []
 def getpathbasename(f):
@@ -270,7 +270,7 @@ for d in (defines + fcompiler.defines):
 
 # --- Define default rule.
 fortranroot, fortransuffix = getpathbasename(fortranfile)
-defaultrule = 'dependencies: %(compile_firstobject)s %(pkg)s_p%(osuffix)s %(fortranroot)s%(osuffix)s %(pkg)spymodule.c Forthon.h Forthon.c %(extraobjectsstr)s'%locals()
+defaultrule = f'dependencies: {compile_firstobject} {pkg}_p{osuffix} {fortranroot}{osuffix} {pkg}pymodule.c Forthon.h Forthon.c {extraobjectsstr}'
 
 if writemodules:
     # --- Fortran modules are written by the wrapper to the _p file.
@@ -301,8 +301,8 @@ if cargs is not None:
 #if omp:
 #    extra_compile_args.append('-fopenmp')
 
-pypreproc = '%(python)s -c "from Forthon.preprocess import main;main()" %(f90)s -t%(machine)s %(forthonargs)s'%locals()
-forthon = '%(python)s -c "from Forthon.wrappergenerator import wrappergenerator_main;wrappergenerator_main()"'%locals()
+pypreproc = f'{python} -c "from Forthon.preprocess import main;main()" {f90} -t{machine} {forthonargs}'
+forthon = f'{python} -c "from Forthon.wrappergenerator import wrappergenerator_main;wrappergenerator_main()"'
 noprintdirectory = ''
 if not verbose:
     # --- Set so that the make doesn't produce any output
@@ -316,22 +316,15 @@ if not verbose:
 # --- so that it doesn't have any dependencies beyond itself.
 compile_firstrule = ''
 if compile_first != '':
-    compile_firstrule = '%(pkg)s_p%(osuffix)s %(fortranroot)s%(osuffix)s %(extraobjectsstr)s: %(compile_firstobject)s\n'%locals()
+    compile_firstrule = f'{pkg}_p{osuffix} {fortranroot}{osuffix} {extraobjectsstr}: {compile_firstobject}\n'
     if compile_firstsuffix != '':
-        suffixpath = os.path.join(upbuilddir, '%(compile_first)s'%locals())
+        suffixpath = os.path.join(upbuilddir, f'{compile_first}')
         if compile_firstsuffix[-2:] == '90': ff = f90free
         else:                                ff = f90fixed
-        compile_firstrule = """
-%(compile_firstobject)s: %(suffixpath)s
-	%(ff)s %(fopt)s %(fargs)s -c $<
-  """%locals()
-
-compilerulestemplate = """
-%%%(osuffix)s: %(fixedpath)s %(modulecontainer)s%(osuffix)s
-	%(f90fixed)s %(fopt)s %(fargs)s -c $<
-%%%(osuffix)s: %(freepath)s %(modulecontainer)s%(osuffix)s
-	%(f90free)s %(fopt)s %(fargs)s -c $<
-"""
+        compile_firstrule = f"""
+{compile_firstobject}: {suffixpath}
+	{ff} {fopt} {fargs} -c $<
+  """
 
 if not writemodules and not fortranfile == compile_first:
     # --- If not writing modules, create a rule to compile the main fortran file
@@ -341,10 +334,10 @@ if not writemodules and not fortranfile == compile_first:
     # --- redundant dependency in the makefile.
     if fortransuffix[-2:] == '90': ff = f90free
     else:                          ff = f90fixed
-    compilerules = """
-%(wrapperdependency)s: %(upfortranfile)s
-	%(ff)s %(fopt)s %(fargs)s -c $<
-"""%locals()
+    compilerules = f"""
+{wrapperdependency}: {upfortranfile}
+	{ff} {fopt} {fargs} -c $<
+"""
 else:
     compilerules = ''
 
@@ -353,23 +346,29 @@ extrafortranrules = ''
 for sourcedir in sourcedirs:
     # --- Create path to fortran files for the Makefile since they will be
     # --- referenced from the build directory.
-    freepath = os.path.join(os.path.join(upbuilddir, sourcedir), '%%.%(free_suffix)s'%locals())
-    fixedpath = os.path.join(os.path.join(upbuilddir, sourcedir), '%%.%(fixed_suffix)s'%locals())
-    compilerules += compilerulestemplate%locals()
+    freepath = os.path.join(os.path.join(upbuilddir, sourcedir), f'%.{free_suffix}')
+    fixedpath = os.path.join(os.path.join(upbuilddir, sourcedir), f'%.{fixed_suffix}')
+    compilerulestemplate = f"""
+%{osuffix}: {fixedpath} {modulecontainer}{osuffix}
+	{f90fixed} {fopt} {fargs} -c $<
+%{osuffix}: {freepath} {modulecontainer}{osuffix}
+	{f90free} {fopt} {fargs} -c $<
+"""
+    compilerules += compilerulestemplate
 
     # --- Add build rules for fortran files with suffices other than the
     # --- basic fixed and free ones.
     if len(fortransuffices) > 2:
         for suffix in fortransuffices[2:]:
-            suffixpath = os.path.join(upbuilddir, sourcedir, '%%.%(suffix)s'%locals())
+            suffixpath = os.path.join(upbuilddir, sourcedir, f'%.{suffix}')
             if suffix[-2:] == '90':
                 ff = f90free
             else:
                 ff = f90fixed
-            extrafortranrules += """
-%%%(osuffix)s: %(suffixpath)s %(modulecontainer)s%(osuffix)s
-	%(ff)s %(fopt)s %(fargs)s -c $<
-"""%locals()
+            extrafortranrules += f"""
+%{osuffix}: {suffixpath} {modulecontainer}{osuffix}
+	{ff} {fopt} {fargs} -c $<
+"""
             del suffix, suffixpath, ff
 
 
@@ -379,39 +378,39 @@ for sourcedir in sourcedirs:
 # --- The second changes the timestamp of the pymodule.c to force a rebuild
 # --- of the .so during the setuptools setup if any of the source files have
 # --- been updated.
-makefiletext = """
-%(definesstr)s
+makefiletext = f"""
+{definesstr}
 
-%(defaultrule)s
+{defaultrule}
 
-%(compile_firstrule)s
-%(compilerules)s
-%(extrafortranrules)s
-Forthon.h:%(forthonhome)s%(pathsep)sForthon.h
-	%(pypreproc)s %(forthonhome)s%(pathsep)sForthon.h Forthon.h
-Forthon.c:%(forthonhome)s%(pathsep)sForthon.c
-	%(pypreproc)s %(forthonhome)s%(pathsep)sForthon.c Forthon.c
+{compile_firstrule}
+{compilerules}
+{extrafortranrules}
+Forthon.h:{forthonhome}{pathsep}Forthon.h
+	{pypreproc} {forthonhome}{pathsep}Forthon.h Forthon.h
+Forthon.c:{forthonhome}{pathsep}Forthon.c
+	{pypreproc} {forthonhome}{pathsep}Forthon.c Forthon.c
 
-%(pkg)s_p%(osuffix)s:%(pkg)s_p.%(free_suffix)s %(wrapperdependency)s
-	%(f90free)s %(popt)s %(fargs)s -c %(pkg)s_p.%(free_suffix)s
-%(pkg)s_p.%(free_suffix)s: %(pkg)spymodule.c
-%(pkg)spymodule.c::%(interfacefile)s
-	%(forthon)s --realsize %(realsize)s %(f90)s -t %(machine)s %(forthonargs)s %(initialgallot)s %(othermacstr)s %(dep)s %(pkg)s %(interfacefile)s
-%(pkg)spymodule.c:: %(upfortranfile)s %(extrafilesstr)s
-	@touch %(pkg)spymodule.c
+{pkg}_p{osuffix}:{pkg}_p.{free_suffix} {wrapperdependency}
+	{f90free} {popt} {fargs} -c {pkg}_p.{free_suffix}
+{pkg}_p.{free_suffix}: {pkg}pymodule.c
+{pkg}pymodule.c::{interfacefile}
+	{forthon} --realsize {realsize} {f90} -t {machine} {forthonargs} {initialgallot} {othermacstr} {dep} {pkg} {interfacefile}
+{pkg}pymodule.c:: {upfortranfile} {extrafilesstr}
+	@touch {pkg}pymodule.c
 clean:
-	rm -rf *%(osuffix)s *_p.%(free_suffix)s *.mod *module.c *.scalars *.so Forthon.c Forthon.h forthonf2c.h build
-"""%(locals())
+	rm -rf *{osuffix} *_p.{free_suffix} *.mod *module.c *.scalars *.so Forthon.c Forthon.h forthonf2c.h build
+"""
 builddir=fixpath(builddir, 0)
 try: os.makedirs(builddir)
 except: pass
-makefile = open(os.path.join(builddir, 'Makefile.%s'%pkg), 'w')
+makefile = open(os.path.join(builddir, f'Makefile.{pkg}'), 'w')
 makefile.write(makefiletext)
 makefile.close()
 
 # --- Now, execuate the make command.
 os.chdir(builddir)
-m = os.system('make -f Makefile.%(pkg)s %(noprintdirectory)s'%locals())
+m = os.system(f'make -f Makefile.{pkg} {noprintdirectory}')
 if m != 0:
     # --- If there was a problem with the make, then quite this too.
     # --- The factor of 256 just selects out the higher of the two bytes
@@ -480,7 +479,7 @@ if with_feenableexcept:
 if pkgbase is None:
     pkgbase = pkg + pkgsuffix
 
-define_macros.append(('FORTHON_PKGNAME', '"%s"'%pkgbase))
+define_macros.append(('FORTHON_PKGNAME', f'"{pkgbase}"'))
 
 package_dir = None
 packages = None
