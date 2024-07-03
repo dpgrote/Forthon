@@ -106,13 +106,15 @@ c========================================================================
       return
       end
 c========================================================================
-      subroutine examplesetactionaction1(i)
+      subroutine examplesetactionaction1(dummy, i)
+      integer(ISZ):: dummy
       integer(ISZ):: i
       print*,"action1 is being set to ",i
       return
       end
 c========================================================================
-      subroutine examplegetactionaction1()
+      subroutine examplegetactionaction1(dummy)
+      integer(ISZ):: dummy
       print*,"action1 is being get"
       return
       end

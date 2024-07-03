@@ -316,16 +316,14 @@ class PyWrap(PyWrap_OMPExtension):
         # --- setaction and getaction routines
         for s in self.slist:
             if s.setaction is not None:
-                self.cw('extern void ' + fname(self.fsub('setaction', s.name)) +
-                        '(' + fvars.ftoc_dict[s.type] + ' *v);')
+                self.cw('extern void ' + fname(self.fsub('setaction', s.name)) + '(char *fobj, char *v);')
             if s.getaction is not None:
-                self.cw('extern void ' + fname(self.fsub('getaction', s.name)) + '(void);')
+                self.cw('extern void ' + fname(self.fsub('getaction', s.name)) + '(char *fobj);')
         for a in self.alist:
             if a.setaction is not None:
-                self.cw('extern void ' + fname(self.fsub('setaction', a.name)) +
-                        '(' + fvars.ftoc_dict[a.type] + ' *v);')
+                self.cw('extern void ' + fname(self.fsub('setaction', a.name)) + '(char *fobj, char *v);')
             if a.getaction is not None:
-                self.cw('extern void ' + fname(self.fsub('getaction', a.name)) + '(void);')
+                self.cw('extern void ' + fname(self.fsub('getaction', a.name)) + '(char *fobj);')
 
         ###########################################################################
         # --- Write declarations of c pointers to fortran variables

@@ -187,18 +187,14 @@ class ForthonDerivedType:
             # --- setaction and getaction routines
             for s in slist:
                 if s.setaction is not None:
-                    self.cw('extern void ' + fname(self.fsub(t, 'setaction', s.name)) +
-                            '(char *fobj, ' + fvars.ftoc_dict[s.type] + ' *v);')
+                    self.cw('extern void ' + fname(self.fsub(t, 'setaction', s.name)) + '(char *fobj, char *v);')
                 if s.getaction is not None:
-                    self.cw('extern void ' + fname(self.fsub(t, 'getaction', s.name)) +
-                            '(char *fobj);')
+                    self.cw('extern void ' + fname(self.fsub(t, 'getaction', s.name)) + '(char *fobj);')
             for a in alist:
                 if a.setaction is not None:
-                    self.cw('extern void ' + fname(self.fsub(t, 'setaction', a.name)) +
-                            '(char *fobj, ' + fvars.ftoc_dict[a.type] + ' *v);')
+                    self.cw('extern void ' + fname(self.fsub(t, 'setaction', a.name)) + '(char *fobj, char *v);')
                 if a.getaction is not None:
-                    self.cw('extern void ' + fname(self.fsub(t, 'getaction', a.name)) +
-                            '(char *fobj);')
+                    self.cw('extern void ' + fname(self.fsub(t, 'getaction', a.name)) + '(char *fobj);')
             self.cw('')
 
             #########################################################################

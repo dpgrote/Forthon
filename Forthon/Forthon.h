@@ -50,8 +50,8 @@ typedef struct {
   int parameter;
   void (*setscalarpointer)(char *,char *,npy_intp *);
   void (*getscalarpointer)(struct ForthonObject_ **,char *,int *);
-  void (*setaction)();
-  void (*getaction)();
+  void (*setaction)(char *, char *);
+  void (*getaction)(char *);
   } Fortranscalar;
 
 struct Fortranarray_;
@@ -64,8 +64,8 @@ typedef struct Fortranarray_{
   union {char* s;char** d;} data;
   void (*setarraypointer)(char *,char *,npy_intp *);
   void (*getarraypointer)(struct Fortranarray_ *,char*);
-  void (*setaction)();
-  void (*getaction)();
+  void (*setaction)(char *, char *);
+  void (*getaction)(char *);
   double initvalue;
   PyArrayObject* pya;
   char* group;
@@ -578,8 +578,8 @@ static int Forthon_setscalardouble(ForthonObject *self,PyObject *value,
   e = PyArg_Parse(value,"d",&lv);
   if (e) {
     if (fscalar->setaction != NULL) {
-      if (self->fobj == NULL) fscalar->setaction(&lv);
-      else                    fscalar->setaction((self->fobj),&lv);
+      if (self->fobj == NULL) fscalar->setaction((char *)0, (char *)&lv);
+      else                    fscalar->setaction((char *)(self->fobj), (char *)&lv);
       }
     memcpy((fscalar->data),&lv,sizeof(double));}
   else {
@@ -600,8 +600,8 @@ static int Forthon_setscalarcdouble(ForthonObject *self,PyObject *value,
   e = PyArg_Parse(value,"D",&lv);
   if (e) {
     if (fscalar->setaction != NULL) {
-      if (self->fobj == NULL) fscalar->setaction(&lv);
-      else                    fscalar->setaction((self->fobj),&lv);
+      if (self->fobj == NULL) fscalar->setaction((char *)0, (char *)&lv);
+      else                    fscalar->setaction((char *)(self->fobj), (char *)&lv);
       }
     memcpy((fscalar->data),&lv,2*sizeof(double));}
   else {
@@ -622,8 +622,8 @@ static int Forthon_setscalarfloat(ForthonObject *self,PyObject *value,
   e = PyArg_Parse(value,"f",&lv);
   if (e) {
     if (fscalar->setaction != NULL) {
-      if (self->fobj == NULL) fscalar->setaction(&lv);
-      else                    fscalar->setaction((self->fobj),&lv);
+      if (self->fobj == NULL) fscalar->setaction((char *)0, (char *)&lv);
+      else                    fscalar->setaction((char *)(self->fobj), (char *)&lv);
       }
     memcpy((fscalar->data),&lv,sizeof(float));}
   else {
@@ -645,8 +645,8 @@ static int Forthon_setscalarcfloat(ForthonObject *self,PyObject *value,
   e = PyArg_Parse(value,"D",&lv);
   if (e) {
     if (fscalar->setaction != NULL) {
-      if (self->fobj == NULL) fscalar->setaction(&lv);
-      else                    fscalar->setaction((self->fobj),&lv);
+      if (self->fobj == NULL) fscalar->setaction((char *)0, (char *)&lv);
+      else                    fscalar->setaction((char *)(self->fobj), (char *)&lv);
       }
     memcpy((fscalar->data),&lv,2*sizeof(float));}
   else {
@@ -671,8 +671,8 @@ static int Forthon_setscalarinteger(ForthonObject *self,PyObject *value,
 #endif
   if (!PyErr_Occurred()) {
     if (fscalar->setaction != NULL) {
-      if (self->fobj == NULL) fscalar->setaction(&lv);
-      else                    fscalar->setaction((self->fobj),&lv);
+      if (self->fobj == NULL) fscalar->setaction((char *)0, (char *)&lv);
+      else                    fscalar->setaction((char *)(self->fobj), (char *)&lv);
       }
     memcpy((fscalar->data),&lv,sizeof(long));}
   else {
@@ -733,9 +733,9 @@ static int Forthon_setscalarderivedtype(ForthonObject *self,PyObject *value,
 
   if (fscalar->setaction != NULL) {
     if (self->fobj == NULL)
-      fscalar->setaction(((ForthonObject *)value)->fobj);
+      fscalar->setaction((char *)0, (char *)((ForthonObject *)value)->fobj);
     else
-      fscalar->setaction((self->fobj),((ForthonObject *)value)->fobj);
+      fscalar->setaction((char *)(self->fobj), (char *)((ForthonObject *)value)->fobj);
     }
 
   /* This does the assignment in Fortran. */
@@ -813,9 +813,9 @@ static int Forthon_setarray(ForthonObject *self,PyObject *value,
     if (setit) {
       if (farray->setaction != NULL) {
         if (self->fobj == NULL)
-          farray->setaction(PyArray_BYTES(ax));
+          farray->setaction((char *)0, (char *)PyArray_BYTES(ax));
         else
-          farray->setaction((self->fobj),PyArray_BYTES(ax));
+          farray->setaction((char *)(self->fobj), (char *)PyArray_BYTES(ax));
         }
       if (farray->pya != NULL) {Py_XDECREF(farray->pya);}
       farray->pya = ax;
@@ -2330,8 +2330,8 @@ static PyObject *Forthon_getattro(ForthonObject *self,PyObject *oname)
   if (pyi != NULL) {
     PyArg_Parse(pyi,"l",&i);
     if (self->fscalars[i].getaction != NULL) {
-      if (self->fobj == NULL) self->fscalars[i].getaction();
-      else                    self->fscalars[i].getaction((self->fobj));
+      if (self->fobj == NULL) self->fscalars[i].getaction((char *)0);
+      else                    self->fscalars[i].getaction((char *)(self->fobj));
       }
     if (self->fscalars[i].type == NPY_DOUBLE) {
       return Forthon_getscalardouble(self,(void *)i);}
@@ -2353,8 +2353,8 @@ static PyObject *Forthon_getattro(ForthonObject *self,PyObject *oname)
   if (pyi != NULL) {
     PyArg_Parse(pyi,"l",&i);
     if (self->farrays[i].getaction != NULL) {
-      if (self->fobj == NULL) self->farrays[i].getaction();
-      else                    self->farrays[i].getaction((self->fobj));
+      if (self->fobj == NULL) self->farrays[i].getaction((char *)0);
+      else                    self->farrays[i].getaction((char *)(self->fobj));
       }
     return Forthon_getarray(self,(void *)i);}
 
