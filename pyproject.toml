@@ -34,7 +34,7 @@ include-package-data = true
 include = ["Forthon"]
 
 [tool.setuptools.package-data]
-Forthon = ["License.txt","Forthon.h","Forthon.c"]
+Forthon = ["License.txt","Forthon.h","Forthon.c", "npy_2_compat.h"]
 
 [project.scripts]
 Forthon3 = "Forthon.Forthon_builder:call_setup"

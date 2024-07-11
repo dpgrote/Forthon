@@ -17,6 +17,7 @@ typedef PyArrayObject PyArrayObject_fields;
 
 #include <pythonrun.h>
 #include "forthonf2c.h"
+#include "npy_2_compat.h"
 
 static PyObject *ErrorObject;
 
@@ -857,10 +858,10 @@ static int Forthon_setarray(ForthonObject *self,PyObject *value,
            * to be copied into the string. This breaks things at the Python level.
            * An alternative would be to skip the copy if the size == 0. That coding is a bit
            * messier and this seems to work fine. */
-          (((PyArrayObject_fields *)(farray->pya))->descr->elsize) = 0;
+          PyDataType_SET_ELSIZE(((PyArrayObject_fields *)(farray->pya))->descr, 0);
         }
         else {
-          (((PyArrayObject_fields *)(farray->pya))->descr->elsize) = (int)PyArray_ITEMSIZE(ax);
+          PyDataType_SET_ELSIZE(((PyArrayObject_fields *)(farray->pya))->descr, (int)PyArray_ITEMSIZE(ax));
         }
         }
       }
@@ -872,7 +873,7 @@ static int Forthon_setarray(ForthonObject *self,PyObject *value,
     /* Reset the value of the itemsize if it was          */
     /* changed to accomodate a string.                    */
     /* if (d > -1) PyArray_ITEMSIZE(farray->pya) = d; */
-    if (d > -1) (((PyArrayObject_fields *)(farray->pya))->descr->elsize) = d;
+    if (d > -1) PyDataType_SET_ELSIZE(((PyArrayObject_fields *)(farray->pya))->descr, d);
     Py_XDECREF(ax);
   }
   return r;
