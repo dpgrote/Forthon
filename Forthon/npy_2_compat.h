@@ -1,3 +1,5 @@
+/* Forthon note: This file is only included to allow called to PyDataType_SET_ELSIZE
+ * and should be removed after updating to numpy2. */
 /*
  * This header file defines relevant features which:
  * - Require runtime inspection depending on the NumPy version.
