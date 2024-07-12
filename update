@@ -6,7 +6,7 @@ set vvv=`python3 version.py`
 
 git log -n 1 --pretty=%h > .commithash
 
-git add docs/index.html setup.py version.py
+git add docs/index.html version.py
 git commit -m "version $vvv"
 git tag $vvv
 git push
