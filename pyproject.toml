@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "Forthon"
-version = "0.10.4"
+version = "0.10.6"
 license = {file = "Forthon/License.txt"}
 dependencies = ["numpy"]
 authors = [ {name = "David P. Grote", email = "grote1@llnl.gov"}, ]
