@@ -1,2 +1,2 @@
-version = '0.10.6'
-gitversion = '110d5ba'
+version = '0.10.7'
+gitversion = '3f06b41'

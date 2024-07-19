@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "Forthon"
-version = "0.10.6"
+dynamic = ["version"]
 license = {file = "Forthon/License.txt"}
 dependencies = ["numpy"]
 authors = [ {name = "David P. Grote", email = "grote1@llnl.gov"}, ]
@@ -38,4 +38,10 @@ Forthon = ["License.txt","Forthon.h","Forthon.c", "npy_2_compat.h"]
 
 [project.scripts]
 Forthon3 = "Forthon.Forthon_builder:call_setup"
+
+[tool.setuptools.dynamic]
+version = {attr = "Forthon.version.version"}
+
+[project.urls]
+Repository = "https://github.com/dpgrote/Forthon.git"
 
