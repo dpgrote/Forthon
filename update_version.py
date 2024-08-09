@@ -1,22 +1,19 @@
-"0.10.7"
-commithash = "3f06b41"
-
 import sys
-import version
 import subprocess
+
+sys.path.insert(0, 'Forthon')
+import version
 
 def updatefile(filename, vvold, vvnew):
     # --- Update the version number in the given file.
-    ff = open(filename, 'r')
-    text = ff.read()
-    ff.close()
+    with open(filename, 'r') as ff:
+        text = ff.read()
     text = text.replace(vvold, vvnew)
-    ff = open(filename, 'w')
-    ff.write(text)
-    ff.close()
+    with open(filename, 'w') as ff:
+        ff.write(text)
 
 def update(major=False, release=False):
-    vvold = version.__doc__
+    vvold = version.version
     vv = vvold.split('.')
     if release:
         vv[0] = str(int(vv[0])+1)
@@ -31,15 +28,12 @@ def update(major=False, release=False):
     vvnew = '.'.join(vv)
 
     # --- Update the version number in the files.
-    updatefile('pyproject.toml', vvold, vvnew)
-    updatefile('version.py', vvold, vvnew)
     updatefile('Forthon/version.py', vvold, vvnew)
     updatefile('docs/index.html', vvold, vvnew)
 
     # --- Update the commithash of the release.
     commithash = subprocess.check_output('git log -n 1 --pretty=%h', stderr=subprocess.STDOUT, shell=True, text=True).strip()
-    updatefile('version.py', version.commithash, commithash)
     updatefile('Forthon/version.py', version.commithash, commithash)
 
 if __name__ == "__main__":
-    print(version.__doc__)
+    print(version.version)
