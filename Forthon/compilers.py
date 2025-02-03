@@ -268,8 +268,8 @@ class FCompiler:
     def linux_intel(self):
         if self.usecompiler('intel', 'ifort') or self.usecompiler('intel8', 'ifort'):
             self.fcompname = 'ifort'
-            self.f90free += ' -nofor_main -free -DIFC -fpp -fPIC'
-            self.f90fixed += ' -nofor_main -132 -DIFC -fpp -fPIC'
+            self.f90free += ' -nofor-main -free -DIFC -fpp -fPIC'
+            self.f90fixed += ' -nofor-main -132 -DIFC -fpp -fPIC'
             self.f90free += ' -DFPSIZE=%s -r%s -Zp%s' % (realsize, realsize, realsize)
             self.f90fixed += ' -DFPSIZE=%s -r%s -Zp%s' % (realsize, realsize, realsize)
             self.f90free += ' -DISZ=%s -i%s' % (intsize, intsize)
