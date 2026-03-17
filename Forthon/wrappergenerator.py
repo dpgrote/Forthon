@@ -1007,7 +1007,7 @@ class PyWrap(PyWrap_OMPExtension):
             self.cw('  Py_GetArgcArgv(&argc, &argv);')
             self.cw('  f90_init(argc, argv);')
         # self.cw('  ForthonType.tp_getset = ' + self.pkgname + '_getseters;')
-        # self.cw('  ForthonType.tp_methods = ' + self.pkgname + '_methods;')
+        self.cw('  ForthonType.tp_methods = ForthonPackage_methods;')
         self.cw('  if (PyType_Ready(&ForthonType) < 0)')
         self.cw('    return NULL;')
 
