@@ -2402,15 +2402,6 @@ static PyObject *Forthon_getattro(ForthonObject *self,PyObject *oname)
     return self->__module__;
     }
 
-  /* The code here used to be handled by calling Py_FindMethod, but */
-  /* that is not defined in python3 */
-  /* Look through the Forthon generic methods */
-  ml = getForthonPackage_methods();
-  for (; ml->ml_name != NULL; ml++) {
-    if (CMPSTR(ml->ml_name) == 0) {
-      return (PyObject *)PyCFunction_New(ml,(PyObject *)self);
-    }
-  }
   /* Look through the object specific methods */
   ml = self->fmethods;
   for (; ml->ml_name != NULL; ml++) {
