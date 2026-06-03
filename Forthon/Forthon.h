@@ -2260,6 +2260,27 @@ static PyObject *ForthonPackage_varlist(PyObject *_self_,PyObject *args)
 }
 
 /* ######################################################################### */
+static char __dir___doc[] = "Forthon dir() implementation. Returns a list of variables and Forthon methods.";
+static PyObject *ForthonPackage___dir__(PyObject *_self_,PyObject *args)
+{
+  PyObject *result,*star,*name;
+  PyMethodDef *ml;
+  if (!PyArg_ParseTuple(args,"")) return NULL;
+  /* # ForthonPackage_varlist */
+  star = Py_BuildValue("(s)","*");
+  result = ForthonPackage_varlist(_self_,star);
+  Py_DECREF(star);
+  /* # ForthonPackage_methods */
+  ml = getForthonPackage_methods();
+  for (; ml->ml_name != NULL; ml++) {
+    name = Py_BuildValue("s",ml->ml_name);
+    PyList_Append(result,name);
+    Py_DECREF(name);
+  }
+  return result;
+}
+
+/* ######################################################################### */
 /* # Method list                                                            */
 /* Methods which are callable as attributes of a Forthon object            */
 static struct PyMethodDef ForthonPackage_methods[] = {
@@ -2291,6 +2312,7 @@ static struct PyMethodDef ForthonPackage_methods[] = {
   {"__setstate__", (PyCFunction)ForthonPackage_setdict, METH_VARARGS, setdict_doc},
   {"totmembytes" , (PyCFunction)ForthonPackage_totmembytes, METH_VARARGS, totmembytes_doc},
   {"varlist"     , (PyCFunction)ForthonPackage_varlist, METH_VARARGS, varlist_doc},
+  {"__dir__"     , (PyCFunction)ForthonPackage___dir__, METH_VARARGS, __dir___doc},
   {"getstrides"  , (PyCFunction)ForthonPackage_getstrides, METH_VARARGS, getstrides_doc},
   {"printtypenum", (PyCFunction)ForthonPackage_printtypenum, METH_VARARGS, printtypenum_doc},
   {"feenableexcept", (PyCFunction)ForthonPackage_feenableexcept, METH_VARARGS, feenableexcept_doc},
@@ -2380,15 +2402,6 @@ static PyObject *Forthon_getattro(ForthonObject *self,PyObject *oname)
     return self->__module__;
     }
 
-  /* The code here used to be handled by calling Py_FindMethod, but */
-  /* that is not defined in python3 */
-  /* Look through the Forthon generic methods */
-  ml = getForthonPackage_methods();
-  for (; ml->ml_name != NULL; ml++) {
-    if (CMPSTR(ml->ml_name) == 0) {
-      return (PyObject *)PyCFunction_New(ml,(PyObject *)self);
-    }
-  }
   /* Look through the object specific methods */
   ml = self->fmethods;
   for (; ml->ml_name != NULL; ml++) {
@@ -2485,5 +2498,10 @@ static PyTypeObject ForthonType = {
   "Forthon objects",                     /*tp_doc*/
   (traverseproc)Forthon_traverse,        /* tp_traverse */
   (inquiry)Forthon_clear,                /* tp_clear */
+  0,                                     /* tp_richcompare */
+  0,                                     /* tp_weaklistoffset */
+  0,                                     /* tp_iter */
+  0,                                     /* tp_iternext */
+  ForthonPackage_methods,                /* tp_methods */
 
 };
